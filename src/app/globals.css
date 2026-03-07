@@ -1,0 +1,10 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Warm cork/bulletin-board background with subtle dot texture */
+body {
+  background-color: #f5ede0;
+  background-image: radial-gradient(#d4bfa0 0.8px, transparent 0.8px);
+  background-size: 18px 18px;
+}
