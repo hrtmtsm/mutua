@@ -32,6 +32,7 @@ export type Availability = typeof AVAILABILITY[number];
 export interface UserProfile {
   id?:               string;
   session_id:        string;
+  email?:            string;
   native_language:   Language;
   learning_language: Language;
   goal:              Goal;

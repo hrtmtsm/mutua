@@ -90,6 +90,7 @@ const QUESTIONS = [
   'Why do you want to practice this language?',
   'How would you like to practice?',
   'When are you usually available to practice?',
+  'What\'s your email?',
 ];
 
 const SUBTITLES = [
@@ -98,6 +99,7 @@ const SUBTITLES = [
   'We use this to find a partner with the same purpose.',
   'We match you with someone who prefers the same format.',
   'We factor this in when finding your match.',
+  'We\'ll notify you when your partner is ready.',
 ];
 
 export default function OnboardingPage() {
@@ -110,16 +112,18 @@ export default function OnboardingPage() {
   const [goal,         setGoal]         = useState<Goal | null>(null);
   const [commStyle,    setCommStyle]    = useState<CommStyle | null>(null);
   const [availability, setAvailability] = useState<Availability | null>(null);
+  const [email,        setEmail]        = useState('');
 
   const canAdvance =
     (step === 1 && native !== null) ||
     (step === 2 && learning !== null) ||
     (step === 3 && goal !== null) ||
     (step === 4 && commStyle !== null) ||
-    (step === 5 && availability !== null);
+    (step === 5 && availability !== null) ||
+    (step === 6 && /\S+@\S+\.\S+/.test(email));
 
   const handleNext = async () => {
-    if (step < 5) { setStep(s => s + 1); return; }
+    if (step < 6) { setStep(s => s + 1); return; }
 
     setSaving(true);
     const sessionId = crypto.randomUUID();
@@ -127,6 +131,7 @@ export default function OnboardingPage() {
 
     const profile: UserProfile = {
       session_id:        sessionId,
+      email:             email.trim().toLowerCase(),
       native_language:   native!,
       learning_language: learning!,
       goal:              goal!,
@@ -137,7 +142,7 @@ export default function OnboardingPage() {
 
     try { await saveProfile(profile); } catch { /* demo mode */ }
 
-    router.push('/find-match');
+    router.push('/waitlist');
   };
 
   return (
@@ -147,10 +152,10 @@ export default function OnboardingPage() {
       <div className="px-6 py-4 flex items-center justify-between border-b-2 border-neutral-900 bg-[#f5ede0]">
         <span className="font-serif font-black text-xl tracking-tight">Mutua</span>
         <span className="text-xs font-bold text-stone-500 tabular-nums uppercase tracking-widest">
-          {step} / 5
+          {step} / 6
         </span>
       </div>
-      <ProgressBar step={step} total={5} />
+      <ProgressBar step={step} total={6} />
 
       {/* Content */}
       <main className="flex-1 flex flex-col px-6 py-10 max-w-md mx-auto w-full">
@@ -210,6 +215,17 @@ export default function OnboardingPage() {
               ))}
             </div>
           )}
+
+          {/* Q6 — Email */}
+          {step === 6 && (
+            <input
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="your@email.com"
+              className="w-full px-4 py-3 border-2 border-neutral-900 rounded-xl text-sm text-neutral-900 placeholder:text-stone-400 focus:outline-none"
+            />
+          )}
         </div>
 
         {/* Navigation */}
@@ -227,7 +243,7 @@ export default function OnboardingPage() {
             disabled={!canAdvance || saving}
             className="flex-1 px-6 py-3 bg-amber-400 text-neutral-900 border-2 border-neutral-900 text-sm font-bold rounded-lg shadow-[3px_3px_0_0_#111] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] disabled:opacity-30 disabled:cursor-not-allowed disabled:shadow-[3px_3px_0_0_#111] disabled:translate-x-0 disabled:translate-y-0 transition-all"
           >
-            {saving ? 'Saving...' : step === 5 ? 'Find a compatible partner' : 'Continue'}
+            {saving ? 'Saving...' : step === 6 ? 'Join the waitlist' : 'Continue'}
           </button>
         </div>
       </main>
