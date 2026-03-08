@@ -33,9 +33,20 @@ export default function ProfilePage() {
 
         {/* Account status — only show when signed in */}
         {signedIn && (
-          <div className="bg-white border-2 border-neutral-900 rounded-xl px-5 py-4 shadow-[2px_2px_0_0_#111]">
-            <p className="font-semibold text-neutral-900 text-sm">Signed in as {userEmail}</p>
-            <p className="text-xs text-stone-500 mt-0.5">Your profile is saved to your account.</p>
+          <div className="bg-white border-2 border-neutral-900 rounded-xl px-5 py-4 shadow-[2px_2px_0_0_#111] flex items-center justify-between gap-4">
+            <div>
+              <p className="font-semibold text-neutral-900 text-sm">Signed in as {userEmail}</p>
+              <p className="text-xs text-stone-500 mt-0.5">Your profile is saved to your account.</p>
+            </div>
+            <button
+              onClick={async () => {
+                await supabase.auth.signOut();
+                router.refresh();
+              }}
+              className="text-xs font-semibold text-stone-400 hover:text-neutral-900 transition-colors shrink-0"
+            >
+              Sign out
+            </button>
           </div>
         )}
 
