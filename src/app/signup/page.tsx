@@ -14,7 +14,6 @@ export default function SignupPage() {
   const [showPass,     setShowPass]   = useState(false);
   const [showConfirm,  setShowConfirm]= useState(false);
   const [submitting,   setSubmitting] = useState(false);
-  const [done,         setDone]       = useState(false);
   const [error,        setError]      = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -37,8 +36,8 @@ export default function SignupPage() {
       return;
     }
 
-    setDone(true);
     setSubmitting(false);
+    router.push('/profile');
   };
 
   return (
@@ -46,24 +45,15 @@ export default function SignupPage() {
       <div className="flex-1 flex items-center justify-center px-6 py-16">
         <div className="bg-white border-2 border-neutral-900 rounded-2xl shadow-[5px_5px_0_0_#111] px-10 py-12 max-w-sm w-full text-center space-y-8">
 
-          {done ? (
-            <div className="space-y-3">
-              <p className="font-serif font-black text-xl text-neutral-900">Check your email.</p>
+          <>
+            <div className="space-y-2">
+              <p className="font-serif font-black text-xl text-neutral-900">Create your account.</p>
               <p className="text-sm text-stone-500 leading-relaxed">
-                We sent a confirmation link to <strong>{email}</strong>.<br />
-                Click it to activate your account.
+                Save your profile and matches across devices.
               </p>
             </div>
-          ) : (
-            <>
-              <div className="space-y-2">
-                <p className="font-serif font-black text-xl text-neutral-900">Create your account.</p>
-                <p className="text-sm text-stone-500 leading-relaxed">
-                  Save your profile and matches across devices.
-                </p>
-              </div>
 
-              <form onSubmit={handleSubmit} className="space-y-3 text-left">
+            <form onSubmit={handleSubmit} className="space-y-3 text-left">
                 <input
                   type="email"
                   required
@@ -117,14 +107,13 @@ export default function SignupPage() {
                 </button>
               </form>
 
-              <p className="text-xs text-stone-400">
-                Already have an account?{' '}
-                <Link href="/login" className="text-neutral-900 font-semibold hover:underline">
-                  Sign in
-                </Link>
-              </p>
-            </>
-          )}
+            <p className="text-xs text-stone-400">
+              Already have an account?{' '}
+              <Link href="/login" className="text-neutral-900 font-semibold hover:underline">
+                Sign in
+              </Link>
+            </p>
+          </>
 
         </div>
       </div>
