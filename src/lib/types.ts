@@ -7,7 +7,7 @@ export const GOALS = [
   'Casual conversation',
   'Travel',
   'Work / professional',
-  'Exam preparation',
+  'Cultural exchange',
   'Making friends',
 ] as const;
 

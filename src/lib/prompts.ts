@@ -22,12 +22,12 @@ const STARTERS: Record<Goal, string[]> = {
     "What's a professional phrase or expression you find yourself using a lot?",
     "How do you handle a situation where you don't understand something in a work call?",
   ],
-  'Exam preparation': [
-    "Which part of the exam are you finding most challenging right now?",
-    "What does your current study routine look like — does it feel effective?",
-    "Is there a grammar point or vocabulary area that keeps tripping you up?",
-    "How do you practice listening comprehension outside of class?",
-    "What's the hardest part of expressing yourself naturally under time pressure?",
+  'Cultural exchange': [
+    "What's a tradition or celebration in your culture that you think outsiders would find surprising?",
+    "How does your culture typically handle disagreement or conflict — directly or indirectly?",
+    "What's something about daily life in your country that you think is underrated?",
+    "Is there a local food, custom, or place that you think everyone should experience?",
+    "What's something you've learned about another culture that genuinely changed how you see things?",
   ],
   'Making friends': [
     "What's something you're genuinely passionate about that most people don't expect?",

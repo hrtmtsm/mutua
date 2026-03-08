@@ -2,7 +2,7 @@ export const GOAL_DETAILS: Record<string, string> = {
   'Casual conversation': 'Low-pressure chats about everyday life',
   'Travel':              'Practical language for getting around',
   'Work / professional': 'Formal vocabulary and professional settings',
-  'Exam preparation':    'Structured practice focused on accuracy',
+  'Cultural exchange':   'Share perspectives, traditions, and ways of life',
   'Making friends':      'Natural conversation and genuine connection',
 };
 
