@@ -27,7 +27,8 @@ export default function LoginPage() {
       return;
     }
 
-    router.push('/profile');
+    const hasProfile = Boolean(localStorage.getItem('mutua_profile'));
+    router.push(hasProfile ? '/profile' : '/onboarding');
   };
 
   return (
