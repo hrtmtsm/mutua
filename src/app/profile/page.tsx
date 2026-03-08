@@ -5,14 +5,12 @@ import { useRouter } from 'next/navigation';
 import type { UserProfile } from '@/lib/types';
 import { LANGUAGES, GOALS, COMM_STYLES, AVAILABILITY, type Language, type Goal, type CommStyle, type Availability } from '@/lib/types';
 import { LANG_FLAGS } from '@/lib/constants';
-import { supabase, saveProfile } from '@/lib/supabase';
+import { saveProfile } from '@/lib/supabase';
 import AppShell from '@/components/AppShell';
 
 export default function ProfilePage() {
   const router = useRouter();
   const [profile,    setProfile]    = useState<UserProfile | null>(null);
-  const [signedIn,   setSignedIn]   = useState(false);
-  const [userEmail,  setUserEmail]  = useState('');
   const [editing,    setEditing]    = useState(false);
   const [saving,     setSaving]     = useState(false);
 
@@ -34,12 +32,6 @@ export default function ProfilePage() {
       setCommStyle(p.comm_style);
       setAvailability(p.availability);
     }
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session?.user) {
-        setSignedIn(true);
-        setUserEmail(data.session.user.email ?? '');
-      }
-    });
   }, []);
 
   const handleSave = async () => {
@@ -79,25 +71,6 @@ export default function ProfilePage() {
 
         <h1 className="font-serif font-black text-2xl text-neutral-900">Profile</h1>
 
-        {/* Account status */}
-        {signedIn && (
-          <div className="bg-white border-2 border-neutral-900 rounded-xl px-5 py-4 shadow-[2px_2px_0_0_#111] flex items-center justify-between gap-4">
-            <div>
-              <p className="font-semibold text-neutral-900 text-sm">Signed in as {userEmail}</p>
-              <p className="text-xs text-stone-500 mt-0.5">Your profile is saved to your account.</p>
-            </div>
-            <button
-              onClick={async () => {
-                await supabase.auth.signOut();
-                setSignedIn(false);
-                setUserEmail('');
-              }}
-              className="text-xs font-semibold text-stone-400 hover:text-neutral-900 transition-colors shrink-0"
-            >
-              Sign out
-            </button>
-          </div>
-        )}
 
         {/* Profile data */}
         {profile ? (
@@ -182,22 +155,6 @@ export default function ProfilePage() {
               </button>
             )}
 
-            {!signedIn && !editing && (
-              <div className="flex gap-2 pt-1">
-                <button
-                  onClick={() => router.push('/signup')}
-                  className="flex-1 py-2.5 bg-amber-400 text-neutral-900 border-2 border-neutral-900 font-bold text-sm rounded-lg shadow-[2px_2px_0_0_#111] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
-                >
-                  Create an account
-                </button>
-                <button
-                  onClick={() => router.push('/login')}
-                  className="flex-1 py-2.5 bg-white text-neutral-900 border-2 border-neutral-900 font-semibold text-sm rounded-lg shadow-[2px_2px_0_0_#111] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
-                >
-                  Sign in
-                </button>
-              </div>
-            )}
           </div>
         ) : (
           <div className="bg-white border-2 border-neutral-900 rounded-2xl shadow-[4px_4px_0_0_#111] px-8 py-12 text-center space-y-3">
