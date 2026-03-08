@@ -86,11 +86,7 @@ export default function ProfilePage() {
               </div>
             )}
             <button
-              onClick={() => {
-                localStorage.removeItem('mutua_profile');
-                localStorage.removeItem('mutua_session_id');
-                router.push('/onboarding');
-              }}
+              onClick={() => router.push('/onboarding')}
               className="w-full py-2.5 bg-white text-neutral-900 border-2 border-neutral-900 font-semibold text-sm rounded-lg shadow-[2px_2px_0_0_#111] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
             >
               Update preferences
@@ -99,12 +95,12 @@ export default function ProfilePage() {
         ) : (
           <div className="bg-white border-2 border-neutral-900 rounded-2xl shadow-[4px_4px_0_0_#111] px-8 py-12 text-center space-y-3">
             <p className="font-serif font-black text-xl text-neutral-900">No profile yet</p>
-            <p className="text-sm text-stone-500">Create an account to get started.</p>
+            <p className="text-sm text-stone-500">Complete onboarding to set up your profile.</p>
             <button
-              onClick={() => router.push('/signup')}
+              onClick={() => router.push('/onboarding')}
               className="mt-2 inline-block px-6 py-2.5 bg-amber-400 text-neutral-900 border-2 border-neutral-900 font-bold text-sm rounded-lg shadow-[2px_2px_0_0_#111] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
             >
-              Create an account
+              Get started
             </button>
           </div>
         )}
