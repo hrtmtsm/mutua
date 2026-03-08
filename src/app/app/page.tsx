@@ -108,9 +108,6 @@ export default function PracticePage() {
         {/* Page title row */}
         <div className="flex items-center justify-between mb-1">
           <h1 className="font-serif font-black text-2xl text-neutral-900">Practice</h1>
-          <span className="text-xs font-bold uppercase tracking-widest text-stone-400">
-            {partners.length}/{PARTNER_LIMIT} active
-          </span>
         </div>
 
 
