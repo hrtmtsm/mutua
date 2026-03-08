@@ -113,30 +113,12 @@ export default function PracticePage() {
           </span>
         </div>
 
-        {/* Find new match / limit warning */}
-        {atLimit ? (
-          <div className="bg-amber-50 border-2 border-amber-400 rounded-xl px-5 py-4 shadow-[2px_2px_0_0_#f59e0b]">
-            <p className="font-semibold text-neutral-900 text-sm">
-              You have {PARTNER_LIMIT} active partners.
-            </p>
-            <p className="text-xs text-stone-600 mt-1 leading-relaxed">
-              Finish a session or remove a partner to find a new match.
-            </p>
-          </div>
-        ) : (
-          <button
-            onClick={() => router.push('/find-match')}
-            className="w-full py-3 bg-amber-400 text-neutral-900 border-2 border-neutral-900 font-bold rounded-lg shadow-[3px_3px_0_0_#111] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all text-sm"
-          >
-            + Find a new match
-          </button>
-        )}
 
         {/* Partner cards */}
         {partners.length === 0 ? (
           <div className="bg-white border-2 border-neutral-900 rounded-2xl shadow-[4px_4px_0_0_#111] px-8 py-12 text-center">
-            <p className="font-serif font-black text-xl text-neutral-900 mb-2">No active partners yet</p>
-            <p className="text-sm text-stone-500">Find a match to get started.</p>
+            <p className="font-serif font-black text-xl text-neutral-900 mb-2">No partners yet</p>
+            <p className="text-sm text-stone-500">Your match will appear here once we find one for you.</p>
           </div>
         ) : (
           <div className="space-y-4">
