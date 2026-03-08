@@ -60,7 +60,7 @@ export default function ProfilePage() {
     setEditing(false);
   };
 
-  const selectClass = "appearance-none text-sm font-semibold text-neutral-900 border-2 border-neutral-900 rounded-lg pl-3 pr-8 py-1.5 focus:outline-none bg-white shadow-[2px_2px_0_0_#111] cursor-pointer";
+  const selectClass = "appearance-none text-sm font-semibold text-neutral-900 border border-stone-300 rounded-lg pl-3 pr-8 py-1.5 focus:outline-none focus:border-neutral-900 bg-stone-50 cursor-pointer";
   const ChevronDown = () => (
     <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 pointer-events-none" viewBox="0 0 20 20" fill="currentColor">
       <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
