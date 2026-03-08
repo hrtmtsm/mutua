@@ -60,7 +60,18 @@ export default function ProfilePage() {
     setEditing(false);
   };
 
-  const selectClass = "text-sm font-semibold text-neutral-900 border border-stone-300 rounded-md px-2 py-1 focus:outline-none focus:border-neutral-900 bg-white";
+  const selectClass = "appearance-none text-sm font-semibold text-neutral-900 border-2 border-neutral-900 rounded-lg pl-3 pr-8 py-1.5 focus:outline-none bg-white shadow-[2px_2px_0_0_#111] cursor-pointer";
+  const ChevronDown = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 pointer-events-none" viewBox="0 0 20 20" fill="currentColor">
+      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+    </svg>
+  );
+  const SelectWrap = ({ children }: { children: React.ReactNode }) => (
+    <div className="relative flex items-center">
+      {children}
+      <span className="absolute right-2.5 text-neutral-900 pointer-events-none"><ChevronDown /></span>
+    </div>
+  );
 
   return (
     <AppShell>
@@ -122,45 +133,35 @@ export default function ProfilePage() {
                   label: 'Native language',
                   value: `${LANG_FLAGS[native] ?? ''} ${native}`,
                   editor: (
-                    <select value={native} onChange={e => setNative(e.target.value as Language)} className={selectClass}>
-                      {LANGUAGES.map(l => <option key={l}>{l}</option>)}
-                    </select>
+                    <SelectWrap><select value={native} onChange={e => setNative(e.target.value as Language)} className={selectClass}>{LANGUAGES.map(l => <option key={l}>{l}</option>)}</select></SelectWrap>
                   ),
                 },
                 {
                   label: 'Learning',
                   value: `${LANG_FLAGS[learning] ?? ''} ${learning}`,
                   editor: (
-                    <select value={learning} onChange={e => setLearning(e.target.value as Language)} className={selectClass}>
-                      {LANGUAGES.filter(l => l !== native).map(l => <option key={l}>{l}</option>)}
-                    </select>
+                    <SelectWrap><select value={learning} onChange={e => setLearning(e.target.value as Language)} className={selectClass}>{LANGUAGES.filter(l => l !== native).map(l => <option key={l}>{l}</option>)}</select></SelectWrap>
                   ),
                 },
                 {
                   label: 'Goal',
                   value: goal,
                   editor: (
-                    <select value={goal} onChange={e => setGoal(e.target.value as Goal)} className={selectClass}>
-                      {GOALS.map(g => <option key={g}>{g}</option>)}
-                    </select>
+                    <SelectWrap><select value={goal} onChange={e => setGoal(e.target.value as Goal)} className={selectClass}>{GOALS.map(g => <option key={g}>{g}</option>)}</select></SelectWrap>
                   ),
                 },
                 {
                   label: 'Style',
                   value: commStyle,
                   editor: (
-                    <select value={commStyle} onChange={e => setCommStyle(e.target.value as CommStyle)} className={selectClass}>
-                      {COMM_STYLES.map(s => <option key={s}>{s}</option>)}
-                    </select>
+                    <SelectWrap><select value={commStyle} onChange={e => setCommStyle(e.target.value as CommStyle)} className={selectClass}>{COMM_STYLES.map(s => <option key={s}>{s}</option>)}</select></SelectWrap>
                   ),
                 },
                 {
                   label: 'Availability',
                   value: availability,
                   editor: (
-                    <select value={availability} onChange={e => setAvailability(e.target.value as Availability)} className={selectClass}>
-                      {AVAILABILITY.map(a => <option key={a}>{a}</option>)}
-                    </select>
+                    <SelectWrap><select value={availability} onChange={e => setAvailability(e.target.value as Availability)} className={selectClass}>{AVAILABILITY.map(a => <option key={a}>{a}</option>)}</select></SelectWrap>
                   ),
                 },
               ].map(({ label, value, editor }) => (
