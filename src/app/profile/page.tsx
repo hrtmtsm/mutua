@@ -41,7 +41,8 @@ export default function ProfilePage() {
             <button
               onClick={async () => {
                 await supabase.auth.signOut();
-                router.refresh();
+                setSignedIn(false);
+                setUserEmail('');
               }}
               className="text-xs font-semibold text-stone-400 hover:text-neutral-900 transition-colors shrink-0"
             >
