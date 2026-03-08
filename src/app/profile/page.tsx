@@ -57,6 +57,14 @@ export default function ProfilePage() {
               ))}
             </div>
 
+            {!signedIn && (
+              <button
+                onClick={() => router.push('/signup')}
+                className="w-full py-2.5 bg-amber-400 text-neutral-900 border-2 border-neutral-900 font-bold text-sm rounded-lg shadow-[2px_2px_0_0_#111] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+              >
+                Create an account
+              </button>
+            )}
             <button
               onClick={() => {
                 localStorage.removeItem('mutua_profile');
