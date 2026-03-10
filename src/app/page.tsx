@@ -36,6 +36,7 @@ export default function LandingPage() {
           backgroundPosition: 'center top',
           pointerEvents: 'none',
           userSelect: 'none',
+          // @ts-ignore
           WebkitUserDrag: 'none',
           opacity: 0.8,
           zIndex: 0,
