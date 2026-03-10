@@ -66,7 +66,7 @@ function PartnerCard({
       <div className="flex gap-2">
         <button
           onClick={onStartSession}
-          className="flex-1 py-2.5 bg-[#2B8FFF] text-white font-bold text-sm rounded-full shadow-md hover:bg-blue-600 transition-all"
+          className="flex-1 py-2.5 btn-primary text-white font-bold text-sm rounded-full shadow-md transition-all"
         >
           Start session
         </button>

@@ -23,10 +23,10 @@ const HOW_IT_WORKS = [
 
 export default function LandingPage() {
   return (
-    <main className="min-h-screen flex flex-col">
+    <main className="min-h-screen flex flex-col overflow-x-hidden">
 
       {/* ── HERO + GLOBE (single seamless background) ─────────────────────────── */}
-      <div style={{ position: 'relative' }}>
+      <div style={{ position: 'relative', userSelect: 'none' }}>
         {/* Sky background with desaturation */}
         <div style={{
           position: 'absolute',
@@ -35,6 +35,9 @@ export default function LandingPage() {
           backgroundSize: 'cover',
           backgroundPosition: 'center top',
           pointerEvents: 'none',
+          userSelect: 'none',
+          WebkitUserDrag: 'none',
+          opacity: 0.8,
           zIndex: 0,
         }} />
         {/* Gradient overlay */}
@@ -53,32 +56,32 @@ export default function LandingPage() {
             <div className="flex items-center gap-3">
               <Link
                 href="/login"
-                className="text-sm font-semibold px-4 py-2 rounded-full text-white border border-white/40 hover:bg-white/10 transition-all"
+                className="text-sm font-semibold px-4 py-2 rounded-xl text-white border border-white/40 hover:bg-white/10 transition-all"
               >
                 Sign in
               </Link>
               <Link
                 href="/onboarding"
-                className="text-sm font-bold px-5 py-2 rounded-lg bg-[#2B8FFF] text-white hover:bg-blue-600 transition-all shadow"
+                className="text-sm font-bold px-5 py-2 rounded-xl btn-primary text-white shadow"
               >
-                Join the waitlist
+                Start speaking
               </Link>
             </div>
           </nav>
 
-          <div className="text-center px-6 pt-10 pb-6">
+          <div className="text-center px-6 pt-10 pb-2">
             <h1
               className="font-serif font-black text-white leading-[0.97] tracking-[-0.02em] mb-5"
-              style={{ fontSize: 'clamp(44px, 5.5vw, 78px)', textShadow: '0 1px 6px rgba(0,0,0,0.22)' }}
+              style={{ fontSize: 'clamp(38px, 5vw, 68px)' }}
             >
               Find someone who actually<br />wants to practice.
             </h1>
-            <p className="text-white/80 text-base md:text-lg max-w-sm mx-auto mb-8 leading-relaxed">
-              Stop searching.<br />Start speaking.
+            <p className="text-white/80 text-lg md:text-xl max-w-sm mx-auto mb-8 mt-6 leading-relaxed">
+              Stop searching. Start speaking.
             </p>
             <Link
               href="/onboarding"
-              className="inline-block px-8 py-3.5 bg-white text-blue-600 font-bold text-base rounded-full shadow-xl hover:bg-blue-50 transition-all"
+              className="inline-block px-10 py-4 btn-primary text-white font-bold text-base rounded-xl shadow-xl"
             >
               Start speaking &rarr;
             </Link>
@@ -87,7 +90,7 @@ export default function LandingPage() {
 
         {/* Globe — full circle, fully visible, centered */}
         <section className="flex justify-center items-center pt-0 pb-10">
-          <div style={{ position: 'relative', width: 'min(96vw, 940px)', height: 'min(96vw, 940px)', flexShrink: 0 }}>
+          <div style={{ position: 'relative', width: 'min(96vw, 1260px)', height: 'min(96vw, 1260px)', flexShrink: 0 }}>
             {/* Radial glow behind globe */}
             <div style={{
               position: 'absolute',

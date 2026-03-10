@@ -244,7 +244,7 @@ export default function OnboardingPage() {
           {step > 1 && (
             <button
               onClick={() => setStep(s => s - 1)}
-              className="px-5 py-3 border border-stone-200 bg-white text-neutral-900 text-sm font-semibold rounded-full hover:border-stone-400 transition-all"
+              className="px-5 py-3 border border-stone-200 bg-white text-neutral-900 text-sm font-semibold rounded-xl hover:border-stone-400 transition-all"
             >
               Back
             </button>
@@ -252,9 +252,9 @@ export default function OnboardingPage() {
           <button
             onClick={handleNext}
             disabled={!canAdvance || saving}
-            className="flex-1 px-6 py-3 bg-[#2B8FFF] text-white text-sm font-bold rounded-full shadow-md hover:bg-blue-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            className="flex-1 px-6 py-3 btn-primary text-white text-sm font-bold rounded-xl shadow-md disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {saving ? 'Saving...' : step === 6 ? 'Join the waitlist' : 'Continue'}
+            {saving ? 'Saving...' : step === 6 ? 'Start speaking' : 'Continue'}
           </button>
         </div>
       </main>

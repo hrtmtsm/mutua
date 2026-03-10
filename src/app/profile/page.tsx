@@ -149,7 +149,7 @@ export default function ProfilePage() {
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="w-full py-2.5 bg-[#2B8FFF] text-white font-bold text-sm rounded-full shadow-md hover:bg-blue-600 transition-all disabled:opacity-50"
+                className="w-full py-2.5 btn-primary text-white font-bold text-sm rounded-full shadow-md transition-all disabled:opacity-50"
               >
                 {saving ? 'Saving...' : 'Save changes'}
               </button>
@@ -162,7 +162,7 @@ export default function ProfilePage() {
             <p className="text-sm text-stone-500">Complete onboarding to set up your profile.</p>
             <button
               onClick={() => router.push('/onboarding')}
-              className="mt-2 inline-block px-6 py-2.5 bg-[#2B8FFF] text-white font-bold text-sm rounded-full shadow-md hover:bg-blue-600 transition-all"
+              className="mt-2 inline-block px-6 py-2.5 btn-primary text-white font-bold text-sm rounded-full shadow-md transition-all"
             >
               Get started
             </button>

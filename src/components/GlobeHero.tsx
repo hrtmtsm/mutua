@@ -264,11 +264,6 @@ export default function GlobeHero() {
     const mesh = new THREE.Mesh(new THREE.SphereGeometry(1, 64, 64), mat);
     scene.add(mesh);
 
-    // Atmospheric glow
-    scene.add(new THREE.Mesh(
-      new THREE.SphereGeometry(1.07, 32, 32),
-      new THREE.MeshPhongMaterial({ color: new THREE.Color('#5ba8e8'), transparent: true, opacity: 0.13, side: THREE.BackSide }),
-    ));
 
     const euler = new THREE.Euler();
 
@@ -344,32 +339,33 @@ export default function GlobeHero() {
     };
     const onMove = (e: MouseEvent | TouchEvent) => {
       if (!isDragging.current) return;
+      e.preventDefault();
+      e.stopPropagation();
       const p = 'touches' in e ? e.touches[0] : e;
       const dx = p.clientX - prevMouse.current.x;
       const dy = p.clientY - prevMouse.current.y;
-      velRef.current   = dx * 0.008;
-      yawRef.current  += dx * 0.008;
-      // Full vertical rotation — no hard clamp
-      pitchRef.current = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitchRef.current + dy * 0.004));
+      velRef.current    = dx * 0.008;
+      yawRef.current   += dx * 0.008;
+      pitchRef.current  = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitchRef.current + dy * 0.004));
       prevMouse.current = { x: p.clientX, y: p.clientY };
     };
     const onUp = () => { isDragging.current = false; };
 
     renderer.domElement.addEventListener('mousedown',  onDown);
-    renderer.domElement.addEventListener('touchstart', onDown, { passive: true });
-    window.addEventListener('mousemove',  onMove);
-    window.addEventListener('touchmove',  onMove, { passive: true });
-    window.addEventListener('mouseup',    onUp);
-    window.addEventListener('touchend',   onUp);
+    renderer.domElement.addEventListener('touchstart', onDown, { passive: false });
+    renderer.domElement.addEventListener('mousemove',  onMove);
+    renderer.domElement.addEventListener('touchmove',  onMove, { passive: false });
+    window.addEventListener('mouseup',  onUp);
+    window.addEventListener('touchend', onUp);
 
     return () => {
       cancelAnimationFrame(rafRef.current);
       renderer.domElement.removeEventListener('mousedown',  onDown);
       renderer.domElement.removeEventListener('touchstart', onDown);
-      window.removeEventListener('mousemove',  onMove);
-      window.removeEventListener('touchmove',  onMove);
-      window.removeEventListener('mouseup',    onUp);
-      window.removeEventListener('touchend',   onUp);
+      renderer.domElement.removeEventListener('mousemove',  onMove);
+      renderer.domElement.removeEventListener('touchmove',  onMove);
+      window.removeEventListener('mouseup',  onUp);
+      window.removeEventListener('touchend', onUp);
       ro.disconnect();
       renderer.dispose();
       if (el.contains(renderer.domElement)) el.removeChild(renderer.domElement);
@@ -404,9 +400,6 @@ export default function GlobeHero() {
         </div>
       ))}
 
-      <p className="absolute bottom-3 left-1/2 -translate-x-1/2 text-white/35 text-xs z-30 select-none pointer-events-none">
-        Drag to explore
-      </p>
     </div>
   );
 }
