@@ -33,14 +33,15 @@ export async function findCandidates(profile: UserProfile): Promise<UserProfile[
 }
 
 export interface WaitlistEntry {
-  id?: string;
-  email: string;
-  native_language: string;
-  target_language: string;
-  goal: string;
-  communication_style: string;
-  availability: string;
-  created_at?: string;
+  id?:                  string;
+  email:                string;
+  native_language:      string;
+  target_language:      string;
+  goal:                 string;
+  communication_style:  string;
+  availability?:        string;   // deprecated — kept for legacy rows
+  practice_frequency?:  string;
+  created_at?:          string;
 }
 
 export async function saveToWaitlist(

@@ -24,34 +24,44 @@ export const AVAILABILITY = [
   'Flexible',
 ] as const;
 
+export const FREQUENCY = [
+  'Once a week',
+  '2–3 times a week',
+  'Every day',
+  'No fixed schedule',
+] as const;
+
 export type Language     = typeof LANGUAGES[number];
 export type Goal         = typeof GOALS[number];
 export type CommStyle    = typeof COMM_STYLES[number];
 export type Availability = typeof AVAILABILITY[number];
+export type Frequency    = typeof FREQUENCY[number];
 
 export interface UserProfile {
-  id?:               string;
-  session_id:        string;
-  email?:            string;
-  native_language:   Language;
-  learning_language: Language;
-  goal:              Goal;
-  comm_style:        CommStyle;
-  availability:      Availability;
-  name?:             string;   // display name — not persisted to DB
-  created_at?:       string;
+  id?:                 string;
+  session_id:          string;
+  email?:              string;
+  native_language:     Language;
+  learning_language:   Language;
+  goal:                Goal;
+  comm_style:          CommStyle;
+  availability?:       Availability;      // deprecated — kept for legacy rows
+  practice_frequency?: Frequency;
+  name?:               string;            // display name — not persisted to DB
+  created_at?:         string;
 }
 
 // A partner the user has saved to their active partners list
 export interface SavedPartner {
-  partner_id:        string;
-  name:              string;
-  native_language:   Language;
-  learning_language: Language;
-  goal:              Goal;
-  comm_style:        CommStyle;
-  availability:      Availability;
-  saved_at:          string;
+  partner_id:          string;
+  name:                string;
+  native_language:     Language;
+  learning_language:   Language;
+  goal:                Goal;
+  comm_style:          CommStyle;
+  availability?:       Availability;      // deprecated — kept for legacy rows
+  practice_frequency?: Frequency;
+  saved_at:            string;
 }
 
 export interface MatchResult {

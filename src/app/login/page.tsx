@@ -34,7 +34,7 @@ export default function LoginPage() {
   return (
     <AppShell>
       <div className="flex-1 flex items-center justify-center px-6 py-16">
-        <div className="bg-white border-2 border-neutral-900 rounded-2xl shadow-[5px_5px_0_0_#111] px-10 py-12 max-w-sm w-full text-center space-y-8">
+        <div className="bg-white border border-stone-200 rounded-2xl shadow-sm px-10 py-12 max-w-sm w-full text-center space-y-8">
 
           <div className="space-y-2">
             <p className="font-serif font-black text-xl text-neutral-900">Sign in.</p>
@@ -51,7 +51,7 @@ export default function LoginPage() {
               onChange={e => setEmail(e.target.value)}
               placeholder="your@email.com"
               disabled={submitting}
-              className="w-full px-4 py-2.5 border-2 border-neutral-900 rounded-lg text-sm text-neutral-900 placeholder:text-stone-400 focus:outline-none disabled:opacity-50"
+              className="w-full px-4 py-2.5 border border-stone-200 rounded-lg text-sm text-neutral-900 placeholder:text-stone-400 focus:outline-none focus:border-[#2B8FFF] disabled:opacity-50"
             />
             <div className="relative">
               <input
@@ -61,7 +61,7 @@ export default function LoginPage() {
                 onChange={e => setPassword(e.target.value)}
                 placeholder="Password"
                 disabled={submitting}
-                className="w-full px-4 py-2.5 pr-10 border-2 border-neutral-900 rounded-lg text-sm text-neutral-900 placeholder:text-stone-400 focus:outline-none disabled:opacity-50"
+                className="w-full px-4 py-2.5 pr-10 border border-stone-200 rounded-lg text-sm text-neutral-900 placeholder:text-stone-400 focus:outline-none focus:border-[#2B8FFF] disabled:opacity-50"
               />
               <button type="button" onClick={() => setShowPass(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-neutral-900">
                 {showPass
@@ -74,7 +74,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full py-2.5 bg-amber-400 text-neutral-900 border-2 border-neutral-900 font-bold text-sm rounded-lg shadow-[2px_2px_0_0_#111] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all disabled:opacity-50 disabled:pointer-events-none"
+              className="w-full py-2.5 btn-primary text-white font-bold text-sm rounded-full shadow-md transition-all disabled:opacity-50 disabled:pointer-events-none"
             >
               {submitting ? 'Signing in...' : 'Sign in'}
             </button>

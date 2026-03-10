@@ -12,7 +12,7 @@ function Avatar({ name, language }: { name: string; language: string }) {
   return (
     <div
       style={{ backgroundColor: color }}
-      className="w-12 h-12 rounded-xl border-2 border-neutral-900 shadow-[2px_2px_0_0_#111] flex items-center justify-center font-black text-white text-sm shrink-0"
+      className="w-12 h-12 rounded-xl flex items-center justify-center font-black text-white text-sm shrink-0"
     >
       {name.trim().slice(0, 2).toUpperCase()}
     </div>
@@ -30,7 +30,7 @@ function PartnerCard({
 }) {
   const flag = LANG_FLAGS[partner.native_language] ?? '';
   return (
-    <div className="bg-white border-2 border-neutral-900 rounded-2xl shadow-[4px_4px_0_0_#111] p-5 space-y-4">
+    <div className="bg-white border border-stone-200 rounded-2xl shadow-sm p-5 space-y-4">
 
       {/* Identity row */}
       <div className="flex items-center gap-3">
@@ -55,7 +55,7 @@ function PartnerCard({
         {[partner.goal, partner.comm_style, partner.availability].map(tag => (
           <span
             key={tag}
-            className="px-2 py-0.5 bg-amber-100 border border-neutral-900 text-xs font-semibold text-neutral-800 rounded"
+            className="px-2 py-0.5 bg-sky-50 border border-sky-200 text-xs font-semibold text-[#2B8FFF] rounded"
           >
             {tag}
           </span>
@@ -66,13 +66,13 @@ function PartnerCard({
       <div className="flex gap-2">
         <button
           onClick={onStartSession}
-          className="flex-1 py-2.5 bg-amber-400 text-neutral-900 border-2 border-neutral-900 font-bold text-sm rounded-lg shadow-[2px_2px_0_0_#111] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+          className="flex-1 py-2.5 btn-primary text-white font-bold text-sm rounded-full shadow-md transition-all"
         >
           Start session
         </button>
         <button
           onClick={() => alert("Messaging is coming in the next version.")}
-          className="flex-1 py-2.5 bg-white text-neutral-900 border-2 border-neutral-900 font-semibold text-sm rounded-lg shadow-[2px_2px_0_0_#111] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+          className="flex-1 py-2.5 bg-white text-[#2B8FFF] border border-[#2B8FFF] font-semibold text-sm rounded-full hover:bg-sky-50 transition-all"
         >
           Message
         </button>
@@ -113,7 +113,7 @@ export default function PracticePage() {
 
         {/* Partner cards */}
         {partners.length === 0 ? (
-          <div className="bg-white border-2 border-neutral-900 rounded-2xl shadow-[4px_4px_0_0_#111] px-8 py-12 text-center">
+          <div className="bg-white border border-stone-200 rounded-2xl shadow-sm px-8 py-12 text-center">
             <p className="font-serif font-black text-xl text-neutral-900 mb-2">No partners yet</p>
             <p className="text-sm text-stone-500">Your match will appear here once we find one for you.</p>
           </div>

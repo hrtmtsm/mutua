@@ -1,10 +1,36 @@
+
+@import url('https://api.fontshare.com/v2/css?f[]=satoshi@700,600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Warm cork/bulletin-board background with subtle dot texture */
 body {
-  background-color: #f5ede0;
-  background-image: radial-gradient(#d4bfa0 0.8px, transparent 0.8px);
-  background-size: 18px 18px;
+  background-color: #ffffff;
+}
+
+:root {
+  --font-heading: 'Satoshi', sans-serif;
+}
+
+.font-serif {
+  font-family: 'Satoshi', sans-serif !important;
+}
+
+@layer components {
+  .btn-primary {
+    font-family: 'Satoshi', sans-serif !important;
+    background: linear-gradient(160deg, #60bdff 0%, #2B8FFF 40%, #1060d8 100%);
+    box-shadow: 0 4px 14px rgba(43, 143, 255, 0.35), inset 0 1px 0 rgba(255,255,255,0.2);
+    transition: filter 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+  }
+  .btn-primary:hover {
+    filter: brightness(1.06);
+    box-shadow: 0 6px 20px rgba(43, 143, 255, 0.45), inset 0 1px 0 rgba(255,255,255,0.2);
+    transform: translateY(-1px);
+  }
+  .btn-primary:active {
+    transform: translateY(0px);
+    filter: brightness(0.97);
+  }
 }

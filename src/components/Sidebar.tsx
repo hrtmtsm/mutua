@@ -39,11 +39,11 @@ export default function Sidebar() {
   return (
     <>
       {/* ── Desktop sidebar ── */}
-      <aside className="hidden md:flex flex-col w-52 min-h-screen shrink-0 bg-[#f5ede0]">
+      <aside className="hidden md:flex flex-col w-52 min-h-screen shrink-0 bg-white border-r border-stone-100">
 
         {/* Wordmark */}
         <div className="px-5 py-5">
-          <span className="font-serif font-black text-xl tracking-tight">Mutua</span>
+          <span className="font-serif font-black text-xl tracking-tight text-neutral-900">Mutua</span>
         </div>
 
         {/* Nav */}
@@ -56,8 +56,8 @@ export default function Sidebar() {
                 href={href}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition-all ${
                   active
-                    ? 'bg-white text-neutral-900'
-                    : 'text-stone-500 hover:text-neutral-900 hover:bg-white/50'
+                    ? 'bg-sky-50 text-[#2B8FFF]'
+                    : 'text-stone-400 hover:text-neutral-900 hover:bg-stone-50'
                 }`}
               >
                 {icon}
@@ -69,7 +69,7 @@ export default function Sidebar() {
       </aside>
 
       {/* ── Mobile bottom nav ── */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-20 border-t border-stone-300 bg-[#f5ede0] flex">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-20 border-t border-stone-100 bg-white flex">
         {NAV.map(({ href, label, icon }) => {
           const active = pathname === href;
           return (
@@ -77,7 +77,7 @@ export default function Sidebar() {
               key={href}
               href={href}
               className={`flex-1 flex flex-col items-center justify-center gap-1 py-3 transition-colors ${
-                active ? 'text-neutral-900' : 'text-stone-400 hover:text-neutral-900'
+                active ? 'text-[#2B8FFF]' : 'text-stone-400 hover:text-neutral-900'
               }`}
             >
               {icon}

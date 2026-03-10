@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { UserProfile } from '@/lib/types';
-import { LANGUAGES, GOALS, COMM_STYLES, AVAILABILITY, type Language, type Goal, type CommStyle, type Availability } from '@/lib/types';
+import { LANGUAGES, GOALS, COMM_STYLES, FREQUENCY, type Language, type Goal, type CommStyle, type Frequency } from '@/lib/types';
 import { LANG_FLAGS } from '@/lib/constants';
 import { saveProfile } from '@/lib/supabase';
 import AppShell from '@/components/AppShell';
@@ -18,8 +18,8 @@ export default function ProfilePage() {
   const [native,       setNative]       = useState<Language>('English');
   const [learning,     setLearning]     = useState<Language>('Japanese');
   const [goal,         setGoal]         = useState<Goal>('Casual conversation');
-  const [commStyle,    setCommStyle]    = useState<CommStyle>('Voice call');
-  const [availability, setAvailability] = useState<Availability>('Flexible');
+  const [commStyle,          setCommStyle]         = useState<CommStyle>('Voice call');
+  const [practiceFrequency,  setPracticeFrequency] = useState<Frequency>('Once a week');
 
   useEffect(() => {
     const stored = localStorage.getItem('mutua_profile');
@@ -30,7 +30,7 @@ export default function ProfilePage() {
       setLearning(p.learning_language);
       setGoal(p.goal);
       setCommStyle(p.comm_style);
-      setAvailability(p.availability);
+      if (p.practice_frequency) setPracticeFrequency(p.practice_frequency);
     }
   }, []);
 
@@ -42,8 +42,8 @@ export default function ProfilePage() {
       native_language:   native,
       learning_language: learning,
       goal,
-      comm_style:        commStyle,
-      availability,
+      comm_style:         commStyle,
+      practice_frequency: practiceFrequency,
     };
     localStorage.setItem('mutua_profile', JSON.stringify(updated));
     setProfile(updated);
@@ -74,7 +74,7 @@ export default function ProfilePage() {
 
         {/* Profile data */}
         {profile ? (
-          <div className="bg-white border-2 border-neutral-900 rounded-2xl shadow-[4px_4px_0_0_#111] p-6 space-y-4">
+          <div className="bg-white border border-stone-200 rounded-2xl shadow-sm p-6 space-y-4">
 
             {/* Card header with edit toggle */}
             <div className="flex items-center justify-between">
@@ -131,10 +131,10 @@ export default function ProfilePage() {
                   ),
                 },
                 {
-                  label: 'Availability',
-                  value: availability,
+                  label: 'Frequency',
+                  value: practiceFrequency,
                   editor: (
-                    <SelectWrap><select value={availability} onChange={e => setAvailability(e.target.value as Availability)} className={selectClass}>{AVAILABILITY.map(a => <option key={a}>{a}</option>)}</select></SelectWrap>
+                    <SelectWrap><select value={practiceFrequency} onChange={e => setPracticeFrequency(e.target.value as Frequency)} className={selectClass}>{FREQUENCY.map(f => <option key={f}>{f}</option>)}</select></SelectWrap>
                   ),
                 },
               ].map(({ label, value, editor }) => (
@@ -149,7 +149,7 @@ export default function ProfilePage() {
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="w-full py-2.5 bg-amber-400 text-neutral-900 border-2 border-neutral-900 font-bold text-sm rounded-lg shadow-[2px_2px_0_0_#111] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all disabled:opacity-50"
+                className="w-full py-2.5 btn-primary text-white font-bold text-sm rounded-full shadow-md transition-all disabled:opacity-50"
               >
                 {saving ? 'Saving...' : 'Save changes'}
               </button>
@@ -157,12 +157,12 @@ export default function ProfilePage() {
 
           </div>
         ) : (
-          <div className="bg-white border-2 border-neutral-900 rounded-2xl shadow-[4px_4px_0_0_#111] px-8 py-12 text-center space-y-3">
+          <div className="bg-white border border-stone-200 rounded-2xl shadow-sm px-8 py-12 text-center space-y-3">
             <p className="font-serif font-black text-xl text-neutral-900">No profile yet</p>
             <p className="text-sm text-stone-500">Complete onboarding to set up your profile.</p>
             <button
               onClick={() => router.push('/onboarding')}
-              className="mt-2 inline-block px-6 py-2.5 bg-amber-400 text-neutral-900 border-2 border-neutral-900 font-bold text-sm rounded-lg shadow-[2px_2px_0_0_#111] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+              className="mt-2 inline-block px-6 py-2.5 btn-primary text-white font-bold text-sm rounded-full shadow-md transition-all"
             >
               Get started
             </button>

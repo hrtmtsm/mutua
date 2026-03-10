@@ -19,6 +19,14 @@ export const AVAILABILITY_DETAILS: Record<string, string> = {
   'Flexible':         'Open to different times — easy to coordinate',
 };
 
+// deprecated: AVAILABILITY_DETAILS kept for legacy display only
+export const FREQUENCY_DETAILS: Record<string, string> = {
+  'Once a week':       'One focused session per week',
+  '2–3 times a week':  'Regular practice with a consistent partner',
+  'Every day':         'High commitment — daily short or long sessions',
+  'No fixed schedule': 'Practice when it works for both of you',
+};
+
 export const LANG_FLAGS: Record<string, string> = {
   English:    '🇺🇸',
   Japanese:   '🇯🇵',

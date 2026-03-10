@@ -8,8 +8,17 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        serif: ['var(--font-reckless)', 'Georgia', 'serif'],
-        sans:  ['var(--font-geist)',   'system-ui', 'sans-serif'],
+        serif: ['var(--font-heading)', 'system-ui', 'sans-serif'],
+        sans:  ['var(--font-geist)', 'system-ui', 'sans-serif'],
+      },
+      keyframes: {
+        float: {
+          '0%, 100%': { transform: 'translateY(0px)' },
+          '50%':      { transform: 'translateY(-8px)' },
+        },
+      },
+      animation: {
+        float: 'float 4s ease-in-out infinite',
       },
     },
   },

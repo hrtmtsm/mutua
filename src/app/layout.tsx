@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Inter, Fraunces } from 'next/font/google';
+import { Inter, Spline_Sans } from 'next/font/google';
 import './globals.css';
 
 const inter = Inter({
@@ -7,10 +7,10 @@ const inter = Inter({
   variable: '--font-geist',
 });
 
-const reckless = Fraunces({
+const splineSans = Spline_Sans({
   subsets: ['latin'],
-  variable: '--font-reckless',
-  weight: ['700', '900'],
+  variable: '--font-heading',
+  weight: ['600', '700'],
 });
 
 export const metadata: Metadata = {
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${reckless.variable} font-sans text-neutral-900 antialiased`}>
+      <body className={`${inter.variable} ${splineSans.variable} font-sans text-neutral-900 antialiased`}>
         {children}
       </body>
     </html>
