@@ -44,6 +44,17 @@ export interface WaitlistEntry {
   created_at?:          string;
 }
 
+export async function isEmailOnWaitlist(email: string): Promise<boolean> {
+  if (!isConfigured) return false;
+  const { data, error } = await supabase
+    .from('waitlist_matches')
+    .select('id')
+    .eq('email', email.trim().toLowerCase())
+    .limit(1);
+  if (error) return false;
+  return (data ?? []).length > 0;
+}
+
 export async function saveToWaitlist(
   entry: Omit<WaitlistEntry, 'id' | 'created_at'>,
 ): Promise<void> {
