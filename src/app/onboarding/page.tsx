@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   LANGUAGES, GOALS, COMM_STYLES, FREQUENCY,
   type Language, type Goal, type CommStyle, type Frequency, type UserProfile,
 } from '@/lib/types';
 import { GOAL_DETAILS, COMM_STYLE_DETAILS, FREQUENCY_DETAILS } from '@/lib/constants';
-import { saveProfile, saveToWaitlist } from '@/lib/supabase';
+import { saveProfile, saveToWaitlist, isEmailOnWaitlist } from '@/lib/supabase';
 
 // ---- sub-components --------------------------------------------------------
 
@@ -104,6 +104,13 @@ const SUBTITLES = [
 
 export default function OnboardingPage() {
   const router = useRouter();
+
+  useEffect(() => {
+    if (localStorage.getItem('mutua_profile')) {
+      router.replace('/waitlist');
+    }
+  }, [router]);
+
   const [step,    setStep]    = useState(1);
   const [saving,  setSaving]  = useState(false);
 
@@ -126,6 +133,13 @@ export default function OnboardingPage() {
     if (step < 6) { setStep(s => s + 1); return; }
 
     setSaving(true);
+
+    const alreadyOnWaitlist = await isEmailOnWaitlist(email);
+    if (alreadyOnWaitlist) {
+      router.push('/waitlist');
+      return;
+    }
+
     const sessionId = crypto.randomUUID();
     localStorage.setItem('mutua_session_id', sessionId);
 
