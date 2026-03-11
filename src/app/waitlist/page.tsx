@@ -39,7 +39,7 @@ export default function WaitlistPage() {
   return (
     <AppShell>
       <div className="flex-1 flex items-center justify-center px-6 py-16">
-        <div className="bg-white border border-stone-200 rounded-2xl shadow-sm px-10 py-12 max-w-sm w-full text-center space-y-3">
+        <div className="bg-white border border-stone-200 rounded-2xl shadow-sm px-16 py-16 max-w-lg w-full text-center space-y-4">
           <p className="font-serif font-black text-xl text-neutral-900">Welcome to Mutua.</p>
           <p className="text-sm text-stone-500 leading-relaxed">
             We&rsquo;re still early, so we don&rsquo;t have a partner match for you just yet.<br /><br />
