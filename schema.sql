@@ -8,7 +8,11 @@ create table if not exists profiles (
   learning_language  text        not null,
   goal               text        not null,
   comm_style         text        not null,
-  availability       text        not null,
+  availability       text,
+  practice_frequency text,
+  name               text,
+  email              text,
+  avatar_url         text,
   created_at         timestamptz default now()
 );
 
