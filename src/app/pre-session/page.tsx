@@ -20,7 +20,7 @@ const LANG_COLORS: Record<string, string> = {
   Arabic:     '#14b8a6',
 };
 
-function Avatar({ name, lang, size = 'md' }: { name: string; lang: string; size?: 'sm' | 'lg' }) {
+function Avatar({ name, lang, size = 'lg' }: { name: string; lang: string; size?: 'sm' | 'lg' }) {
   const bg = LANG_COLORS[lang] ?? '#3b82f6';
   const cls = size === 'lg' ? 'w-14 h-14 text-xl' : 'w-10 h-10 text-sm';
   return (
