@@ -57,9 +57,10 @@ export default function LandingPage() {
             <div className="flex items-center gap-3">
               <Link
                 href="/auth/send"
-                className="text-sm font-semibold px-4 py-2 rounded-xl text-white border border-white/40 hover:bg-white/10 transition-all"
+                className="flex flex-col items-center px-4 py-2 rounded-xl text-white border border-white/40 hover:bg-white/10 transition-all"
               >
-                See my match
+                <span className="text-sm font-bold leading-tight">Sign up</span>
+                <span className="text-[10px] text-white/70 leading-tight">Create an account to see your match</span>
               </Link>
               <Link
                 href="/onboarding"
