@@ -18,6 +18,7 @@ interface PartnerCard {
   frequency:    string;
   reasons:      string[];
   suggestedTime: string;
+  status:       string;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -98,6 +99,7 @@ function partnerFromMatch(m: Match, sessionId: string): PartnerCard {
     frequency,
     reasons:      m.reasons   ?? [],
     suggestedTime,
+    status:       m.status    ?? 'pending',
   };
 }
 
@@ -114,6 +116,7 @@ function PartnerRow({
 }) {
   const nativeFlag   = LANG_FLAGS[partner.nativeLang]   ?? '';
   const learningFlag = LANG_FLAGS[partner.learningLang] ?? '';
+  const isConfirmed  = partner.status === 'confirmed';
 
   return (
     <div className="bg-white border border-stone-200 rounded-2xl overflow-hidden hover:border-stone-300 transition-all">
@@ -121,9 +124,14 @@ function PartnerRow({
       {/* Header */}
       <div className="px-6 pt-5 pb-4 flex items-center gap-4">
         <Avatar name={partner.name} lang={partner.nativeLang} />
-        <div>
+        <div className="flex-1">
           <p className="font-bold text-neutral-900 text-lg leading-tight">{partner.name}</p>
         </div>
+        {isConfirmed && (
+          <span className="text-xs font-bold uppercase tracking-widest text-[#2B8FFF] bg-sky-50 border border-sky-100 px-2.5 py-1 rounded-full">
+            Confirmed
+          </span>
+        )}
       </div>
 
       {/* Language blocks */}
@@ -155,23 +163,32 @@ function PartnerRow({
       {/* Suggested time + actions */}
       <div className="px-6 pb-5 pt-4 border-t border-stone-100 flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <p className="text-xs text-stone-400">Suggested first session</p>
+          <p className="text-xs text-stone-400">{isConfirmed ? 'First session' : 'Suggested first session'}</p>
           <p className="font-semibold text-neutral-900 text-sm mt-0.5">{partner.suggestedTime}</p>
         </div>
-        <div className="flex items-center gap-3 shrink-0">
-          <button
-            onClick={onSeeOtherTimes}
-            className="text-sm text-stone-400 hover:text-neutral-900 font-medium transition-colors"
-          >
-            Other times
-          </button>
+        {isConfirmed ? (
           <button
             onClick={onConfirm}
             className="px-5 py-2.5 btn-primary text-white text-sm font-bold rounded-xl shadow-sm"
           >
-            Confirm session →
+            Go to session →
           </button>
-        </div>
+        ) : (
+          <div className="flex items-center gap-3 shrink-0">
+            <button
+              onClick={onSeeOtherTimes}
+              className="text-sm text-stone-400 hover:text-neutral-900 font-medium transition-colors"
+            >
+              Other times
+            </button>
+            <button
+              onClick={onConfirm}
+              className="px-5 py-2.5 btn-primary text-white text-sm font-bold rounded-xl shadow-sm"
+            >
+              Confirm session →
+            </button>
+          </div>
+        )}
       </div>
 
     </div>
@@ -182,19 +199,31 @@ function PartnerRow({
 
 export default function MatchResultPage() {
   const router = useRouter();
-  const [partners, setPartners] = useState<PartnerCard[]>([]);
-  const [loading,  setLoading]  = useState(true);
-  const [noMatch,  setNoMatch]  = useState(false);
+  const [partners,      setPartners]      = useState<PartnerCard[]>([]);
+  const [loading,       setLoading]       = useState(true);
+  const [noMatch,       setNoMatch]       = useState(false);
+  const [matchId,       setMatchId]       = useState<string | null>(null);
+  const [partnerEmail,  setPartnerEmail]  = useState<string | null>(null);
+  const [myName,        setMyName]        = useState<string>('');
 
   useEffect(() => {
     async function load() {
       const sessionId = localStorage.getItem('mutua_session_id');
       if (!sessionId) { router.replace('/onboarding'); return; }
 
+      const stored = localStorage.getItem('mutua_profile');
+      if (stored) {
+        const profile = JSON.parse(stored);
+        setMyName(profile.name ?? profile.email?.split('@')[0] ?? '');
+      }
+
       // Try Supabase
       try {
         const m = await getMatchBySessionId(sessionId);
         if (m) {
+          const isA = m.session_id_a === sessionId;
+          setMatchId(m.id);
+          setPartnerEmail(isA ? (m.email_b ?? null) : (m.email_a ?? null));
           setPartners([partnerFromMatch(m, sessionId)]);
           setLoading(false);
           return;
@@ -220,6 +249,7 @@ export default function MatchResultPage() {
           frequency:    item.partner.practice_frequency ?? '',
           reasons:      item.reasons                  ?? [],
           suggestedTime: getSuggestedTime(item.partner.practice_frequency),
+          status:       'pending',
         })));
         setLoading(false);
         return;
@@ -240,6 +270,7 @@ export default function MatchResultPage() {
           frequency:    p.practice_frequency ?? '',
           reasons:      parsed.reasons      ?? [],
           suggestedTime: getSuggestedTime(p.practice_frequency),
+          status:       'pending',
         }]);
         setLoading(false);
         return;
@@ -264,9 +295,25 @@ export default function MatchResultPage() {
     }));
   };
 
-  const handleConfirm = (p: PartnerCard) => {
+  const handleConfirm = async (p: PartnerCard) => {
     savePartner(p);
     localStorage.setItem('mutua_scheduled_time', p.suggestedTime);
+
+    // Persist to DB and notify partner (fire-and-forget — don't block UX)
+    if (matchId && partnerEmail) {
+      fetch('/api/confirm-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          matchId,
+          partnerEmail,
+          partnerName:   p.name,
+          scheduledTime: p.suggestedTime,
+          confirmerName: myName,
+        }),
+      }).catch(() => {});
+    }
+
     router.push('/session-confirmed');
   };
 
