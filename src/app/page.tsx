@@ -59,7 +59,7 @@ export default function LandingPage() {
                 href="/auth/send"
                 className="text-sm font-semibold px-4 py-2 rounded-xl text-white border border-white/40 hover:bg-white/10 transition-all"
               >
-                Sign in
+                See my match
               </Link>
               <Link
                 href="/onboarding"
