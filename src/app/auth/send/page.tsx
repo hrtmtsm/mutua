@@ -11,8 +11,21 @@ export default function SignInPage() {
   const [password, setPassword] = useState('');
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) router.replace('/find-match');
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!session?.user?.email) return;
+      // Restore profile to localStorage before redirecting
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('email', session.user.email)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (profile) {
+        localStorage.setItem('mutua_session_id', profile.session_id);
+        localStorage.setItem('mutua_profile', JSON.stringify(profile));
+      }
+      router.replace('/find-match');
     });
   }, [router]);
   const [show,     setShow]     = useState(false);
