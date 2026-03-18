@@ -36,7 +36,7 @@ export default function AuthCallbackPage() {
       if (profile) {
         localStorage.setItem('mutua_session_id', profile.session_id);
         localStorage.setItem('mutua_profile', JSON.stringify(profile));
-        router.replace('/find-match');
+        router.replace('/auth/welcome');
       } else {
         // Authenticated but no profile — go through onboarding
         router.replace('/onboarding');
