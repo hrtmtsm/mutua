@@ -36,7 +36,10 @@ export default function AuthCallbackPage() {
       if (profile) {
         localStorage.setItem('mutua_session_id', profile.session_id);
         localStorage.setItem('mutua_profile', JSON.stringify(profile));
-        router.replace('/auth/welcome');
+
+        // If they already have a name set, skip welcome — they're a returning user
+        const alreadySetUp = profile.name && !profile.name.includes('@');
+        router.replace(alreadySetUp ? '/find-match' : '/auth/welcome');
       } else {
         // Authenticated but no profile — go through onboarding
         router.replace('/onboarding');
