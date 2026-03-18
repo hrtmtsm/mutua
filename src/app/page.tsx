@@ -56,7 +56,7 @@ export default function LandingPage() {
             <span className="font-serif font-black text-2xl tracking-tight text-white drop-shadow">Mutua</span>
             <div className="flex items-center gap-3">
               <Link
-                href="/login"
+                href="/auth/send"
                 className="text-sm font-semibold px-4 py-2 rounded-xl text-white border border-white/40 hover:bg-white/10 transition-all"
               >
                 Sign in
