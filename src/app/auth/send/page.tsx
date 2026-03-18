@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
@@ -9,10 +9,15 @@ export default function SignInPage() {
 
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) router.replace('/find-match');
+    });
+  }, [router]);
   const [show,     setShow]     = useState(false);
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState('');
-  const [linkSent, setLinkSent] = useState(false);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,29 +48,6 @@ export default function SignInPage() {
     router.replace('/find-match');
   };
 
-  const handleMagicLink = async () => {
-    if (!email.trim()) { setError('Enter your email first.'); return; }
-    setLoading(true);
-    setError('');
-    const { error } = await supabase.auth.signInWithOtp({
-      email: email.trim().toLowerCase(),
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
-    });
-    setLoading(false);
-    if (error) { setError(error.message); return; }
-    setLinkSent(true);
-  };
-
-  if (linkSent) return (
-    <div className="min-h-screen flex items-center justify-center px-6">
-      <div className="w-full max-w-sm space-y-3">
-        <p className="font-serif font-black text-xl text-neutral-900">Check your inbox</p>
-        <p className="text-sm text-stone-500">
-          We sent a link to <span className="font-medium text-neutral-900">{email}</span>. Click it to sign in.
-        </p>
-      </div>
-    </div>
-  );
 
   return (
     <div className="min-h-screen flex items-center justify-center px-6">
@@ -117,19 +99,6 @@ export default function SignInPage() {
 
         </form>
 
-        <div className="relative flex items-center gap-3">
-          <div className="flex-1 h-px bg-stone-200" />
-          <span className="text-xs text-stone-400">or</span>
-          <div className="flex-1 h-px bg-stone-200" />
-        </div>
-
-        <button
-          onClick={handleMagicLink}
-          disabled={loading}
-          className="w-full py-3 border border-stone-200 rounded-xl text-sm font-semibold text-neutral-900 hover:border-stone-400 transition-all disabled:opacity-40"
-        >
-          Email me a sign-in link instead
-        </button>
 
       </div>
     </div>
