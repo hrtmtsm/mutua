@@ -56,17 +56,14 @@ export default function WelcomePage() {
     <div className="min-h-screen flex items-center justify-center px-6 bg-white">
       <div className="w-full max-w-sm">
 
-        {/* Brand */}
-        <p className="text-base font-bold text-neutral-900 mb-10 tracking-tight">Mutua</p>
-
-        {/* Heading */}
+        {/* Brand + Heading — tight unit */}
         <div className="mb-8">
-          <h1 className="font-serif font-black text-neutral-900 leading-[1.05] mb-3 whitespace-nowrap text-2xl">
+          <p className="text-sm font-bold text-neutral-900 mb-1 tracking-tight">Mutua</p>
+          <h1 className="font-serif font-black text-neutral-900 leading-tight mb-2 whitespace-nowrap text-3xl">
             Welcome back.
           </h1>
           <p className="text-sm text-stone-500 leading-relaxed">
-            Your partner will see your name.<br />
-            Set a password so you can sign in anytime.
+            Your partner sees your name — set a password to sign in anytime.
           </p>
         </div>
 
