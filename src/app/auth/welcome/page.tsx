@@ -36,16 +36,24 @@ export default function WelcomePage() {
     // Save name to profiles table
     const sessionId = localStorage.getItem('mutua_session_id');
     if (sessionId) {
+      const trimmed = name.trim();
+
       await supabase
         .from('profiles')
-        .update({ name: name.trim() })
+        .update({ name: trimmed })
         .eq('session_id', sessionId);
+
+      // Also update name in matches table (stored at match-creation time, now stale)
+      await Promise.all([
+        supabase.from('matches').update({ name_a: trimmed }).eq('session_id_a', sessionId),
+        supabase.from('matches').update({ name_b: trimmed }).eq('session_id_b', sessionId),
+      ]);
 
       // Keep localStorage in sync
       const stored = localStorage.getItem('mutua_profile');
       if (stored) {
         const profile = JSON.parse(stored);
-        localStorage.setItem('mutua_profile', JSON.stringify({ ...profile, name: name.trim() }));
+        localStorage.setItem('mutua_profile', JSON.stringify({ ...profile, name: trimmed }));
       }
     }
 
