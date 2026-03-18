@@ -57,16 +57,15 @@ export default function WelcomePage() {
       <div className="w-full max-w-sm">
 
         {/* Brand */}
-        <p className="text-sm font-bold text-neutral-900 mb-10 tracking-tight">Mutua</p>
+        <p className="text-2xl font-black text-neutral-900 mb-10 tracking-tight">Mutua</p>
 
         {/* Heading */}
         <div className="mb-8">
           <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-stone-400 mb-3">
             Welcome back
           </p>
-          <h1 className="font-serif font-black text-neutral-900 leading-[1.05] mb-3"
-              style={{ fontSize: 'clamp(22px, 5vw, 28px)' }}>
-            One last<br />thing.
+          <h1 className="font-serif font-black text-neutral-900 leading-[1.05] mb-3 whitespace-nowrap text-2xl">
+            Almost there.
           </h1>
           <p className="text-sm text-stone-500 leading-relaxed">
             Your partner will see your name.<br />
