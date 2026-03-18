@@ -19,11 +19,13 @@ export default function ProfilePage() {
   const fileRef    = useRef<HTMLInputElement>(null);
 
   const [profile,   setProfile]   = useState<UserProfile | null>(null);
-  const [editing,   setEditing]   = useState(false);
-  const [saving,    setSaving]    = useState(false);
+  const [editing,        setEditing]        = useState(false);
+  const [editingIdentity, setEditingIdentity] = useState(false);
+  const [saving,         setSaving]         = useState(false);
 
   // Identity fields
   const [name,      setName]      = useState('');
+  const [draftName, setDraftName] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
   const [uploading, setUploading] = useState(false);
 
@@ -40,6 +42,7 @@ export default function ProfilePage() {
       const p: UserProfile = JSON.parse(stored);
       setProfile(p);
       setName(p.name ?? '');
+      setDraftName(p.name ?? '');
       setAvatarUrl((p as any).avatar_url ?? '');
       setNative(p.native_language);
       setLearning(p.learning_language);
@@ -69,10 +72,10 @@ export default function ProfilePage() {
     setUploading(false);
   };
 
-  const handleSaveName = async () => {
-    if (!profile || !name.trim()) return;
+  const handleSaveIdentity = async () => {
+    if (!profile || !draftName.trim()) return;
     setSaving(true);
-    const trimmed = name.trim();
+    const trimmed = draftName.trim();
     await supabase.from('profiles').update({ name: trimmed }).eq('session_id', profile.session_id);
     await Promise.all([
       supabase.from('matches').update({ name_a: trimmed }).eq('session_id_a', profile.session_id),
@@ -81,7 +84,9 @@ export default function ProfilePage() {
     const stored = localStorage.getItem('mutua_profile');
     if (stored) localStorage.setItem('mutua_profile', JSON.stringify({ ...JSON.parse(stored), name: trimmed }));
     setProfile(p => p ? { ...p, name: trimmed } : p);
+    setName(trimmed);
     setSaving(false);
+    setEditingIdentity(false);
   };
 
   const handleSavePrefs = async () => {
@@ -127,34 +132,43 @@ export default function ProfilePage() {
         {profile ? (
           <>
             {/* ── Identity card ── */}
-            <div className="bg-white border border-stone-200 rounded-2xl shadow-sm p-6">
+            <div className="bg-white border border-stone-200 rounded-2xl shadow-sm p-6 space-y-4">
+
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-bold uppercase tracking-widest text-stone-400">Your identity</p>
+                {!editingIdentity ? (
+                  <button onClick={() => { setDraftName(name); setEditingIdentity(true); }} title="Edit" className="text-stone-300 hover:text-neutral-900 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                    </svg>
+                  </button>
+                ) : (
+                  <button onClick={() => setEditingIdentity(false)} className="text-xs text-stone-400 hover:text-neutral-900 transition-colors">Cancel</button>
+                )}
+              </div>
+
               <div className="flex items-center gap-5">
 
                 {/* Avatar */}
                 <div className="relative shrink-0">
-                  <button
-                    onClick={handleAvatarClick}
-                    disabled={uploading}
-                    className="block w-16 h-16 rounded-2xl overflow-hidden focus:outline-none group"
-                  >
+                  <div className={`block w-16 h-16 rounded-2xl overflow-hidden ${editingIdentity ? 'cursor-pointer group' : ''}`}
+                       onClick={editingIdentity ? handleAvatarClick : undefined}>
                     {avatarUrl ? (
                       <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
                     ) : (
-                      <div
-                        style={{ backgroundColor: avatarBg }}
-                        className="w-full h-full flex items-center justify-center font-black text-white text-xl"
-                      >
+                      <div style={{ backgroundColor: avatarBg }} className="w-full h-full flex items-center justify-center font-black text-white text-xl">
                         {initials}
                       </div>
                     )}
-                    {/* Overlay on hover */}
-                    <div className="absolute inset-0 rounded-2xl bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                    </div>
-                  </button>
+                    {editingIdentity && (
+                      <div className="absolute inset-0 rounded-2xl bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
                   {uploading && (
                     <div className="absolute inset-0 rounded-2xl bg-white/70 flex items-center justify-center">
                       <div className="w-4 h-4 border-2 border-[#2B8FFF] border-t-transparent rounded-full animate-spin" />
@@ -166,21 +180,28 @@ export default function ProfilePage() {
                 {/* Name */}
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-bold uppercase tracking-widest text-stone-400 mb-1.5">Name</p>
-                  <div className="flex items-center gap-2">
+                  {editingIdentity ? (
                     <input
                       type="text"
-                      value={name}
-                      onChange={e => setName(e.target.value)}
-                      onBlur={handleSaveName}
-                      onKeyDown={e => e.key === 'Enter' && handleSaveName()}
+                      value={draftName}
+                      onChange={e => setDraftName(e.target.value)}
+                      autoFocus
                       placeholder="Your name"
-                      className="flex-1 min-w-0 text-base font-bold text-neutral-900 bg-transparent border-b border-transparent focus:border-stone-300 focus:outline-none transition-colors pb-0.5"
+                      className="w-full text-base font-bold text-neutral-900 border border-stone-200 rounded-lg px-3 py-1.5 focus:outline-none focus:border-[#2B8FFF] transition-colors"
                     />
-                    {saving && <div className="w-3.5 h-3.5 border-2 border-[#2B8FFF] border-t-transparent rounded-full animate-spin shrink-0" />}
-                  </div>
+                  ) : (
+                    <p className="text-base font-bold text-neutral-900">{name || '—'}</p>
+                  )}
                 </div>
 
               </div>
+
+              {editingIdentity && (
+                <button onClick={handleSaveIdentity} disabled={saving} className="w-full py-2.5 btn-primary text-white font-bold text-sm rounded-full shadow-md disabled:opacity-50">
+                  {saving ? 'Saving...' : 'Save changes'}
+                </button>
+              )}
+
             </div>
 
             {/* ── Preferences card ── */}
