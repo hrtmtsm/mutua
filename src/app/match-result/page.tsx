@@ -17,7 +17,7 @@ interface PartnerCard {
   commStyle:    string;
   frequency:    string;
   reasons:      string[];
-  suggestedTime: string;
+  slots:        string[];
   status:       string;
 }
 
@@ -51,44 +51,17 @@ function Avatar({ name, lang, size = 'md' }: { name: string; lang: string; size?
   );
 }
 
-function getSuggestedTime(frequency?: string): string {
-  const now = new Date();
-  let daysAhead = 3;
-  if      (frequency === 'Every day')         daysAhead = 1;
-  else if (frequency === '2–3 times a week')  daysAhead = 2;
-  else if (frequency === 'Once a week')       daysAhead = 5;
-  const date = new Date(now);
-  date.setDate(now.getDate() + daysAhead);
-  return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + ' · 7:00 PM';
-}
-
-function generateAlternateSlots(suggestedTime: string): string[] {
-  const now = new Date();
-  return [
-    { days: 1, time: '7:00 PM' },
-    { days: 2, time: '8:00 PM' },
-    { days: 3, time: '6:30 PM' },
-    { days: 4, time: '9:00 AM' },
-    { days: 5, time: '10:00 AM' },
-    { days: 6, time: '7:00 PM' },
-  ]
-    .map(({ days, time }) => {
-      const d = new Date(now);
-      d.setDate(now.getDate() + days);
-      return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + ' · ' + time;
-    })
-    .filter(s => s !== suggestedTime)
-    .slice(0, 4);
+function generateSlots(): string[] {
+  const times = ['7:00 PM', '10:00 AM', '8:00 PM', '3:00 PM', '7:00 PM'];
+  return times.map((t, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1 + i);
+    return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + ' · ' + t;
+  });
 }
 
 function partnerFromMatch(m: Match, sessionId: string): PartnerCard {
   const isA = m.session_id_a === sessionId;
-  const frequency = m.practice_frequency ?? '';
-  const suggestedTime = m.suggested_time
-    ? new Date(m.suggested_time).toLocaleDateString('en-US', {
-        weekday: 'short', month: 'short', day: 'numeric',
-      }) + ' · 7:00 PM'
-    : getSuggestedTime(frequency);
   return {
     id:           isA ? (m.session_id_b) : (m.session_id_a),
     name:         isA ? (m.name_b  ?? 'Your partner') : (m.name_a  ?? 'Your partner'),
@@ -96,9 +69,9 @@ function partnerFromMatch(m: Match, sessionId: string): PartnerCard {
     learningLang: isA ? m.native_language_a            :  m.native_language_b,
     goal:         m.goal      ?? '',
     commStyle:    m.comm_style ?? '',
-    frequency,
+    frequency:    m.practice_frequency ?? '',
     reasons:      m.reasons   ?? [],
-    suggestedTime,
+    slots:        generateSlots(),
     status:       m.status    ?? 'pending',
   };
 }
@@ -108,20 +81,17 @@ function partnerFromMatch(m: Match, sessionId: string): PartnerCard {
 function PartnerRow({
   partner,
   onConfirm,
-  onSeeOtherTimes,
 }: {
   partner: PartnerCard;
-  onConfirm: () => void;
-  onSeeOtherTimes: () => void;
+  onConfirm: (time: string) => void;
 }) {
   const nativeFlag   = LANG_FLAGS[partner.nativeLang]   ?? '';
   const learningFlag = LANG_FLAGS[partner.learningLang] ?? '';
   const isConfirmed  = partner.status === 'confirmed';
 
   return (
-    <div className="bg-white border border-stone-200 rounded-2xl overflow-hidden hover:border-stone-300 transition-all">
+    <div className="bg-white border border-stone-200 rounded-2xl overflow-hidden">
 
-      {/* Header */}
       <div className="px-6 pt-5 pb-4 flex items-center gap-4">
         <Avatar name={partner.name} lang={partner.nativeLang} />
         <div className="flex-1">
@@ -134,7 +104,6 @@ function PartnerRow({
         )}
       </div>
 
-      {/* Language blocks */}
       <div className="px-6 pb-4 grid grid-cols-2 gap-3">
         <div className="bg-stone-50 border border-stone-100 rounded-xl px-4 py-3">
           <p className="text-xs font-bold uppercase tracking-widest text-stone-400 mb-1">Native</p>
@@ -146,9 +115,8 @@ function PartnerRow({
         </div>
       </div>
 
-      {/* Why you match */}
       {partner.reasons.length > 0 && (
-        <div className="px-6 pb-5">
+        <div className="px-6 pb-4">
           <p className="text-xs font-semibold uppercase tracking-widest text-stone-400 mb-2">In common</p>
           <div className="flex flex-wrap gap-1.5">
             {partner.reasons.slice(0, 3).map((r, i) => (
@@ -160,34 +128,29 @@ function PartnerRow({
         </div>
       )}
 
-      {/* Suggested time + actions */}
-      <div className="px-6 pb-5 pt-4 border-t border-stone-100 flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <p className="text-xs text-stone-400">{isConfirmed ? 'First session' : 'Suggested first session'}</p>
-          <p className="font-semibold text-neutral-900 text-sm mt-0.5">{partner.suggestedTime}</p>
-        </div>
+      <div className="px-6 pb-5 pt-4 border-t border-stone-100">
         {isConfirmed ? (
           <button
-            onClick={onConfirm}
+            onClick={() => onConfirm(partner.slots[0] ?? '')}
             className="px-5 py-2.5 btn-primary text-white text-sm font-bold rounded-xl shadow-sm"
           >
             Go to session →
           </button>
         ) : (
-          <div className="flex items-center gap-3 shrink-0">
-            <button
-              onClick={onSeeOtherTimes}
-              className="text-sm text-stone-400 hover:text-neutral-900 font-medium transition-colors"
-            >
-              Other times
-            </button>
-            <button
-              onClick={onConfirm}
-              className="px-5 py-2.5 btn-primary text-white text-sm font-bold rounded-xl shadow-sm"
-            >
-              Confirm session →
-            </button>
-          </div>
+          <>
+            <p className="text-xs font-bold uppercase tracking-widest text-stone-400 mb-3">Pick a time to meet</p>
+            <div className="flex flex-wrap gap-2">
+              {partner.slots.map(slot => (
+                <button
+                  key={slot}
+                  onClick={() => onConfirm(slot)}
+                  className="px-3.5 py-2 border border-stone-200 rounded-xl text-sm font-semibold text-neutral-900 hover:border-[#2B8FFF] hover:bg-sky-50 hover:text-[#2B8FFF] transition-all"
+                >
+                  {slot}
+                </button>
+              ))}
+            </div>
+          </>
         )}
       </div>
 
@@ -260,7 +223,7 @@ export default function MatchResultPage() {
           commStyle:    item.partner.comm_style       ?? '',
           frequency:    item.partner.practice_frequency ?? '',
           reasons:      item.reasons                  ?? [],
-          suggestedTime: getSuggestedTime(item.partner.practice_frequency),
+          slots:        generateSlots(),
           status:       'pending',
         })));
         setLoading(false);
@@ -281,7 +244,7 @@ export default function MatchResultPage() {
           commStyle:    p.comm_style        ?? '',
           frequency:    p.practice_frequency ?? '',
           reasons:      parsed.reasons      ?? [],
-          suggestedTime: getSuggestedTime(p.practice_frequency),
+          slots:        generateSlots(),
           status:       'pending',
         }]);
         setLoading(false);
@@ -307,34 +270,19 @@ export default function MatchResultPage() {
     }));
   };
 
-  const handleConfirm = async (p: PartnerCard) => {
+  const handleConfirm = async (p: PartnerCard, time: string) => {
     savePartner(p);
-    localStorage.setItem('mutua_scheduled_time', p.suggestedTime);
+    localStorage.setItem('mutua_scheduled_time', time);
 
-    // Persist to DB and notify partner (fire-and-forget — don't block UX)
     if (matchId && partnerEmail) {
       fetch('/api/confirm-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          matchId,
-          partnerEmail,
-          partnerName:   p.name,
-          scheduledTime: p.suggestedTime,
-          confirmerName: myName,
-        }),
+        body: JSON.stringify({ matchId, partnerEmail, partnerName: p.name, scheduledTime: time, confirmerName: myName }),
       }).catch(() => {});
     }
 
     router.push('/session-confirmed');
-  };
-
-  const handleSeeOtherTimes = (p: PartnerCard) => {
-    savePartner(p);
-    if (matchId) localStorage.setItem('mutua_match_id', matchId);
-    if (partnerEmail) localStorage.setItem('mutua_partner_email', partnerEmail);
-    localStorage.setItem('mutua_session_slots', JSON.stringify(generateAlternateSlots(p.suggestedTime)));
-    router.push('/session-schedule');
   };
 
   // ── Render ──────────────────────────────────────────────────────────────────
@@ -369,8 +317,7 @@ export default function MatchResultPage() {
             <PartnerRow
               key={p.id}
               partner={p}
-              onConfirm={() => handleConfirm(p)}
-              onSeeOtherTimes={() => handleSeeOtherTimes(p)}
+              onConfirm={(time) => handleConfirm(p, time)}
             />
           ))}
         </div>
