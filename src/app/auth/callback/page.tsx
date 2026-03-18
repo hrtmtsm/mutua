@@ -51,10 +51,23 @@ export default function AuthCallbackPage() {
 
   if (status === 'error') return (
     <div className="min-h-screen flex items-center justify-center px-6">
-      <div className="text-center space-y-3">
-        <p className="font-serif font-black text-xl text-neutral-900">Link expired</p>
-        <p className="text-sm text-stone-500">This link may have expired. Request a new one.</p>
-        <a href="/auth/send" className="block text-sm text-[#2B8FFF] font-semibold">Get a new link →</a>
+      <div className="w-full max-w-sm space-y-6">
+        <div>
+          <p className="font-serif font-black text-2xl text-neutral-900 mb-2">Link already used</p>
+          <p className="text-sm text-stone-500 leading-relaxed">
+            This link can only be used once. Sign in with your email and password instead.
+          </p>
+        </div>
+        <a
+          href="/auth/send"
+          className="block w-full py-3 text-center btn-primary text-white font-bold text-sm rounded-xl"
+        >
+          Sign in →
+        </a>
+        <p className="text-center text-xs text-stone-400">
+          No password set?{' '}
+          <a href="/auth/send" className="text-[#2B8FFF] font-semibold">Email me a new link</a>
+        </p>
       </div>
     </div>
   );
