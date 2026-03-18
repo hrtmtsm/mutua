@@ -46,7 +46,7 @@ function emailHtml(magicLink: string): string {
               <!-- CTA -->
               <table cellpadding="0" cellspacing="0">
                 <tr>
-                  <td style="background:#2B8FFF;border-radius:12px;">
+                  <td style="background:linear-gradient(160deg,#60bdff 0%,#2B8FFF 40%,#1060d8 100%);border-radius:12px;box-shadow:0 4px 14px rgba(43,143,255,0.35)">
                     <a href="${magicLink}" style="display:inline-block;padding:16px 32px;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;letter-spacing:-0.2px;">
                       Meet your partner →
                     </a>
