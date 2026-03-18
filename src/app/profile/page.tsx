@@ -1,31 +1,46 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { UserProfile } from '@/lib/types';
 import { LANGUAGES, GOALS, COMM_STYLES, FREQUENCY, type Language, type Goal, type CommStyle, type Frequency } from '@/lib/types';
 import { LANG_FLAGS } from '@/lib/constants';
-import { saveProfile } from '@/lib/supabase';
+import { supabase, saveProfile } from '@/lib/supabase';
 import AppShell from '@/components/AppShell';
 
-export default function ProfilePage() {
-  const router = useRouter();
-  const [profile,    setProfile]    = useState<UserProfile | null>(null);
-  const [editing,    setEditing]    = useState(false);
-  const [saving,     setSaving]     = useState(false);
+const LANG_COLORS: Record<string, string> = {
+  Japanese: '#3b82f6', Korean: '#8b5cf6', Mandarin: '#ef4444',
+  Spanish: '#f59e0b', French: '#10b981', English: '#6366f1',
+  Portuguese: '#f97316', German: '#64748b', Italian: '#ec4899', Arabic: '#14b8a6',
+};
 
-  // Editable fields
-  const [native,       setNative]       = useState<Language>('English');
-  const [learning,     setLearning]     = useState<Language>('Japanese');
-  const [goal,         setGoal]         = useState<Goal>('Casual conversation');
-  const [commStyle,          setCommStyle]         = useState<CommStyle>('Voice call');
-  const [practiceFrequency,  setPracticeFrequency] = useState<Frequency>('Once a week');
+export default function ProfilePage() {
+  const router     = useRouter();
+  const fileRef    = useRef<HTMLInputElement>(null);
+
+  const [profile,   setProfile]   = useState<UserProfile | null>(null);
+  const [editing,   setEditing]   = useState(false);
+  const [saving,    setSaving]    = useState(false);
+
+  // Identity fields
+  const [name,      setName]      = useState('');
+  const [avatarUrl, setAvatarUrl] = useState('');
+  const [uploading, setUploading] = useState(false);
+
+  // Preference fields
+  const [native,     setNative]     = useState<Language>('English');
+  const [learning,   setLearning]   = useState<Language>('Japanese');
+  const [goal,       setGoal]       = useState<Goal>('Casual conversation');
+  const [commStyle,  setCommStyle]  = useState<CommStyle>('Voice call');
+  const [practiceFrequency, setPracticeFrequency] = useState<Frequency>('Once a week');
 
   useEffect(() => {
     const stored = localStorage.getItem('mutua_profile');
     if (stored) {
       const p: UserProfile = JSON.parse(stored);
       setProfile(p);
+      setName(p.name ?? '');
+      setAvatarUrl((p as any).avatar_url ?? '');
       setNative(p.native_language);
       setLearning(p.learning_language);
       setGoal(p.goal);
@@ -34,13 +49,48 @@ export default function ProfilePage() {
     }
   }, []);
 
-  const handleSave = async () => {
+  const handleAvatarClick = () => fileRef.current?.click();
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !profile) return;
+    setUploading(true);
+    const ext  = file.name.split('.').pop();
+    const path = `${profile.session_id}.${ext}`;
+    const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true });
+    if (!error) {
+      const { data } = supabase.storage.from('avatars').getPublicUrl(path);
+      const url = data.publicUrl;
+      setAvatarUrl(url);
+      await supabase.from('profiles').update({ avatar_url: url }).eq('session_id', profile.session_id);
+      const stored = localStorage.getItem('mutua_profile');
+      if (stored) localStorage.setItem('mutua_profile', JSON.stringify({ ...JSON.parse(stored), avatar_url: url }));
+    }
+    setUploading(false);
+  };
+
+  const handleSaveName = async () => {
+    if (!profile || !name.trim()) return;
+    setSaving(true);
+    const trimmed = name.trim();
+    await supabase.from('profiles').update({ name: trimmed }).eq('session_id', profile.session_id);
+    await Promise.all([
+      supabase.from('matches').update({ name_a: trimmed }).eq('session_id_a', profile.session_id),
+      supabase.from('matches').update({ name_b: trimmed }).eq('session_id_b', profile.session_id),
+    ]);
+    const stored = localStorage.getItem('mutua_profile');
+    if (stored) localStorage.setItem('mutua_profile', JSON.stringify({ ...JSON.parse(stored), name: trimmed }));
+    setProfile(p => p ? { ...p, name: trimmed } : p);
+    setSaving(false);
+  };
+
+  const handleSavePrefs = async () => {
     if (!profile) return;
     setSaving(true);
     const updated: UserProfile = {
       ...profile,
-      native_language:   native,
-      learning_language: learning,
+      native_language:    native,
+      learning_language:  learning,
       goal,
       comm_style:         commStyle,
       practice_frequency: practiceFrequency,
@@ -51,6 +101,9 @@ export default function ProfilePage() {
     setSaving(false);
     setEditing(false);
   };
+
+  const initials = name.trim().slice(0, 2).toUpperCase() || '?';
+  const avatarBg = LANG_COLORS[native] ?? '#3b82f6';
 
   const selectClass = "appearance-none text-sm font-semibold text-neutral-900 border border-stone-300 rounded-lg pl-3 pr-8 py-1.5 focus:outline-none focus:border-neutral-900 bg-stone-50 cursor-pointer";
   const ChevronDown = () => (
@@ -71,99 +124,109 @@ export default function ProfilePage() {
 
         <h1 className="font-serif font-black text-2xl text-neutral-900">Profile</h1>
 
-
-        {/* Profile data */}
         {profile ? (
-          <div className="bg-white border border-stone-200 rounded-2xl shadow-sm p-6 space-y-4">
+          <>
+            {/* ── Identity card ── */}
+            <div className="bg-white border border-stone-200 rounded-2xl shadow-sm p-6">
+              <div className="flex items-center gap-5">
 
-            {/* Card header with edit toggle */}
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-bold uppercase tracking-widest text-stone-400">Your preferences</p>
-              {!editing ? (
-                <button
-                  onClick={() => setEditing(true)}
-                  title="Edit preferences"
-                  className="text-stone-300 hover:text-neutral-900 transition-colors"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                  </svg>
-                </button>
-              ) : (
-                <button
-                  onClick={() => { setEditing(false); }}
-                  className="text-xs text-stone-400 hover:text-neutral-900 transition-colors"
-                >
-                  Cancel
+                {/* Avatar */}
+                <div className="relative shrink-0">
+                  <button
+                    onClick={handleAvatarClick}
+                    disabled={uploading}
+                    className="block w-16 h-16 rounded-2xl overflow-hidden focus:outline-none group"
+                  >
+                    {avatarUrl ? (
+                      <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div
+                        style={{ backgroundColor: avatarBg }}
+                        className="w-full h-full flex items-center justify-center font-black text-white text-xl"
+                      >
+                        {initials}
+                      </div>
+                    )}
+                    {/* Overlay on hover */}
+                    <div className="absolute inset-0 rounded-2xl bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    </div>
+                  </button>
+                  {uploading && (
+                    <div className="absolute inset-0 rounded-2xl bg-white/70 flex items-center justify-center">
+                      <div className="w-4 h-4 border-2 border-[#2B8FFF] border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  )}
+                  <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+                </div>
+
+                {/* Name */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold uppercase tracking-widest text-stone-400 mb-1.5">Name</p>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={e => setName(e.target.value)}
+                      onBlur={handleSaveName}
+                      onKeyDown={e => e.key === 'Enter' && handleSaveName()}
+                      placeholder="Your name"
+                      className="flex-1 min-w-0 text-base font-bold text-neutral-900 bg-transparent border-b border-transparent focus:border-stone-300 focus:outline-none transition-colors pb-0.5"
+                    />
+                    {saving && <div className="w-3.5 h-3.5 border-2 border-[#2B8FFF] border-t-transparent rounded-full animate-spin shrink-0" />}
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            {/* ── Preferences card ── */}
+            <div className="bg-white border border-stone-200 rounded-2xl shadow-sm p-6 space-y-4">
+
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-bold uppercase tracking-widest text-stone-400">Your preferences</p>
+                {!editing ? (
+                  <button onClick={() => setEditing(true)} title="Edit" className="text-stone-300 hover:text-neutral-900 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                    </svg>
+                  </button>
+                ) : (
+                  <button onClick={() => setEditing(false)} className="text-xs text-stone-400 hover:text-neutral-900 transition-colors">Cancel</button>
+                )}
+              </div>
+
+              <div className="space-y-0">
+                {[
+                  { label: 'Native language', value: `${LANG_FLAGS[native] ?? ''} ${native}`, editor: <SelectWrap><select value={native} onChange={e => setNative(e.target.value as Language)} className={selectClass}>{LANGUAGES.map(l => <option key={l}>{l}</option>)}</select></SelectWrap> },
+                  { label: 'Learning',         value: `${LANG_FLAGS[learning] ?? ''} ${learning}`, editor: <SelectWrap><select value={learning} onChange={e => setLearning(e.target.value as Language)} className={selectClass}>{LANGUAGES.filter(l => l !== native).map(l => <option key={l}>{l}</option>)}</select></SelectWrap> },
+                  { label: 'Goal',             value: goal,             editor: <SelectWrap><select value={goal} onChange={e => setGoal(e.target.value as Goal)} className={selectClass}>{GOALS.map(g => <option key={g}>{g}</option>)}</select></SelectWrap> },
+                  { label: 'Style',            value: commStyle,        editor: <SelectWrap><select value={commStyle} onChange={e => setCommStyle(e.target.value as CommStyle)} className={selectClass}>{COMM_STYLES.map(s => <option key={s}>{s}</option>)}</select></SelectWrap> },
+                  { label: 'Frequency',        value: practiceFrequency, editor: <SelectWrap><select value={practiceFrequency} onChange={e => setPracticeFrequency(e.target.value as Frequency)} className={selectClass}>{FREQUENCY.map(f => <option key={f}>{f}</option>)}</select></SelectWrap> },
+                ].map(({ label, value, editor }) => (
+                  <div key={label} className="flex items-center justify-between py-3 border-b border-stone-100 last:border-0">
+                    <span className="text-xs font-bold uppercase tracking-widest text-stone-400">{label}</span>
+                    {editing ? editor : <span className="text-sm font-semibold text-neutral-900">{value}</span>}
+                  </div>
+                ))}
+              </div>
+
+              {editing && (
+                <button onClick={handleSavePrefs} disabled={saving} className="w-full py-2.5 btn-primary text-white font-bold text-sm rounded-full shadow-md disabled:opacity-50">
+                  {saving ? 'Saving...' : 'Save changes'}
                 </button>
               )}
+
             </div>
-
-            {/* Rows */}
-            <div className="space-y-0">
-              {[
-                {
-                  label: 'Native language',
-                  value: `${LANG_FLAGS[native] ?? ''} ${native}`,
-                  editor: (
-                    <SelectWrap><select value={native} onChange={e => setNative(e.target.value as Language)} className={selectClass}>{LANGUAGES.map(l => <option key={l}>{l}</option>)}</select></SelectWrap>
-                  ),
-                },
-                {
-                  label: 'Learning',
-                  value: `${LANG_FLAGS[learning] ?? ''} ${learning}`,
-                  editor: (
-                    <SelectWrap><select value={learning} onChange={e => setLearning(e.target.value as Language)} className={selectClass}>{LANGUAGES.filter(l => l !== native).map(l => <option key={l}>{l}</option>)}</select></SelectWrap>
-                  ),
-                },
-                {
-                  label: 'Goal',
-                  value: goal,
-                  editor: (
-                    <SelectWrap><select value={goal} onChange={e => setGoal(e.target.value as Goal)} className={selectClass}>{GOALS.map(g => <option key={g}>{g}</option>)}</select></SelectWrap>
-                  ),
-                },
-                {
-                  label: 'Style',
-                  value: commStyle,
-                  editor: (
-                    <SelectWrap><select value={commStyle} onChange={e => setCommStyle(e.target.value as CommStyle)} className={selectClass}>{COMM_STYLES.map(s => <option key={s}>{s}</option>)}</select></SelectWrap>
-                  ),
-                },
-                {
-                  label: 'Frequency',
-                  value: practiceFrequency,
-                  editor: (
-                    <SelectWrap><select value={practiceFrequency} onChange={e => setPracticeFrequency(e.target.value as Frequency)} className={selectClass}>{FREQUENCY.map(f => <option key={f}>{f}</option>)}</select></SelectWrap>
-                  ),
-                },
-              ].map(({ label, value, editor }) => (
-                <div key={label} className="flex items-center justify-between py-3 border-b border-stone-100 last:border-0">
-                  <span className="text-xs font-bold uppercase tracking-widest text-stone-400">{label}</span>
-                  {editing ? editor : <span className="text-sm font-semibold text-neutral-900">{value}</span>}
-                </div>
-              ))}
-            </div>
-
-            {editing && (
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="w-full py-2.5 btn-primary text-white font-bold text-sm rounded-full shadow-md transition-all disabled:opacity-50"
-              >
-                {saving ? 'Saving...' : 'Save changes'}
-              </button>
-            )}
-
-          </div>
+          </>
         ) : (
           <div className="bg-white border border-stone-200 rounded-2xl shadow-sm px-8 py-12 text-center space-y-3">
             <p className="font-serif font-black text-xl text-neutral-900">No profile yet</p>
             <p className="text-sm text-stone-500">Complete onboarding to set up your profile.</p>
-            <button
-              onClick={() => router.push('/onboarding')}
-              className="mt-2 inline-block px-6 py-2.5 btn-primary text-white font-bold text-sm rounded-full shadow-md transition-all"
-            >
+            <button onClick={() => router.push('/onboarding')} className="mt-2 inline-block px-6 py-2.5 btn-primary text-white font-bold text-sm rounded-full shadow-md">
               Get started
             </button>
           </div>
