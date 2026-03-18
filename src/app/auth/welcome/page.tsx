@@ -53,17 +53,24 @@ export default function WelcomePage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-6 bg-white">
+    <div className="min-h-screen flex flex-col bg-white">
+
+      {/* Nav */}
+      <nav className="px-8 py-5 shrink-0">
+        <span className="text-lg font-black text-neutral-900 tracking-tight">Mutua</span>
+      </nav>
+
+      {/* Centered form */}
+      <div className="flex-1 flex items-center justify-center px-6">
       <div className="w-full max-w-sm">
 
-        {/* Brand + Heading — tight unit */}
+        {/* Heading */}
         <div className="mb-8">
-          <p className="text-sm font-bold text-neutral-900 mb-1 tracking-tight">Mutua</p>
-          <h1 className="font-serif font-black text-neutral-900 leading-tight mb-2 whitespace-nowrap text-3xl">
+          <h1 className="font-serif font-black text-neutral-900 leading-tight mb-2 text-3xl">
             Welcome back.
           </h1>
-          <p className="text-sm text-stone-500 leading-relaxed">
-            Your partner sees your name — set a password to sign in anytime.
+          <p className="text-sm text-stone-500">
+            Your partner will see your name. Set a password to sign in anytime.
           </p>
         </div>
 
@@ -136,6 +143,7 @@ export default function WelcomePage() {
 
         </form>
 
+      </div>
       </div>
     </div>
   );
