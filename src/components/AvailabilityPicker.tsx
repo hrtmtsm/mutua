@@ -75,6 +75,9 @@ export default function AvailabilityPicker({ initial = [], timezone: tzProp, onC
   const isSelected = (day: number, minute: number) =>
     selected.has(`${day}-${minute}`);
 
+  // Day navigation — show 4 days at a time
+  const [dayStart, setDayStart] = useState(0); // 0=Mon–Thu … 3=Thu–Sun
+
   // Drag-to-select (mouse only — touch uses onClick so scroll works)
   const [dragging, setDragging] = useState<'add' | 'remove' | null>(null);
   const mouseHandled = useRef(false);
@@ -140,65 +143,75 @@ export default function AvailabilityPicker({ initial = [], timezone: tzProp, onC
         </p>
       )}
 
-      {/* Grid — outer wrapper allows horizontal scroll on mobile */}
-      <div className="border border-stone-200 rounded-2xl overflow-hidden overflow-x-auto scrollbar-thin">
-        <div style={{ minWidth: '420px' }}>
-        {/* Day header row — sticky so it never scrolls away */}
-        <div
-          className="grid bg-stone-50 border-b border-stone-200 sticky top-0 z-10"
-          style={{ gridTemplateColumns: `repeat(7, minmax(0, 1fr))` }}
-        >
-          {DAY_LABELS.map((d, i) => (
-            <div key={d} className={`py-2.5 text-center text-xs font-semibold text-stone-500 ${i > 0 ? 'border-l border-stone-200' : ''}`}>
-              {d}
-            </div>
-          ))}
-        </div>
-
-        {/* Time rows */}
-        <div className={fullHeight ? '' : 'overflow-y-auto max-h-80 scrollbar-thin'}>
-          {TIME_SLOTS.map(({ shortLabel, minute }, i) => {
-            const isHour = minute % 60 === 0;
-            return (
-              <div
-                key={minute}
-                className={`grid ${isHour && i > 0 ? 'border-t border-stone-200' : i > 0 ? 'border-t border-stone-100' : ''}`}
-                style={{ gridTemplateColumns: `repeat(7, minmax(0, 1fr))` }}
-              >
-                {DAY_LABELS.map((_, day) => {
-                  const active   = isSelected(day, minute);
-                  const partner  = isPartner(day, minute);
-                  const overlap  = active && partner;
-                  return (
-                    <button
-                      key={day}
-                      onPointerDown={e => handlePointerDown(e, day, minute)}
-                      onPointerEnter={e => handlePointerEnter(e, day, minute)}
-                      onClick={() => handleClick(day, minute)}
-                      style={active ? { borderRadius: '6px' } : undefined}
-                      className={`${day > 0 ? 'border-l border-stone-100' : ''} py-2.5 transition-colors flex items-center justify-center ${
-                        overlap
-                          ? 'bg-emerald-400/50 hover:bg-emerald-400/60'
-                          : active
-                            ? 'bg-[#2B8FFF]/40 hover:bg-[#2B8FFF]/50'
-                            : partner
-                              ? 'bg-amber-200/50 hover:bg-amber-200/70'
-                              : 'bg-stone-50 hover:bg-[#2B8FFF]/10'
-                      }`}
-                    >
-                      <span className={`text-[9px] font-medium pointer-events-none select-none ${
-                        active ? 'text-[#1060d8]' : partner ? 'text-amber-700' : 'text-stone-400'
-                      }`}>
-                        {shortLabel}
-                      </span>
-                    </button>
-                  );
-                })}
+      {/* Day header — sticky, outside overflow-hidden so position:sticky works */}
+      <div className="sticky top-0 z-10 bg-white pb-px">
+        <div className="flex items-center border border-stone-200 rounded-t-2xl bg-stone-50 overflow-hidden">
+          <button
+            onClick={() => setDayStart(d => Math.max(0, d - 1))}
+            disabled={dayStart === 0}
+            className="px-2.5 py-3 text-stone-400 hover:text-stone-700 disabled:opacity-20 transition-colors shrink-0"
+            aria-label="Previous days"
+          >
+            ‹
+          </button>
+          <div className="grid flex-1" style={{ gridTemplateColumns: `repeat(4, 1fr)` }}>
+            {Array.from({ length: 4 }, (_, i) => dayStart + i).map((dayIdx, i) => (
+              <div key={dayIdx} className={`py-2.5 text-center text-xs font-semibold text-stone-500 ${i > 0 ? 'border-l border-stone-200' : ''}`}>
+                {DAY_LABELS[dayIdx]}
               </div>
-            );
-          })}
+            ))}
+          </div>
+          <button
+            onClick={() => setDayStart(d => Math.min(3, d + 1))}
+            disabled={dayStart === 3}
+            className="px-2.5 py-3 text-stone-400 hover:text-stone-700 disabled:opacity-20 transition-colors shrink-0"
+            aria-label="Next days"
+          >
+            ›
+          </button>
         </div>
-        </div>
+      </div>
+
+      {/* Time rows — inside separate rounded-b container (overflow-hidden here is fine, no sticky inside) */}
+      <div className={`border-l border-r border-b border-stone-200 rounded-b-2xl overflow-hidden ${fullHeight ? '' : 'overflow-y-auto max-h-80 scrollbar-thin'}`}>
+        {TIME_SLOTS.map(({ shortLabel, minute }, i) => {
+          const isHour = minute % 60 === 0;
+          const visibleDays = Array.from({ length: 4 }, (_, j) => dayStart + j);
+          return (
+            <div
+              key={minute}
+              className={`grid ${isHour && i > 0 ? 'border-t border-stone-200' : i > 0 ? 'border-t border-stone-100' : ''}`}
+              style={{ gridTemplateColumns: `repeat(4, 1fr)` }}
+            >
+              {visibleDays.map((day, colIdx) => {
+                const active  = isSelected(day, minute);
+                const partner = isPartner(day, minute);
+                const overlap = active && partner;
+                return (
+                  <button
+                    key={day}
+                    onPointerDown={e => handlePointerDown(e, day, minute)}
+                    onPointerEnter={e => handlePointerEnter(e, day, minute)}
+                    onClick={() => handleClick(day, minute)}
+                    style={active ? { borderRadius: '6px' } : undefined}
+                    className={`${colIdx > 0 ? 'border-l border-stone-100' : ''} py-2.5 transition-colors flex items-center justify-center ${
+                      overlap  ? 'bg-emerald-400/50 hover:bg-emerald-400/60'
+                      : active  ? 'bg-[#2B8FFF]/40 hover:bg-[#2B8FFF]/50'
+                      : partner ? 'bg-amber-200/50 hover:bg-amber-200/70'
+                                : 'bg-stone-50 hover:bg-[#2B8FFF]/10'
+                    }`}
+                  >
+                    <span className={`text-[9px] font-medium pointer-events-none select-none ${
+                      active ? 'text-[#1060d8]' : partner ? 'text-amber-700' : 'text-stone-400'
+                    }`}>
+                      {shortLabel}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })}
       </div>
 
       {!hideLegend && partnerSlots && partnerSlots.length > 0 && (
