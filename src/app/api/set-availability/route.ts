@@ -72,12 +72,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, matchesTriggered: 0 });
   }
 
-  // Find all active matches waiting on availability
+  // Find all active matches waiting on availability (include 'computing' to unstick old matches)
   const { data: matches } = await db
     .from('matches')
     .select('id, scheduling_state, session_id_a, session_id_b')
     .or(`session_id_a.eq.${profile.session_id},session_id_b.eq.${profile.session_id}`)
-    .in('scheduling_state', ['pending_both', 'pending_a', 'pending_b', 'no_overlap']);
+    .in('scheduling_state', ['pending_both', 'pending_a', 'pending_b', 'no_overlap', 'computing']);
 
   if (!matches?.length) {
     return NextResponse.json({ ok: true, matchesTriggered: 0 });
@@ -105,8 +105,13 @@ export async function POST(request: Request) {
       : !!current?.availability_a_set_at;
 
     if (otherSideReady) {
+      // Both sides ready — trigger scheduler
       Object.assign(updatePayload, { scheduling_state: 'computing' });
       matchesToSchedule.push(m.id);
+    } else {
+      // Only this side ready — move to pending_a or pending_b so partner sees the CTA
+      const pendingState = iAmA ? 'pending_b' : 'pending_a';
+      Object.assign(updatePayload, { scheduling_state: pendingState });
     }
 
     await db.from('matches').update(updatePayload).eq('id', m.id);
