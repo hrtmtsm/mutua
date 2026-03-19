@@ -112,7 +112,7 @@ export default function SetAvailabilityPage() {
           disabled={saving || slots.length === 0}
           className="w-full py-3.5 btn-primary text-white font-bold text-sm rounded-xl disabled:opacity-40 disabled:pointer-events-none"
         >
-          {saving ? 'Saving...' : 'Save availability →'}
+          {saving ? 'Finding a time...' : 'Find a time →'}
         </button>
       </div>
     </div>
