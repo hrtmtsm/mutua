@@ -136,36 +136,51 @@ export default function AvailabilityPicker({ initial = [], timezone: tzProp, onC
         </div>
 
         {/* Time rows — scrollable */}
-        <div className={fullHeight ? '' : 'overflow-y-auto max-h-80'}>
-          {TIME_SLOTS.map(({ label, minute }, i) => (
-            <div
-              key={minute}
-              className={`grid border-stone-50 ${i < TIME_SLOTS.length - 1 ? 'border-b' : ''}`}
-              style={{ gridTemplateColumns: `64px repeat(7, 1fr)` }}
-            >
-              {/* Time label — only on the hour */}
-              <div className="flex items-center px-3">
-                {minute % 60 === 0 && (
-                  <span className="text-[10px] text-stone-400 whitespace-nowrap">{label}</span>
-                )}
+        <div className={fullHeight ? '' : 'overflow-y-auto max-h-80 scrollbar-thin'}>
+          {TIME_SLOTS.map(({ label, minute }, i) => {
+            const prevMinute = i > 0 ? TIME_SLOTS[i - 1].minute : null;
+            const nextMinute = i < TIME_SLOTS.length - 1 ? TIME_SLOTS[i + 1].minute : null;
+            return (
+              <div
+                key={minute}
+                className={`grid border-stone-50 ${i < TIME_SLOTS.length - 1 ? 'border-b' : ''}`}
+                style={{ gridTemplateColumns: `64px repeat(7, 1fr)` }}
+              >
+                {/* Time label — only on the hour */}
+                <div className="flex items-center px-3">
+                  {minute % 60 === 0 && (
+                    <span className="text-[10px] text-stone-400 whitespace-nowrap">{label}</span>
+                  )}
+                </div>
+                {DAY_LABELS.map((_, day) => {
+                  const active   = isSelected(day, minute);
+                  const aboveOn  = prevMinute !== null && isSelected(day, prevMinute);
+                  const belowOn  = nextMinute !== null && isSelected(day, nextMinute);
+                  const roundTop    = active && !aboveOn;
+                  const roundBottom = active && !belowOn;
+                  const radius = [
+                    roundTop    ? '6px' : '0',
+                    roundTop    ? '6px' : '0',
+                    roundBottom ? '6px' : '0',
+                    roundBottom ? '6px' : '0',
+                  ].join(' ');
+                  return (
+                    <button
+                      key={day}
+                      onPointerDown={() => handlePointerDown(day, minute)}
+                      onPointerEnter={() => handlePointerEnter(day, minute)}
+                      style={active ? { borderRadius: radius } : undefined}
+                      className={`border-l border-stone-100 py-2.5 transition-colors touch-none ${
+                        active
+                          ? 'bg-[#2B8FFF] hover:bg-[#1a7de8]'
+                          : 'hover:bg-[#2B8FFF]/10'
+                      }`}
+                    />
+                  );
+                })}
               </div>
-              {DAY_LABELS.map((_, day) => {
-                const active = isSelected(day, minute);
-                return (
-                  <button
-                    key={day}
-                    onPointerDown={() => handlePointerDown(day, minute)}
-                    onPointerEnter={() => handlePointerEnter(day, minute)}
-                    className={`border-l border-stone-100 py-2.5 transition-colors touch-none ${
-                      active
-                        ? 'bg-[#2B8FFF] hover:bg-[#1a7de8]'
-                        : 'hover:bg-[#2B8FFF]/10'
-                    }`}
-                  />
-                );
-              })}
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
