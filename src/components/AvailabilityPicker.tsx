@@ -172,7 +172,7 @@ export default function AvailabilityPicker({ initial = [], timezone: tzProp, onC
                       style={active ? { borderRadius: radius } : undefined}
                       className={`border-l border-stone-100 py-2.5 transition-colors touch-none ${
                         active
-                          ? 'bg-[#2B8FFF] hover:bg-[#1a7de8]'
+                          ? 'bg-[#2B8FFF]/40 hover:bg-[#2B8FFF]/50'
                           : 'hover:bg-[#2B8FFF]/10'
                       }`}
                     />
