@@ -129,7 +129,7 @@ export default function AvailabilityPicker({ initial = [], timezone: tzProp, onC
         >
           <div />
           {DAY_LABELS.map(d => (
-            <div key={d} className="py-2.5 text-center text-xs font-semibold text-stone-500 border-l border-stone-100">
+            <div key={d} className="py-2 text-center text-xs font-semibold text-stone-500 border-l border-stone-100">
               {d}
             </div>
           ))}
@@ -170,7 +170,7 @@ export default function AvailabilityPicker({ initial = [], timezone: tzProp, onC
                       onPointerDown={() => handlePointerDown(day, minute)}
                       onPointerEnter={() => handlePointerEnter(day, minute)}
                       style={active ? { borderRadius: radius } : undefined}
-                      className={`border-l border-stone-100 py-2.5 transition-colors touch-none ${
+                      className={`border-l border-stone-100 py-1 transition-colors touch-none ${
                         active
                           ? 'bg-[#2B8FFF] hover:bg-[#1a7de8]'
                           : 'hover:bg-[#2B8FFF]/10'

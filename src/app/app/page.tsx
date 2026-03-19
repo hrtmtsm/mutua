@@ -312,6 +312,16 @@ export default function SessionPage() {
     init();
   }, [router, loadMatch]);
 
+  // Re-fetch when user returns to this tab (e.g. back from /set-availability)
+  useEffect(() => {
+    if (!sessionId) return;
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') loadMatch(sessionId);
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [sessionId, loadMatch]);
+
   // Poll when state is 'computing' — re-fetch every 4s until it resolves
   useEffect(() => {
     if (!partner || !sessionId) return;
