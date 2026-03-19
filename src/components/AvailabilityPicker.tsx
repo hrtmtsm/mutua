@@ -28,18 +28,19 @@ export interface AvailabilitySlot {
 }
 
 interface Props {
-  initial?:      AvailabilitySlot[];
-  timezone?:     string;
-  onChange:      (slots: AvailabilitySlot[], timezone: string) => void;
-  onSave?:       (slots: AvailabilitySlot[], timezone: string) => Promise<void>;
-  saving?:       boolean;
-  fullHeight?:   boolean;           // if true, show all rows without scroll cap
-  partnerSlots?: AvailabilitySlot[]; // show partner's availability as a tint
+  initial?:             AvailabilitySlot[];
+  timezone?:            string;
+  onChange:             (slots: AvailabilitySlot[], timezone: string) => void;
+  onSave?:              (slots: AvailabilitySlot[], timezone: string) => Promise<void>;
+  saving?:              boolean;
+  fullHeight?:          boolean;
+  partnerSlots?:        AvailabilitySlot[];
+  hideTimezoneNotice?:  boolean; // let parent render timezone UI outside the scroll area
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export default function AvailabilityPicker({ initial = [], timezone: tzProp, onChange, onSave, saving, fullHeight, partnerSlots }: Props) {
+export default function AvailabilityPicker({ initial = [], timezone: tzProp, onChange, onSave, saving, fullHeight, partnerSlots, hideTimezoneNotice }: Props) {
   const [selected, setSelected] = useState<Set<string>>(new Set(
     initial.map(s => `${s.day_of_week}-${s.start_minute}`)
   ));
@@ -97,8 +98,8 @@ export default function AvailabilityPicker({ initial = [], timezone: tzProp, onC
       onPointerUp={() => setDragging(null)}
       onPointerLeave={() => setDragging(null)}
     >
-      {/* Timezone notice */}
-      {!tzConfirmed && (
+      {/* Timezone notice — only rendered if parent hasn't taken over */}
+      {!hideTimezoneNotice && !tzConfirmed && (
         <div className="mb-4 flex items-center justify-between gap-4 px-4 py-3 bg-sky-50 border border-sky-100 rounded-xl text-sm">
           <span className="text-neutral-700">
             Using your device timezone: <strong>{timezone}</strong>
@@ -122,7 +123,7 @@ export default function AvailabilityPicker({ initial = [], timezone: tzProp, onC
           </div>
         </div>
       )}
-      {tzConfirmed && (
+      {!hideTimezoneNotice && tzConfirmed && (
         <p className="text-xs text-stone-600 mb-4">
           Times shown in {timezone}.{' '}
           <button className="underline text-[#2B8FFF]" onClick={() => setTzConfirmed(false)}>Change</button>

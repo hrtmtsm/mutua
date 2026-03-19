@@ -16,6 +16,7 @@ function SetAvailabilityInner() {
 
   const [slots,        setSlots]        = useState<AvailabilitySlot[]>([]);
   const [timezone,     setTimezone]     = useState(Intl.DateTimeFormat().resolvedOptions().timeZone);
+  const [showTzSelect, setShowTzSelect] = useState(false);
   const [saving,       setSaving]       = useState(false);
   const [cancelling,   setCancelling]   = useState(false);
   const [loading,      setLoading]      = useState(true);
@@ -132,6 +133,29 @@ function SetAvailabilityInner() {
                 ? `Your schedules don't overlap yet. Partner's free times are highlighted — add slots that line up to find a shared window.`
                 : `We'll match your schedule with ${partnerName}'s and automatically find the best time — you only set this once.`}
           </p>
+
+          {/* Timezone row — fixed, never scrolls */}
+          <div className="mt-3 flex items-center gap-2 text-xs text-stone-600">
+            {showTzSelect ? (
+              <>
+                <select
+                  value={timezone}
+                  onChange={e => { setTimezone(e.target.value); setShowTzSelect(false); }}
+                  className="border border-stone-200 rounded-lg px-2 py-1 bg-white text-neutral-700 focus:outline-none text-xs"
+                >
+                  {Intl.supportedValuesOf('timeZone').map(tz => (
+                    <option key={tz} value={tz}>{tz}</option>
+                  ))}
+                </select>
+                <button onClick={() => setShowTzSelect(false)} className="text-stone-400 hover:text-stone-600">Cancel</button>
+              </>
+            ) : (
+              <>
+                <span>Times in <strong>{timezone}</strong></span>
+                <button onClick={() => setShowTzSelect(true)} className="text-[#2B8FFF] underline">Change</button>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Grid — scrolls independently */}
@@ -146,6 +170,7 @@ function SetAvailabilityInner() {
               timezone={timezone}
               onChange={(s, tz) => { setSlots(s); setTimezone(tz); }}
               fullHeight
+              hideTimezoneNotice
               partnerSlots={partnerSlots.length > 0 ? partnerSlots : undefined}
             />
           )}
