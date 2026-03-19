@@ -333,6 +333,34 @@ export default function SessionPage() {
     }
   }, []);
 
+  // Fallback: build a card from localStorage if DB has no match yet
+  const loadFromLocalStorage = useCallback(() => {
+    const multi  = localStorage.getItem('mutua_partners');
+    const single = localStorage.getItem('mutua_match');
+
+    const raw = multi
+      ? (JSON.parse(multi) as Array<{ partner: any; reasons?: string[] }>)[0]
+      : single ? { partner: JSON.parse(single).partner, reasons: JSON.parse(single).reasons } : null;
+
+    if (!raw?.partner) return false;
+    const p = raw.partner;
+    setPartner({
+      matchId:         '',
+      id:              p.session_id        ?? 'demo',
+      name:            p.name              ?? 'Your partner',
+      nativeLang:      p.native_language,
+      learningLang:    p.learning_language,
+      goal:            p.goal              ?? '',
+      commStyle:       p.comm_style        ?? '',
+      frequency:       p.practice_frequency ?? '',
+      reasons:         raw.reasons         ?? [],
+      schedulingState: 'pending_both',
+      scheduledAt:     null,
+      iAmA:            true,
+    });
+    return true;
+  }, []);
+
   useEffect(() => {
     async function init() {
       const sid = localStorage.getItem('mutua_session_id');
@@ -340,8 +368,8 @@ export default function SessionPage() {
       setSessionId(sid);
 
       const found = await loadMatch(sid);
-      if (!found) setLoading(false);
-      else setLoading(false);
+      if (!found) loadFromLocalStorage();
+      setLoading(false);
 
       // Load my saved availability
       const { data: { session } } = await supabase.auth.getSession();
