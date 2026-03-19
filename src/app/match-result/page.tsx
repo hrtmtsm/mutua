@@ -211,6 +211,10 @@ export default function MatchResultPage() {
       const sessionId = localStorage.getItem('mutua_session_id');
       if (!sessionId) { router.replace('/onboarding'); return; }
 
+      // Scheduling is now handled on /app — redirect there
+      router.replace('/app');
+      return;
+
       const stored = localStorage.getItem('mutua_profile');
       if (stored) {
         const profile = JSON.parse(stored);
