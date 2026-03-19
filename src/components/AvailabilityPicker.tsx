@@ -78,6 +78,15 @@ export default function AvailabilityPicker({ initial = [], timezone: tzProp, onC
   // Day navigation — two fixed pages: Mon–Thu (page 0) and Fri–Sun (page 1)
   const [page, setPage] = useState(0);
   const visibleDays = page === 0 ? [0, 1, 2, 3] : [4, 5, 6];
+  const swipeStartX = useRef<number | null>(null);
+  const handleSwipeStart = (e: React.TouchEvent) => { swipeStartX.current = e.touches[0].clientX; };
+  const handleSwipeEnd   = (e: React.TouchEvent) => {
+    if (swipeStartX.current === null) return;
+    const dx = e.changedTouches[0].clientX - swipeStartX.current;
+    if (dx < -40 && page === 0) setPage(1);
+    if (dx >  40 && page === 1) setPage(0);
+    swipeStartX.current = null;
+  };
 
   // Drag-to-select (mouse only — touch uses onClick so scroll works)
   const [dragging, setDragging] = useState<'add' | 'remove' | null>(null);
@@ -144,37 +153,27 @@ export default function AvailabilityPicker({ initial = [], timezone: tzProp, onC
         </p>
       )}
 
-      {/* Sticky day header with overlaid arrow — no extra rows */}
+      {/* Sticky day header — swipeable left/right to switch pages */}
       <div className="sticky top-0 z-10 bg-white">
         <div
-          className="relative grid border border-b-0 border-stone-200 rounded-t-2xl bg-stone-50"
+          className="relative grid border border-b-0 border-stone-200 rounded-t-2xl bg-stone-100"
           style={{ gridTemplateColumns: `repeat(${visibleDays.length}, 1fr)` }}
+          onTouchStart={handleSwipeStart}
+          onTouchEnd={handleSwipeEnd}
         >
           {visibleDays.map((dayIdx, i) => (
-            <div key={dayIdx} className={`py-2.5 text-center text-xs font-semibold text-stone-500 ${i > 0 ? 'border-l border-stone-200' : ''}`}>
+            <div key={dayIdx} className={`py-2.5 text-center text-xs font-semibold text-stone-600 ${i > 0 ? 'border-l border-stone-200' : ''}`}>
               {DAY_LABELS[dayIdx]}
             </div>
           ))}
-
-          {/* Arrow — absolutely positioned, floats over last/first column edge */}
-          {page === 0 && (
-            <button
-              onClick={() => setPage(1)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 transition-colors text-base leading-none"
-              aria-label="Show Fri–Sun"
-            >
-              ›
-            </button>
-          )}
-          {page === 1 && (
-            <button
-              onClick={() => setPage(0)}
-              className="absolute left-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 transition-colors text-base leading-none"
-              aria-label="Show Mon–Thu"
-            >
-              ‹
-            </button>
-          )}
+          {/* Subtle edge fade to hint at more pages */}
+          {page === 0 && <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-stone-200/60 to-transparent rounded-tr-2xl pointer-events-none" />}
+          {page === 1 && <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-stone-200/60 to-transparent rounded-tl-2xl pointer-events-none" />}
+        </div>
+        {/* Page dots */}
+        <div className="flex justify-center gap-1.5 py-1">
+          <button onClick={() => setPage(0)} className={`w-1.5 h-1.5 rounded-full transition-colors ${page === 0 ? 'bg-stone-400' : 'bg-stone-200'}`} />
+          <button onClick={() => setPage(1)} className={`w-1.5 h-1.5 rounded-full transition-colors ${page === 1 ? 'bg-stone-400' : 'bg-stone-200'}`} />
         </div>
       </div>
 
