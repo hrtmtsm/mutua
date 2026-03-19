@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -75,22 +75,31 @@ export default function AvailabilityPicker({ initial = [], timezone: tzProp, onC
   const isSelected = (day: number, minute: number) =>
     selected.has(`${day}-${minute}`);
 
-  // Drag-to-select
+  // Drag-to-select (mouse only — touch uses onClick so scroll works)
   const [dragging, setDragging] = useState<'add' | 'remove' | null>(null);
-  const handlePointerDown = (day: number, minute: number) => {
+  const mouseHandled = useRef(false);
+
+  const handlePointerDown = (e: React.PointerEvent, day: number, minute: number) => {
+    if (e.pointerType !== 'mouse') return; // touch: let onClick handle it
+    mouseHandled.current = true;
     const key = `${day}-${minute}`;
     const mode = selected.has(key) ? 'remove' : 'add';
     setDragging(mode);
     toggle(day, minute);
   };
-  const handlePointerEnter = (day: number, minute: number) => {
-    if (!dragging) return;
+  const handlePointerEnter = (e: React.PointerEvent, day: number, minute: number) => {
+    if (e.pointerType !== 'mouse' || !dragging) return;
     const key = `${day}-${minute}`;
     setSelected(prev => {
       const next = new Set(prev);
       dragging === 'add' ? next.add(key) : next.delete(key);
       return next;
     });
+  };
+  // Touch tap: onClick only fires if the finger didn't scroll
+  const handleClick = (day: number, minute: number) => {
+    if (mouseHandled.current) { mouseHandled.current = false; return; }
+    toggle(day, minute);
   };
 
   return (
@@ -162,8 +171,9 @@ export default function AvailabilityPicker({ initial = [], timezone: tzProp, onC
                   return (
                     <button
                       key={day}
-                      onPointerDown={() => handlePointerDown(day, minute)}
-                      onPointerEnter={() => handlePointerEnter(day, minute)}
+                      onPointerDown={e => handlePointerDown(e, day, minute)}
+                      onPointerEnter={e => handlePointerEnter(e, day, minute)}
+                      onClick={() => handleClick(day, minute)}
                       style={active ? { borderRadius: '6px' } : undefined}
                       className={`${day > 0 ? 'border-l border-stone-100' : ''} py-2.5 transition-colors flex items-center justify-center ${
                         overlap
