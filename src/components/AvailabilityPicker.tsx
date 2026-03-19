@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -26,17 +26,18 @@ export interface AvailabilitySlot {
 }
 
 interface Props {
-  initial?:   AvailabilitySlot[];
-  timezone?:  string;
-  onChange:   (slots: AvailabilitySlot[], timezone: string) => void;
-  onSave?:    (slots: AvailabilitySlot[], timezone: string) => Promise<void>;
-  saving?:    boolean;
-  fullHeight?: boolean;  // if true, show all rows without scroll cap
+  initial?:      AvailabilitySlot[];
+  timezone?:     string;
+  onChange:      (slots: AvailabilitySlot[], timezone: string) => void;
+  onSave?:       (slots: AvailabilitySlot[], timezone: string) => Promise<void>;
+  saving?:       boolean;
+  fullHeight?:   boolean;           // if true, show all rows without scroll cap
+  partnerSlots?: AvailabilitySlot[]; // show partner's availability as a tint
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export default function AvailabilityPicker({ initial = [], timezone: tzProp, onChange, onSave, saving, fullHeight }: Props) {
+export default function AvailabilityPicker({ initial = [], timezone: tzProp, onChange, onSave, saving, fullHeight, partnerSlots }: Props) {
   const [selected, setSelected] = useState<Set<string>>(new Set(
     initial.map(s => `${s.day_of_week}-${s.start_minute}`)
   ));
@@ -51,6 +52,12 @@ export default function AvailabilityPicker({ initial = [], timezone: tzProp, onC
     });
     onChange(slots, timezone);
   }, [selected, timezone]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const partnerSet = useMemo(
+    () => new Set((partnerSlots ?? []).map(s => `${s.day_of_week}-${s.start_minute}`)),
+    [partnerSlots],
+  );
+  const isPartner = (day: number, minute: number) => partnerSet.has(`${day}-${minute}`);
 
   const toggle = (day: number, minute: number) => {
     const key = `${day}-${minute}`;
@@ -154,6 +161,8 @@ export default function AvailabilityPicker({ initial = [], timezone: tzProp, onC
                 </div>
                 {DAY_LABELS.map((_, day) => {
                   const active   = isSelected(day, minute);
+                  const partner  = isPartner(day, minute);
+                  const overlap  = active && partner;
                   const aboveOn  = prevMinute !== null && isSelected(day, prevMinute);
                   const belowOn  = nextMinute !== null && isSelected(day, nextMinute);
                   const roundTop    = active && !aboveOn;
@@ -171,9 +180,13 @@ export default function AvailabilityPicker({ initial = [], timezone: tzProp, onC
                       onPointerEnter={() => handlePointerEnter(day, minute)}
                       style={active ? { borderRadius: radius } : undefined}
                       className={`border-l border-stone-100 py-2.5 transition-colors touch-none ${
-                        active
-                          ? 'bg-[#2B8FFF]/40 hover:bg-[#2B8FFF]/50'
-                          : 'hover:bg-[#2B8FFF]/10'
+                        overlap
+                          ? 'bg-emerald-400/50 hover:bg-emerald-400/60'
+                          : active
+                            ? 'bg-[#2B8FFF]/40 hover:bg-[#2B8FFF]/50'
+                            : partner
+                              ? 'bg-amber-300/30 hover:bg-amber-300/50'
+                              : 'hover:bg-[#2B8FFF]/10'
                       }`}
                     />
                   );
@@ -183,6 +196,23 @@ export default function AvailabilityPicker({ initial = [], timezone: tzProp, onC
           })}
         </div>
       </div>
+
+      {partnerSlots && partnerSlots.length > 0 && (
+        <div className="flex items-center justify-center gap-4 mt-3 text-xs text-stone-500">
+          <span className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-sm bg-[#2B8FFF]/40 inline-block" />
+            You
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-sm bg-amber-300/50 inline-block" />
+            Partner
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-sm bg-emerald-400/50 inline-block" />
+            Overlap
+          </span>
+        </div>
+      )}
 
       <p className="text-xs text-stone-400 mt-2 text-center">
         {selected.size === 0

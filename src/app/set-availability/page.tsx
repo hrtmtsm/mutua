@@ -1,19 +1,25 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import AvailabilityPicker from '@/components/AvailabilityPicker';
 import type { AvailabilitySlot } from '@/components/AvailabilityPicker';
 import TopNav from '@/components/Sidebar';
 
-export default function SetAvailabilityPage() {
+function SetAvailabilityInner() {
   const router = useRouter();
-  const [slots,       setSlots]       = useState<AvailabilitySlot[]>([]);
-  const [timezone,    setTimezone]    = useState(Intl.DateTimeFormat().resolvedOptions().timeZone);
-  const [saving,      setSaving]      = useState(false);
-  const [loading,     setLoading]     = useState(true);
-  const [partnerName, setPartnerName] = useState('your partner');
+  const searchParams   = useSearchParams();
+  const matchId        = searchParams.get('matchId');
+  const schedulingState = searchParams.get('schedulingState');
+  const showPartner    = schedulingState === 'no_overlap';
+
+  const [slots,        setSlots]        = useState<AvailabilitySlot[]>([]);
+  const [timezone,     setTimezone]     = useState(Intl.DateTimeFormat().resolvedOptions().timeZone);
+  const [saving,       setSaving]       = useState(false);
+  const [loading,      setLoading]      = useState(true);
+  const [partnerName,  setPartnerName]  = useState('your partner');
+  const [partnerSlots, setPartnerSlots] = useState<AvailabilitySlot[]>([]);
 
   // Read partner name synchronously on mount
   useEffect(() => {
@@ -44,6 +50,24 @@ export default function SetAvailabilityPage() {
     }
     load();
   }, []);
+
+  // Fetch partner slots when in no_overlap state
+  useEffect(() => {
+    if (!showPartner || !matchId) return;
+    async function loadPartner() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) return;
+      const res = await fetch(
+        `/api/get-partner-availability?matchId=${encodeURIComponent(matchId!)}`,
+        { headers: { Authorization: `Bearer ${session.access_token}` } },
+      ).catch(() => null);
+      if (res?.ok) {
+        const data = await res.json();
+        if (data.slots?.length) setPartnerSlots(data.slots);
+      }
+    }
+    loadPartner();
+  }, [matchId, showPartner]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSave = async () => {
     setSaving(true);
@@ -83,7 +107,9 @@ export default function SetAvailabilityPage() {
           </p>
           <h1 className="font-serif font-black text-2xl text-neutral-900">When are you usually free?</h1>
           <p className="text-sm text-stone-500 mt-1.5">
-            We'll match your schedule with {partnerName}'s and automatically find the best time — you only set this once.
+            {showPartner
+              ? `Your schedules don't overlap yet. Partner's free times are highlighted — add slots that line up to find a shared window.`
+              : `We'll match your schedule with ${partnerName}'s and automatically find the best time — you only set this once.`}
           </p>
         </div>
 
@@ -99,6 +125,7 @@ export default function SetAvailabilityPage() {
               timezone={timezone}
               onChange={(s, tz) => { setSlots(s); setTimezone(tz); }}
               fullHeight
+              partnerSlots={partnerSlots.length > 0 ? partnerSlots : undefined}
             />
           )}
         </div>
@@ -116,5 +143,17 @@ export default function SetAvailabilityPage() {
         </button>
       </div>
     </div>
+  );
+}
+
+export default function SetAvailabilityPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-[#2B8FFF] border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <SetAvailabilityInner />
+    </Suspense>
   );
 }

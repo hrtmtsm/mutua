@@ -196,13 +196,13 @@ function SchedulingCard({
         {s === 'no_overlap' && (
           <div className="space-y-3">
             <p className="text-sm text-stone-500">
-              No shared window found yet — try adding a few more free slots.
+              Your schedules don't overlap yet. Update your free times and we'll match you automatically.
             </p>
             <button
               onClick={onBookExchange}
               className="w-full py-3 btn-primary text-white font-bold text-sm rounded-xl"
             >
-              Update my availability →
+              Update my free times →
             </button>
           </div>
         )}
@@ -336,7 +336,10 @@ export default function SessionPage() {
 
   const handleBookExchange = () => {
     if (partner) localStorage.setItem('mutua_scheduling_partner', partner.name);
-    router.push('/set-availability');
+    const params = new URLSearchParams();
+    if (partner?.matchId)         params.set('matchId', partner.matchId);
+    if (partner?.schedulingState) params.set('schedulingState', partner.schedulingState);
+    router.push(`/set-availability?${params.toString()}`);
   };
 
   const handleAvailabilitySaved = (mId: string) => {
