@@ -27,28 +27,30 @@ interface Slot {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-/** Expand recurring weekly availability into concrete UTC slots over the next 7 days */
+/** Expand recurring weekly availability into concrete UTC slots over the next 14 days */
 function expandToUTC(rows: UserAvailability[]): Slot[] {
   const slots: Slot[] = [];
   const now = new Date();
+  // Use UTC midnight as the anchor so day boundaries don't shift based on server clock time
+  const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 
-  // Check the next 7 days (starting from today)
-  for (let dayOffset = 0; dayOffset < 7; dayOffset++) {
-    const date = new Date(now);
-    date.setDate(now.getDate() + dayOffset);
+  // Check the next 14 days (2 weeks to ensure tz offsets don't miss the current week)
+  for (let dayOffset = 0; dayOffset < 14; dayOffset++) {
+    const date = new Date(todayUTC);
+    date.setUTCDate(todayUTC.getUTCDate() + dayOffset);
 
     // day_of_week: 0=Mon … 6=Sun  (spec convention)
-    // JS getDay(): 0=Sun … 6=Sat
-    const jsDay = date.getDay();
+    // JS getUTCDay(): 0=Sun … 6=Sat
+    const jsDay = date.getUTCDay();
     const specDay = jsDay === 0 ? 6 : jsDay - 1; // convert JS→spec
 
     for (const row of rows) {
       if (row.day_of_week !== specDay) continue;
 
       // Build a local datetime string in the user's timezone, then convert to UTC
-      const year  = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day   = String(date.getDate()).padStart(2, '0');
+      const year  = date.getUTCFullYear();
+      const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+      const day   = String(date.getUTCDate()).padStart(2, '0');
       const hours = String(Math.floor(row.start_minute / 60)).padStart(2, '0');
       const mins  = String(row.start_minute % 60).padStart(2, '0');
 
@@ -68,28 +70,8 @@ function expandToUTC(rows: UserAvailability[]): Slot[] {
 /** Convert a local datetime string + IANA timezone to a UTC Date */
 function localToUTC(localDatetime: string, timezone: string): Date | null {
   try {
-    // Create a formatter that tells us what UTC time corresponds to
-    // the given local time in the given timezone
-    const parts = new Intl.DateTimeFormat('en-US', {
-      timeZone: timezone,
-      year: 'numeric', month: '2-digit', day: '2-digit',
-      hour: '2-digit', minute: '2-digit', second: '2-digit',
-      hour12: false,
-    }).formatToParts(new Date(localDatetime));
-
-    // This is a known technique: parse the reference date and compute the offset
-    const ref = new Date(localDatetime);
-    // Get what the timezone formatter shows for the same epoch millisecond
-    const fmt = new Intl.DateTimeFormat('en-US', {
-      timeZone: timezone,
-      year: 'numeric', month: '2-digit', day: '2-digit',
-      hour: '2-digit', minute: '2-digit', second: '2-digit',
-      hour12: false,
-    });
-
-    // Binary-search-free approach: use the offset between UTC and local display
-    // We construct an approximate UTC time, format it in the target tz, check
-    // if it matches our desired local time. Iterate once to correct for DST.
+    // Treat the local datetime string as if it were UTC, then measure
+    // the offset by formatting that epoch in the target timezone.
     const desired = new Date(localDatetime + 'Z'); // treat as UTC initially
     const displayed = formatInTZ(desired, timezone);
     if (!displayed) return null;
@@ -159,6 +141,7 @@ export interface SchedulerResult {
 
 export async function runScheduler(matchId: string): Promise<SchedulerResult> {
   const db = adminClient();
+  const tag = `[scheduler:${matchId.slice(0, 8)}]`;
 
   // 1. Fetch the match
   const { data: match, error: matchErr } = await db
@@ -168,30 +151,20 @@ export async function runScheduler(matchId: string): Promise<SchedulerResult> {
     .single();
   if (matchErr || !match) throw new Error(`Match not found: ${matchId}`);
 
-  // 2. Resolve auth user IDs from session IDs
-  const { data: profiles } = await db
-    .from('profiles')
-    .select('session_id, id')
-    .in('session_id', [match.session_id_a, match.session_id_b]);
+  console.log(`${tag} match found — emailA=${match.email_a} emailB=${match.email_b} state=${match.scheduling_state}`);
 
-  const profileA = profiles?.find(p => p.session_id === match.session_id_a);
-  const profileB = profiles?.find(p => p.session_id === match.session_id_b);
-
-  // We need auth.users IDs, which are stored as `id` in profiles if profiles.id = auth user id
-  // Actually profiles table uses its own UUID as id. We need to get user_id from auth.
-  // The profiles table doesn't directly store auth user id — look up via email or use a join.
-  // For now, use profiles.id as a proxy — this will need to be reconciled when
-  // user_availability is populated (it stores auth.users id as user_id).
-  // Short-term: query user_availability by matching session_id via profiles.
-
-  // Get auth user IDs from Supabase auth
-  const { data: usersData } = await db.auth.admin.listUsers();
+  // Get auth user IDs from Supabase auth — use perPage:1000 to avoid pagination truncation
+  const { data: usersData } = await db.auth.admin.listUsers({ perPage: 1000 });
   const users = usersData?.users ?? [];
+
+  console.log(`${tag} total auth users returned: ${users.length}`);
 
   const emailA = match.email_a;
   const emailB = match.email_b;
   const authUserA = users.find(u => u.email === emailA);
   const authUserB = users.find(u => u.email === emailB);
+
+  console.log(`${tag} authUserA=${authUserA?.id ?? 'NOT FOUND'} authUserB=${authUserB?.id ?? 'NOT FOUND'}`);
 
   if (!authUserA || !authUserB) {
     // One or both users haven't signed up yet — can't schedule
@@ -204,6 +177,10 @@ export async function runScheduler(matchId: string): Promise<SchedulerResult> {
     db.from('user_availability').select('*').eq('user_id', authUserB.id),
   ]);
 
+  console.log(`${tag} availA rows=${availA?.length ?? 0} availB rows=${availB?.length ?? 0}`);
+  if (availA?.length) console.log(`${tag} availA sample:`, JSON.stringify(availA.slice(0, 3)));
+  if (availB?.length) console.log(`${tag} availB sample:`, JSON.stringify(availB.slice(0, 3)));
+
   const hasA = (availA?.length ?? 0) > 0;
   const hasB = (availB?.length ?? 0) > 0;
 
@@ -212,11 +189,19 @@ export async function runScheduler(matchId: string): Promise<SchedulerResult> {
   if (!hasB)           return { state: 'pending_b',    slot: null };
 
   // 4. Expand to concrete UTC slots for next 7 days
+  const now = new Date();
+  console.log(`${tag} server UTC now=${now.toISOString()}`);
+
   const slotsA = expandToUTC(availA as UserAvailability[]);
   const slotsB = expandToUTC(availB as UserAvailability[]);
 
+  console.log(`${tag} expandedA=${slotsA.length} expandedB=${slotsB.length}`);
+  if (slotsA.length) console.log(`${tag} slotsA sample:`, slotsA.slice(0, 3).map(s => s.start.toISOString()));
+  if (slotsB.length) console.log(`${tag} slotsB sample:`, slotsB.slice(0, 3).map(s => s.start.toISOString()));
+
   // 5. Find overlapping windows
   let candidates = intersect(slotsA, slotsB);
+  console.log(`${tag} candidates after intersect=${candidates.length}`);
 
   // 6. Subtract confirmed sessions for both users
   const [{ data: bookedA }, { data: bookedB }] = await Promise.all([
@@ -226,15 +211,18 @@ export async function runScheduler(matchId: string): Promise<SchedulerResult> {
 
   candidates = subtractBooked(candidates, (bookedA ?? []) as ConfirmedSession[]);
   candidates = subtractBooked(candidates, (bookedB ?? []) as ConfirmedSession[]);
+  console.log(`${tag} candidates after subtractBooked=${candidates.length}`);
 
   // 7. Filter: skip slots within next 2 hours
   const minStart = new Date(Date.now() + 2 * 60 * 60 * 1000);
   candidates = candidates.filter(s => s.start > minStart);
+  console.log(`${tag} candidates after minStart filter=${candidates.length} (minStart=${minStart.toISOString()})`);
 
   // 8. Sort by soonest
   candidates.sort((a, b) => a.start.getTime() - b.start.getTime());
 
   const best = candidates[0] ?? null;
+  console.log(`${tag} best=${best ? best.start.toISOString() : 'none'} → ${best ? 'scheduled' : 'no_overlap'}`);
 
   if (!best) {
     return { state: 'no_overlap', slot: null };
