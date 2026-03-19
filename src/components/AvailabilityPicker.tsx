@@ -140,65 +140,62 @@ export default function AvailabilityPicker({ initial = [], timezone: tzProp, onC
         </p>
       )}
 
-      {/* Grid — outer wrapper allows horizontal scroll on mobile */}
-      <div className="border border-stone-200 rounded-2xl overflow-hidden overflow-x-auto scrollbar-thin">
-        <div style={{ minWidth: '420px' }}>
-        {/* Day header row — sticky so it never scrolls away */}
+      {/* Sticky day header — lives outside the overflow container so sticky works */}
+      <div className="sticky top-0 z-10 bg-white">
         <div
-          className="grid bg-stone-50 border-b border-stone-200 sticky top-0 z-10"
+          className="grid bg-stone-100 border border-b-0 border-stone-200 rounded-t-2xl"
           style={{ gridTemplateColumns: `repeat(7, minmax(0, 1fr))` }}
         >
           {DAY_LABELS.map((d, i) => (
-            <div key={d} className={`py-2.5 text-center text-xs font-semibold text-stone-500 ${i > 0 ? 'border-l border-stone-200' : ''}`}>
+            <div key={d} className={`py-2.5 text-center text-xs font-semibold text-stone-600 ${i > 0 ? 'border-l border-stone-200' : ''}`}>
               {d}
             </div>
           ))}
         </div>
+      </div>
 
-        {/* Time rows */}
-        <div className={fullHeight ? '' : 'overflow-y-auto max-h-80 scrollbar-thin'}>
-          {TIME_SLOTS.map(({ shortLabel, minute }, i) => {
-            const isHour = minute % 60 === 0;
-            return (
-              <div
-                key={minute}
-                className={`grid ${isHour && i > 0 ? 'border-t border-stone-200' : i > 0 ? 'border-t border-stone-100' : ''}`}
-                style={{ gridTemplateColumns: `repeat(7, minmax(0, 1fr))` }}
-              >
-                {DAY_LABELS.map((_, day) => {
-                  const active   = isSelected(day, minute);
-                  const partner  = isPartner(day, minute);
-                  const overlap  = active && partner;
-                  return (
-                    <button
-                      key={day}
-                      onPointerDown={e => handlePointerDown(e, day, minute)}
-                      onPointerEnter={e => handlePointerEnter(e, day, minute)}
-                      onClick={() => handleClick(day, minute)}
-                      style={active ? { borderRadius: '6px' } : undefined}
-                      className={`${day > 0 ? 'border-l border-stone-100' : ''} py-2.5 transition-colors flex items-center justify-center ${
-                        overlap
-                          ? 'bg-emerald-400/50 hover:bg-emerald-400/60'
-                          : active
-                            ? 'bg-[#2B8FFF]/40 hover:bg-[#2B8FFF]/50'
-                            : partner
-                              ? 'bg-amber-200/50 hover:bg-amber-200/70'
-                              : 'bg-stone-50 hover:bg-[#2B8FFF]/10'
-                      }`}
-                    >
-                      <span className={`text-[9px] font-medium pointer-events-none select-none ${
-                        active ? 'text-[#1060d8]' : partner ? 'text-amber-700' : 'text-stone-400'
-                      }`}>
-                        {shortLabel}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            );
-          })}
-        </div>
-        </div>
+      {/* Time rows */}
+      <div className={`border-l border-r border-b border-stone-200 rounded-b-2xl overflow-hidden ${fullHeight ? '' : 'overflow-y-auto max-h-80 scrollbar-thin'}`}>
+        {TIME_SLOTS.map(({ shortLabel, minute }, i) => {
+          const isHour = minute % 60 === 0;
+          return (
+            <div
+              key={minute}
+              className={`grid ${isHour && i > 0 ? 'border-t border-stone-200' : i > 0 ? 'border-t border-stone-100' : ''}`}
+              style={{ gridTemplateColumns: `repeat(7, minmax(0, 1fr))` }}
+            >
+              {DAY_LABELS.map((_, day) => {
+                const active   = isSelected(day, minute);
+                const partner  = isPartner(day, minute);
+                const overlap  = active && partner;
+                return (
+                  <button
+                    key={day}
+                    onPointerDown={e => handlePointerDown(e, day, minute)}
+                    onPointerEnter={e => handlePointerEnter(e, day, minute)}
+                    onClick={() => handleClick(day, minute)}
+                    style={active ? { borderRadius: '6px' } : undefined}
+                    className={`${day > 0 ? 'border-l border-stone-100' : ''} py-2.5 transition-colors flex items-center justify-center ${
+                      overlap
+                        ? 'bg-emerald-400/50 hover:bg-emerald-400/60'
+                        : active
+                          ? 'bg-[#2B8FFF]/40 hover:bg-[#2B8FFF]/50'
+                          : partner
+                            ? 'bg-amber-200/50 hover:bg-amber-200/70'
+                            : 'bg-stone-50 hover:bg-[#2B8FFF]/10'
+                    }`}
+                  >
+                    <span className={`text-[9px] font-medium pointer-events-none select-none ${
+                      active ? 'text-[#1060d8]' : partner ? 'text-amber-700' : 'text-stone-400'
+                    }`}>
+                      {shortLabel}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })}
       </div>
 
       {!hideLegend && partnerSlots && partnerSlots.length > 0 && (
