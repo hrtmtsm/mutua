@@ -123,9 +123,9 @@ export default function AvailabilityPicker({ initial = [], timezone: tzProp, onC
         </div>
       )}
       {tzConfirmed && (
-        <p className="text-xs text-stone-400 mb-4">
+        <p className="text-xs text-stone-600 mb-4">
           Times shown in {timezone}.{' '}
-          <button className="underline" onClick={() => setTzConfirmed(false)}>Change</button>
+          <button className="underline text-[#2B8FFF]" onClick={() => setTzConfirmed(false)}>Change</button>
         </p>
       )}
 
