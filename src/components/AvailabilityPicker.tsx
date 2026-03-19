@@ -8,14 +8,16 @@ import { useState, useEffect, useMemo } from 'react';
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 // Full 24 hours, 30-min steps
-const TIME_SLOTS: { label: string; minute: number }[] = [];
+const TIME_SLOTS: { label: string; shortLabel: string; minute: number }[] = [];
 for (let h = 0; h < 24; h++) {
   for (const m of [0, 30]) {
-    const h12  = h === 0 ? 12 : h > 12 ? h - 12 : h;
-    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12   = h === 0 ? 12 : h > 12 ? h - 12 : h;
+    const ampm  = h >= 12 ? 'PM' : 'AM';
+    const mStr  = String(m).padStart(2, '0');
     TIME_SLOTS.push({
-      label:  `${h12}:${String(m).padStart(2, '0')} ${ampm}`,
-      minute: h * 60 + m,
+      label:      `${h12}:${mStr} ${ampm}`,
+      shortLabel: `${h12}:${mStr}`,
+      minute:     h * 60 + m,
     });
   }
 }
@@ -132,11 +134,10 @@ export default function AvailabilityPicker({ initial = [], timezone: tzProp, onC
         {/* Day header row */}
         <div
           className="grid bg-stone-50 border-b border-stone-200"
-          style={{ gridTemplateColumns: `72px repeat(7, 1fr)` }}
+          style={{ gridTemplateColumns: `repeat(7, 1fr)` }}
         >
-          <div />
-          {DAY_LABELS.map(d => (
-            <div key={d} className="py-2.5 text-center text-xs font-semibold text-stone-500 border-l border-stone-200">
+          {DAY_LABELS.map((d, i) => (
+            <div key={d} className={`py-2.5 text-center text-xs font-semibold text-stone-500 ${i > 0 ? 'border-l border-stone-200' : ''}`}>
               {d}
             </div>
           ))}
@@ -144,7 +145,7 @@ export default function AvailabilityPicker({ initial = [], timezone: tzProp, onC
 
         {/* Time rows — scrollable */}
         <div className={fullHeight ? '' : 'overflow-y-auto max-h-80 scrollbar-thin'}>
-          {TIME_SLOTS.map(({ label, minute }, i) => {
+          {TIME_SLOTS.map(({ shortLabel, minute }, i) => {
             const isHour = minute % 60 === 0;
             const prevMinute = i > 0 ? TIME_SLOTS[i - 1].minute : null;
             const nextMinute = i < TIME_SLOTS.length - 1 ? TIME_SLOTS[i + 1].minute : null;
@@ -152,14 +153,8 @@ export default function AvailabilityPicker({ initial = [], timezone: tzProp, onC
               <div
                 key={minute}
                 className={`grid ${isHour && i > 0 ? 'border-t border-stone-200' : i > 0 ? 'border-t border-stone-100' : ''}`}
-                style={{ gridTemplateColumns: `72px repeat(7, 1fr)` }}
+                style={{ gridTemplateColumns: `repeat(7, 1fr)` }}
               >
-                {/* Time label — every row */}
-                <div className="flex items-center px-3 py-2">
-                  <span className={`text-[10px] whitespace-nowrap ${isHour ? 'text-stone-500 font-medium' : 'text-stone-300'}`}>
-                    {label}
-                  </span>
-                </div>
                 {DAY_LABELS.map((_, day) => {
                   const active   = isSelected(day, minute);
                   const partner  = isPartner(day, minute);
@@ -180,7 +175,7 @@ export default function AvailabilityPicker({ initial = [], timezone: tzProp, onC
                       onPointerDown={() => handlePointerDown(day, minute)}
                       onPointerEnter={() => handlePointerEnter(day, minute)}
                       style={active ? { borderRadius: radius } : undefined}
-                      className={`border-l border-stone-100 py-3 transition-colors touch-none ${
+                      className={`${day > 0 ? 'border-l border-stone-100' : ''} py-2.5 transition-colors touch-none flex items-center justify-center ${
                         overlap
                           ? 'bg-emerald-400/50 hover:bg-emerald-400/60'
                           : active
@@ -189,7 +184,13 @@ export default function AvailabilityPicker({ initial = [], timezone: tzProp, onC
                               ? 'bg-amber-200/50 hover:bg-amber-200/70'
                               : 'bg-stone-50 hover:bg-[#2B8FFF]/10'
                       }`}
-                    />
+                    >
+                      <span className={`text-[9px] font-medium pointer-events-none select-none ${
+                        active ? 'text-[#1060d8]' : partner ? 'text-amber-700' : 'text-stone-400'
+                      }`}>
+                        {shortLabel}
+                      </span>
+                    </button>
                   );
                 })}
               </div>
