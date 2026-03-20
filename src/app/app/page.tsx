@@ -264,7 +264,11 @@ export default function SessionPage() {
       setPartner(card);
       setMatchId(m.id);
       if (card.schedulingState === 'scheduled' && card.scheduledAt) {
-        localStorage.setItem('mutua_last_scheduled_at', card.scheduledAt);
+        localStorage.setItem('mutua_last_notification', JSON.stringify({
+          type: 'session_scheduled',
+          partnerName: card.name,
+          scheduledAt: card.scheduledAt,
+        }));
       }
       return true;
     } catch (err) {
