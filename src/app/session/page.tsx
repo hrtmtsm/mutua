@@ -917,20 +917,19 @@ export default function SessionPage() {
       {/* ── First-session walkthrough tooltip ── */}
       {showWalkthrough && (
         <div className="fixed inset-0 z-50 pointer-events-none">
-          {/* Dim everything except top-right */}
           <div className="absolute inset-0 bg-black/40 pointer-events-auto"
             onClick={() => { localStorage.setItem('mutua_seen_walkthrough', 'true'); setShowWalkthrough(false); }}
           />
-          {/* Tooltip anchored below the prompt card */}
-          <div className="absolute top-[200px] right-3 w-[260px] pointer-events-auto">
-            {/* Arrow pointing up toward prompt card */}
+
+          {/* Desktop: below prompt card, top-right, arrow up */}
+          <div className="hidden md:block absolute top-[340px] right-3 w-[260px] pointer-events-auto">
             <div className="flex justify-end pr-8">
               <div className="w-0 h-0 border-l-[8px] border-r-[8px] border-b-[10px] border-l-transparent border-r-transparent border-b-white" />
             </div>
             <div className="bg-white rounded-2xl p-4 shadow-xl space-y-3">
               <p className="text-sm font-semibold text-neutral-900">Conversation prompts</p>
               <p className="text-sm text-neutral-500 leading-relaxed">
-                Topics to help keep the conversation going. Use them if you need to — totally optional.
+                Use it as a guide — or just go with the flow.
               </p>
               <button
                 onClick={() => { localStorage.setItem('mutua_seen_walkthrough', 'true'); setShowWalkthrough(false); }}
@@ -938,6 +937,25 @@ export default function SessionPage() {
               >
                 Got it 👍
               </button>
+            </div>
+          </div>
+
+          {/* Mobile: above prompt card at bottom, arrow down */}
+          <div className="md:hidden absolute bottom-[340px] left-3 right-3 pointer-events-auto">
+            <div className="bg-white rounded-2xl p-4 shadow-xl space-y-3">
+              <p className="text-sm font-semibold text-neutral-900">Conversation prompts</p>
+              <p className="text-sm text-neutral-500 leading-relaxed">
+                Use it as a guide — or just go with the flow.
+              </p>
+              <button
+                onClick={() => { localStorage.setItem('mutua_seen_walkthrough', 'true'); setShowWalkthrough(false); }}
+                className="w-full py-2.5 btn-primary text-white font-bold rounded-xl text-sm"
+              >
+                Got it 👍
+              </button>
+            </div>
+            <div className="flex justify-center">
+              <div className="w-0 h-0 border-l-[8px] border-r-[8px] border-t-[10px] border-l-transparent border-r-transparent border-t-white" />
             </div>
           </div>
         </div>
