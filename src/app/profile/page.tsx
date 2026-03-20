@@ -9,6 +9,7 @@ import { supabase, saveProfile } from '@/lib/supabase';
 import type { UserAvailability } from '@/lib/supabase';
 import AppShell from '@/components/AppShell';
 import AvailabilityPicker from '@/components/AvailabilityPicker';
+import { Pencil, Camera, ChevronDown } from 'lucide-react';
 
 const LANG_COLORS: Record<string, string> = {
   Japanese: '#3b82f6', Korean: '#8b5cf6', Mandarin: '#ef4444',
@@ -137,11 +138,6 @@ export default function ProfilePage() {
   const avatarBg = LANG_COLORS[native] ?? '#3b82f6';
 
   const selectClass = "appearance-none text-sm font-semibold text-neutral-900 border border-stone-300 rounded-lg pl-3 pr-8 py-1.5 focus:outline-none focus:border-neutral-900 bg-stone-50 cursor-pointer";
-  const ChevronDown = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 pointer-events-none" viewBox="0 0 20 20" fill="currentColor">
-      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-    </svg>
-  );
   const SelectWrap = ({ children }: { children: React.ReactNode }) => (
     <div className="relative flex items-center">
       {children}
@@ -164,9 +160,7 @@ export default function ProfilePage() {
                 <p className="text-xs font-bold uppercase tracking-widest text-stone-400">Your identity</p>
                 {!editingIdentity ? (
                   <button onClick={() => { setDraftName(name); setEditingIdentity(true); }} title="Edit" className="text-stone-300 hover:text-neutral-900 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
-                      <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                    </svg>
+                    <Pencil className="w-3.5 h-3.5" />
                   </button>
                 ) : (
                   <button onClick={() => setEditingIdentity(false)} className="text-xs text-stone-400 hover:text-neutral-900 transition-colors">Cancel</button>
@@ -188,10 +182,7 @@ export default function ProfilePage() {
                     )}
                     {editingIdentity && (
                       <div className="absolute inset-0 rounded-2xl bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
+                        <Camera className="w-4 h-4" />
                       </div>
                     )}
                   </div>
@@ -237,9 +228,7 @@ export default function ProfilePage() {
                 <p className="text-xs font-bold uppercase tracking-widest text-stone-400">Your preferences</p>
                 {!editing ? (
                   <button onClick={() => setEditing(true)} title="Edit" className="text-stone-300 hover:text-neutral-900 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
-                      <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                    </svg>
+                    <Pencil className="w-3.5 h-3.5" />
                   </button>
                 ) : (
                   <button onClick={() => setEditing(false)} className="text-xs text-stone-400 hover:text-neutral-900 transition-colors">Cancel</button>

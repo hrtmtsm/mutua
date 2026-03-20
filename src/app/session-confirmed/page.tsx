@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import TopNav from '@/components/Sidebar';
+import { CheckCircle2 } from 'lucide-react';
 
 export default function SessionConfirmedPage() {
   const router = useRouter();
@@ -32,9 +33,7 @@ export default function SessionConfirmedPage() {
           {/* Check mark */}
           <div className="flex justify-center">
             <div className="w-16 h-16 rounded-full bg-sky-50 border border-sky-200 flex items-center justify-center">
-              <svg className="w-7 h-7 text-[#2B8FFF]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-              </svg>
+              <CheckCircle2 className="w-7 h-7 text-[#2B8FFF]" />
             </div>
           </div>
 
