@@ -28,7 +28,7 @@ export default function NotificationsPage() {
 
   return (
     <AppShell>
-      <div className="max-w-2xl mx-auto px-6 py-10">
+      <main className="flex-1 px-6 py-10 max-w-2xl mx-auto w-full">
         <h1 className="font-serif font-black text-2xl text-neutral-900 mb-6">Notifications</h1>
 
         {!notification ? (
@@ -44,7 +44,7 @@ export default function NotificationsPage() {
             </div>
           </Link>
         )}
-      </div>
+      </main>
     </AppShell>
   );
 }
