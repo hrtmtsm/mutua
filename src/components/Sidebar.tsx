@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 const NAV = [
   {
@@ -19,15 +20,26 @@ const NAV = [
     label: 'Messages',
     match: ['/messages'],
   },
-  {
-    href: '/profile',
-    label: 'Profile',
-    match: ['/profile'],
-  },
 ];
 
 export default function TopNav() {
   const pathname = usePathname();
+  const [initials, setInitials] = useState('');
+  const [hasUnread, setHasUnread] = useState(false);
+
+  useEffect(() => {
+    const raw = localStorage.getItem('mutua_profile');
+    if (raw) {
+      const profile = JSON.parse(raw);
+      const name: string = profile.name ?? '';
+      const parts = name.trim().split(' ');
+      setInitials(parts.length >= 2
+        ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+        : name.slice(0, 2).toUpperCase()
+      );
+    }
+    setHasUnread(!!localStorage.getItem('mutua_unread_notification'));
+  }, [pathname]);
 
   return (
     <header className="sticky top-0 z-20 bg-white border-b border-stone-100">
@@ -59,6 +71,29 @@ export default function TopNav() {
           })}
         </nav>
 
+        {/* Right side: notification bell + profile avatar */}
+        <div className="flex items-center gap-3 shrink-0">
+
+          {/* Bell */}
+          <Link href="/notifications" className="relative p-1.5 text-stone-400 hover:text-neutral-700 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+            {hasUnread && (
+              <span className="absolute top-1 right-1 w-2 h-2 bg-rose-500 rounded-full" />
+            )}
+          </Link>
+
+          {/* Profile avatar */}
+          <Link href="/profile" className="w-8 h-8 rounded-full bg-neutral-900 flex items-center justify-center text-white text-xs font-bold hover:opacity-80 transition-opacity">
+            {initials || (
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            )}
+          </Link>
+
+        </div>
 
       </div>
     </header>

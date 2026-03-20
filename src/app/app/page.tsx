@@ -263,6 +263,9 @@ export default function SessionPage() {
 
       setPartner(card);
       setMatchId(m.id);
+      if (card.schedulingState === 'scheduled' && card.scheduledAt) {
+        localStorage.setItem('mutua_last_scheduled_at', card.scheduledAt);
+      }
       return true;
     } catch (err) {
       console.error('loadMatch error:', err);
@@ -335,7 +338,15 @@ export default function SessionPage() {
     if (partner.schedulingState !== 'computing') return;
 
     const interval = setInterval(async () => {
+      const prevState = partner.schedulingState;
       await loadMatch(sessionId);
+      // If resolved to scheduled, set unread badge on the bell
+      setPartner(p => {
+        if (p && prevState === 'computing' && p.schedulingState === 'scheduled') {
+          localStorage.setItem('mutua_unread_notification', 'session_scheduled');
+        }
+        return p;
+      });
     }, 4000);
 
     return () => clearInterval(interval);
