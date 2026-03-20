@@ -928,9 +928,9 @@ export default function SessionPage() {
               <div className="w-0 h-0 border-l-[8px] border-r-[8px] border-b-[10px] border-l-transparent border-r-transparent border-b-white" />
             </div>
             <div className="bg-white rounded-2xl p-4 shadow-xl space-y-3">
-              <p className="text-sm font-semibold text-neutral-900">Your guide, not a script</p>
+              <p className="text-sm font-semibold text-neutral-900">Conversation prompts</p>
               <p className="text-sm text-neutral-500 leading-relaxed">
-                Check off tasks as you go and switch languages halfway so you both get equal practice.
+                Topics to help keep the conversation going. Use them if you need to — totally optional.
               </p>
               <button
                 onClick={() => { localStorage.setItem('mutua_seen_walkthrough', 'true'); setShowWalkthrough(false); }}
