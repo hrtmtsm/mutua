@@ -162,48 +162,53 @@ function PartnerTile({
 // ── SelfPIP ───────────────────────────────────────────────────────────────────
 
 function SelfPIP({
-  cameraOn, videoRef, isSpeaking, haloRef, positionClass,
+  cameraOn, videoRef, isSpeaking, haloRef, positionClass, avatarUrl, initials,
 }: {
   cameraOn:  boolean;
   videoRef:  React.RefObject<HTMLVideoElement>;
   isSpeaking: boolean;
   haloRef:   React.RefObject<HTMLDivElement>;
   positionClass?: string;
+  avatarUrl?: string | null;
+  initials?: string;
 }) {
   return (
     <div
-      className={`${positionClass ?? 'absolute bottom-4 right-3 z-10'} w-[118px] rounded-2xl overflow-hidden`}
+      className={`${positionClass ?? 'absolute bottom-4 right-3 z-10'} w-[140px] rounded-2xl overflow-hidden`}
       style={{ aspectRatio: '3/4' }}
     >
       {cameraOn ? (
         <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover" />
       ) : (
         <div className="relative w-full h-full flex items-center justify-center overflow-hidden bg-[#2B8FFF]">
-          {/* Blurred profile background — same treatment as partner tile */}
-          <div
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#2B8FFF] flex items-center justify-center"
-            style={{
-              width: '200%',
-              aspectRatio: '1',
-              filter: 'blur(22px) saturate(1.5) brightness(0.82)',
-            }}
-          >
-            <span
-              className="font-black text-white select-none pointer-events-none"
-              style={{ fontSize: '60px', lineHeight: 1, opacity: 0.9 }}
-            >
-              YO
-            </span>
-          </div>
-          {/* Speaking halo — driven directly by mic volume via ref */}
+          {/* Blurred profile background */}
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt=""
+              aria-hidden
+              className="absolute inset-0 w-full h-full object-cover"
+              style={{ filter: 'blur(22px) saturate(1.5) brightness(0.8)', transform: 'scale(1.1)' }}
+            />
+          ) : (
+            <div
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#2B8FFF] flex items-center justify-center"
+              style={{ width: '200%', aspectRatio: '1', filter: 'blur(22px) saturate(1.5) brightness(0.82)' }}
+            />
+          )}
+          {/* Speaking halo */}
           <div
             ref={haloRef}
             className="absolute w-16 h-16 rounded-full bg-white/30"
             style={{ opacity: 0, transform: 'scale(1)', transformOrigin: 'center', willChange: 'transform, opacity' }}
           />
           {/* Frosted avatar */}
-          <div className="relative w-12 h-12 rounded-full bg-white/20 backdrop-blur-md ring-2 ring-white/40 flex items-center justify-center font-bold text-white text-sm select-none">
-            You
+          <div className="relative w-16 h-16 rounded-full overflow-hidden ring-2 ring-white/40 bg-white/20 backdrop-blur-md flex items-center justify-center font-bold text-white text-base select-none">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <span>{initials ?? 'You'}</span>
+            )}
           </div>
         </div>
       )}
@@ -238,6 +243,8 @@ export default function SessionPage() {
   const [turnSwitched,         setTurnSwitched]         = useState(false);
   const [difficulty,           setDifficulty]           = useState(1);
 
+  const [myAvatarUrl,     setMyAvatarUrl]     = useState<string | null>(null);
+  const [myInitials,      setMyInitials]      = useState('');
   const [youSpeaking,     setYouSpeaking]     = useState(false);
   const [isOnline,        setIsOnline]        = useState(true);
   const [micBlocked,      setMicBlocked]      = useState(false);
@@ -255,6 +262,19 @@ export default function SessionPage() {
   const promptChangedAtRef = useRef<number>(Date.now());
 
   const [pool, setPool] = useState<Pools>(() => buildFallbackPool(''));
+
+  useEffect(() => {
+    const rawProfile = localStorage.getItem('mutua_profile');
+    if (rawProfile) {
+      const p = JSON.parse(rawProfile);
+      if (p.avatar_url) setMyAvatarUrl(p.avatar_url);
+      const name: string = p.name ?? '';
+      const parts = name.trim().split(' ');
+      setMyInitials(parts.length >= 2
+        ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+        : name.slice(0, 2).toUpperCase());
+    }
+  }, []);
 
   useEffect(() => {
     const stored = localStorage.getItem('mutua_match');
@@ -708,16 +728,16 @@ export default function SessionPage() {
             {/* Mobile: SelfPIP + prompt card stacked at bottom-right */}
             {!chatOpen && (
               <div className="md:hidden absolute bottom-3 left-3 right-3 z-10 flex flex-col items-end gap-2">
-                <SelfPIP cameraOn={cameraOn} videoRef={videoRef} isSpeaking={youSpeaking} haloRef={selfHaloRef} positionClass="relative" />
+                <SelfPIP cameraOn={cameraOn} videoRef={videoRef} isSpeaking={youSpeaking} haloRef={selfHaloRef} positionClass="relative" avatarUrl={myAvatarUrl} initials={myInitials} />
                 <div className="w-full">{promptCard}</div>
               </div>
             )}
             {chatOpen && (
-              <SelfPIP cameraOn={cameraOn} videoRef={videoRef} isSpeaking={youSpeaking} haloRef={selfHaloRef} positionClass="md:hidden absolute bottom-4 right-3 z-10" />
+              <SelfPIP cameraOn={cameraOn} videoRef={videoRef} isSpeaking={youSpeaking} haloRef={selfHaloRef} positionClass="md:hidden absolute bottom-4 right-3 z-10" avatarUrl={myAvatarUrl} initials={myInitials} />
             )}
 
             {/* Desktop: SelfPIP absolute bottom-right, prompt card top-right */}
-            <SelfPIP cameraOn={cameraOn} videoRef={videoRef} isSpeaking={youSpeaking} haloRef={selfHaloRef} positionClass="hidden md:block absolute bottom-4 right-3 z-10" />
+            <SelfPIP cameraOn={cameraOn} videoRef={videoRef} isSpeaking={youSpeaking} haloRef={selfHaloRef} positionClass="hidden md:block absolute bottom-4 right-3 z-10" avatarUrl={myAvatarUrl} initials={myInitials} />
             {!chatOpen && (
               <div className="hidden md:block absolute top-16 right-3 w-[300px] z-10">
                 {promptCard}
