@@ -4,11 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Bell, User } from 'lucide-react';
-const LANG_COLORS: Record<string, string> = {
-  Japanese: '#3b82f6', Korean: '#8b5cf6', Mandarin: '#ef4444',
-  Spanish: '#f59e0b', French: '#10b981', English: '#6366f1',
-  Portuguese: '#f97316', German: '#64748b', Italian: '#ec4899', Arabic: '#14b8a6',
-};
+import { LANG_AVATAR_COLOR } from '@/lib/constants';
 
 const NAV = [
   {
@@ -45,7 +41,7 @@ export default function TopNav() {
         : name.slice(0, 2).toUpperCase()
       );
       const lang: string = profile.native_language ?? '';
-      setAvatarBg(LANG_COLORS[lang] ?? '#171717');
+      setAvatarBg(LANG_AVATAR_COLOR[lang] ?? '#171717');
     }
     setHasUnread(!!localStorage.getItem('mutua_unread_notification'));
   }, [pathname]);

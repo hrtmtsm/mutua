@@ -4,18 +4,13 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { UserProfile } from '@/lib/types';
 import { LANGUAGES, GOALS, COMM_STYLES, FREQUENCY, type Language, type Goal, type CommStyle, type Frequency } from '@/lib/types';
-import { LANG_FLAGS } from '@/lib/constants';
+import { LANG_FLAGS, LANG_AVATAR_COLOR } from '@/lib/constants';
 import { supabase, saveProfile } from '@/lib/supabase';
 import type { UserAvailability } from '@/lib/supabase';
 import AppShell from '@/components/AppShell';
 import AvailabilityPicker from '@/components/AvailabilityPicker';
 import { Pencil, Camera, ChevronDown } from 'lucide-react';
 
-const LANG_COLORS: Record<string, string> = {
-  Japanese: '#3b82f6', Korean: '#8b5cf6', Mandarin: '#ef4444',
-  Spanish: '#f59e0b', French: '#10b981', English: '#6366f1',
-  Portuguese: '#f97316', German: '#64748b', Italian: '#ec4899', Arabic: '#14b8a6',
-};
 
 export default function ProfilePage() {
   const router     = useRouter();
@@ -135,7 +130,7 @@ export default function ProfilePage() {
   };
 
   const initials = name.trim().slice(0, 2).toUpperCase() || '?';
-  const avatarBg = LANG_COLORS[native] ?? '#3b82f6';
+  const avatarBg = LANG_AVATAR_COLOR[native] ?? '#3b82f6';
 
   const selectClass = "appearance-none text-sm font-semibold text-neutral-900 border border-stone-300 rounded-lg pl-3 pr-8 py-1.5 focus:outline-none focus:border-neutral-900 bg-stone-50 cursor-pointer";
   const SelectWrap = ({ children }: { children: React.ReactNode }) => (
@@ -147,7 +142,7 @@ export default function ProfilePage() {
 
   return (
     <AppShell>
-      <main className="flex-1 px-6 py-8 max-w-lg mx-auto w-full space-y-5">
+      <main className="flex-1 px-6 py-10 max-w-2xl mx-auto w-full space-y-5">
 
         <h1 className="font-serif font-black text-2xl text-neutral-900">Profile</h1>
 

@@ -69,8 +69,8 @@ export default function HistoryPage() {
 
   return (
     <AppShell>
-      <div className="max-w-lg mx-auto px-5 py-8">
-        <h1 className="font-black text-2xl text-neutral-900 mb-6">Practice history</h1>
+      <div className="max-w-2xl mx-auto px-6 py-10">
+        <h1 className="font-serif font-black text-2xl text-neutral-900 mb-6">History</h1>
 
         {partners.length === 0 ? (
           <p className="text-sm text-neutral-400 text-center mt-20">

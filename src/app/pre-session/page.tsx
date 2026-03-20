@@ -3,26 +3,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { SavedPartner } from '@/lib/types';
-import { LANG_FLAGS } from '@/lib/constants';
+import { LANG_FLAGS, LANG_AVATAR_COLOR } from '@/lib/constants';
 import { getSessionStarters } from '@/lib/prompts';
 import TopNav from '@/components/Sidebar';
 import { Mic, MicOff, Video, VideoOff } from 'lucide-react';
 
-const LANG_COLORS: Record<string, string> = {
-  Japanese:   '#3b82f6',
-  Korean:     '#8b5cf6',
-  Mandarin:   '#ef4444',
-  Spanish:    '#f59e0b',
-  French:     '#10b981',
-  English:    '#6366f1',
-  Portuguese: '#f97316',
-  German:     '#64748b',
-  Italian:    '#ec4899',
-  Arabic:     '#14b8a6',
-};
-
 function Avatar({ name, lang, size = 'lg' }: { name: string; lang: string; size?: 'sm' | 'lg' }) {
-  const bg = LANG_COLORS[lang] ?? '#3b82f6';
+  const bg = LANG_AVATAR_COLOR[lang] ?? '#3b82f6';
   const cls = size === 'lg' ? 'w-14 h-14 text-xl' : 'w-10 h-10 text-sm';
   return (
     <div style={{ backgroundColor: bg }} className={`${cls} rounded-2xl flex items-center justify-center font-black text-white shrink-0`}>

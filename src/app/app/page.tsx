@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase, getMatchBySessionId, type Match, type SchedulingState } from '@/lib/supabase';
-import { LANG_FLAGS } from '@/lib/constants';
+import { LANG_FLAGS, LANG_AVATAR_COLOR } from '@/lib/constants';
 import AppShell from '@/components/AppShell';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -25,21 +25,8 @@ interface PartnerCard {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-const LANG_COLORS: Record<string, string> = {
-  Japanese:   '#3b82f6',
-  Korean:     '#8b5cf6',
-  Mandarin:   '#ef4444',
-  Spanish:    '#f59e0b',
-  French:     '#10b981',
-  English:    '#6366f1',
-  Portuguese: '#f97316',
-  German:     '#64748b',
-  Italian:    '#ec4899',
-  Arabic:     '#14b8a6',
-};
-
 function Avatar({ name, lang, size = 'md' }: { name: string; lang: string; size?: 'sm' | 'md' }) {
-  const bg  = LANG_COLORS[lang] ?? '#3b82f6';
+  const bg  = LANG_AVATAR_COLOR[lang] ?? '#3b82f6';
   const cls = size === 'sm' ? 'w-10 h-10 text-sm' : 'w-12 h-12 text-base';
   return (
     <div

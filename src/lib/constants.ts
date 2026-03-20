@@ -42,14 +42,14 @@ export const LANG_FLAGS: Record<string, string> = {
 
 // Hex values so they work as inline styles (avoids Tailwind JIT detection issues)
 export const LANG_AVATAR_COLOR: Record<string, string> = {
-  English:    '#3B82F6',
-  Japanese:   '#EF4444',
-  Spanish:    '#EAB308',
-  French:     '#2563EB',
-  Korean:     '#8B5CF6',
-  Mandarin:   '#DC2626',
-  Portuguese: '#10B981',
-  German:     '#64748B',
-  Italian:    '#22C55E',
-  Arabic:     '#F59E0B',
+  Japanese:   '#3b82f6',
+  Korean:     '#8b5cf6',
+  Mandarin:   '#ef4444',
+  Spanish:    '#f59e0b',
+  French:     '#10b981',
+  English:    '#6366f1',
+  Portuguese: '#f97316',
+  German:     '#64748b',
+  Italian:    '#ec4899',
+  Arabic:     '#14b8a6',
 };
