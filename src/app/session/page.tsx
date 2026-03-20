@@ -762,10 +762,10 @@ export default function SessionPage() {
       {/* ── Content: participant area + right sidebar ── */}
       <div className="flex-1 flex flex-col md:flex-row min-h-0">
 
-        {/* ── Participant area ── */}
-        <div className={`flex flex-col ${chatOpen ? 'h-[38%] flex-none md:h-auto md:flex-1' : 'flex-1'}`}>
+        {/* ── Participant area: 50/50 split ── */}
+        <div className={`flex flex-col md:flex-row ${chatOpen ? 'h-[55%] flex-none md:h-auto md:flex-1' : 'flex-1'}`}>
 
-          {/* Partner tile + overlays — fills remaining space */}
+          {/* Partner pane */}
           <div className="relative flex-1 overflow-hidden">
             <PartnerTile
               initials={partnerName.trim().slice(0, 2).toUpperCase()}
@@ -775,13 +775,12 @@ export default function SessionPage() {
               videoRef={partnerVideoRef}
               cameraOn={partnerCameraOn}
             />
-
-            {/* Top bar — transparent overlay */}
-            <div className="absolute top-0 left-0 right-0 z-10 px-5 py-4 flex items-center justify-between"
+            {/* Partner name bar */}
+            <div className="absolute top-0 left-0 right-0 z-10 px-4 py-3 flex items-center justify-between"
               style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.35) 0%, transparent 100%)' }}>
               <div>
                 <div className="flex items-center gap-2">
-                  <p className="font-bold text-white text-base leading-tight">{partnerName}</p>
+                  <p className="font-bold text-white text-sm leading-tight">{partnerName}</p>
                   {partnerMuted && (
                     <span className="flex items-center gap-1 bg-black/40 backdrop-blur-sm rounded-full px-2 py-0.5">
                       <MicOff className="w-3 h-3 text-white/80" />
@@ -793,24 +792,50 @@ export default function SessionPage() {
                   {LANG_FLAGS[partner.native_language]} Native {partner.native_language}
                 </p>
               </div>
-              <span className="font-mono text-sm text-white/50 tabular-nums">{formatTime(seconds)}</span>
+              <span className="font-mono text-xs text-white/50 tabular-nums">{formatTime(seconds)}</span>
             </div>
-
-            {/* Mobile: SelfPIP + prompt card stacked at bottom-right */}
+            {/* Prompt card */}
             {!chatOpen && (
-              <div className="md:hidden absolute bottom-3 left-3 right-3 z-10 flex flex-col items-end gap-2">
-                <SelfPIP cameraOn={cameraOn} videoRef={videoRef} isSpeaking={youSpeaking} haloRef={selfHaloRef} positionClass="relative" avatarUrl={myAvatarUrl} initials={myInitials} avatarBg={LANG_AVATAR_COLOR[myNativeLang] ?? '#2B8FFF'} />
-                <div className="w-full">{promptCard}</div>
+              <div className="absolute top-14 right-2 w-[260px] z-10 hidden md:block">
+                {promptCard}
               </div>
             )}
-            {chatOpen && (
-              <SelfPIP cameraOn={cameraOn} videoRef={videoRef} isSpeaking={youSpeaking} haloRef={selfHaloRef} positionClass="md:hidden absolute bottom-4 right-3 z-10" avatarUrl={myAvatarUrl} initials={myInitials} avatarBg={LANG_AVATAR_COLOR[myNativeLang] ?? '#2B8FFF'} />
-            )}
+          </div>
 
-            {/* Desktop: SelfPIP absolute bottom-right, prompt card top-right */}
-            <SelfPIP cameraOn={cameraOn} videoRef={videoRef} isSpeaking={youSpeaking} haloRef={selfHaloRef} positionClass="hidden md:block absolute bottom-4 right-3 z-10" avatarUrl={myAvatarUrl} initials={myInitials} avatarBg={LANG_AVATAR_COLOR[myNativeLang] ?? '#2B8FFF'} />
+          {/* Self pane */}
+          <div className="relative flex-1 overflow-hidden border-t border-white/10 md:border-t-0 md:border-l md:border-white/10">
+            {/* Video always mounted */}
+            <video
+              ref={videoRef}
+              autoPlay
+              muted
+              playsInline
+              className={`absolute inset-0 w-full h-full object-cover ${cameraOn ? '' : 'hidden'}`}
+            />
+            {!cameraOn && (
+              <div className="absolute inset-0 flex items-center justify-center overflow-hidden"
+                style={{ backgroundColor: LANG_AVATAR_COLOR[myNativeLang] ?? '#2B8FFF' }}>
+                {myAvatarUrl ? (
+                  <img src={myAvatarUrl} alt="" aria-hidden className="absolute inset-0 w-full h-full object-cover"
+                    style={{ filter: 'blur(28px) saturate(1.5) brightness(0.8)', transform: 'scale(1.1)' }} />
+                ) : (
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full flex items-center justify-center"
+                    style={{ width: '100vmax', height: '100vmax', backgroundColor: LANG_AVATAR_COLOR[myNativeLang] ?? '#2B8FFF', filter: 'blur(32px) saturate(1.5) brightness(0.82)' }} />
+                )}
+                <div ref={selfHaloRef} className="absolute w-24 h-24 rounded-full bg-white/30"
+                  style={{ opacity: 0, transform: 'scale(1)', transformOrigin: 'center', willChange: 'transform, opacity' }} />
+                <div className="relative w-20 h-20 rounded-full overflow-hidden ring-2 ring-white/40 bg-white/20 backdrop-blur-md flex items-center justify-center font-bold text-white text-xl select-none">
+                  {myAvatarUrl ? <img src={myAvatarUrl} alt="" className="w-full h-full object-cover" /> : <span>{myInitials || 'You'}</span>}
+                </div>
+              </div>
+            )}
+            {/* "You" label */}
+            <div className="absolute bottom-3 left-0 right-0 flex justify-center pointer-events-none z-10">
+              <span className="text-[11px] font-semibold text-white/80 bg-black/25 backdrop-blur-sm px-2 py-0.5 rounded-full">You</span>
+            </div>
+            {/* Mobile prompt card */}
             {!chatOpen && (
-              <div className="hidden md:block absolute top-16 right-3 w-[300px] z-10">
+              <div className="md:hidden absolute bottom-10 left-2 right-2 z-10">
                 {promptCard}
               </div>
             )}
