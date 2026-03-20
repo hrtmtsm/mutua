@@ -763,7 +763,7 @@ export default function SessionPage() {
       <div className="flex-1 flex flex-col md:flex-row min-h-0">
 
         {/* ── Participant area: 50/50 split ── */}
-        <div className={`flex flex-col md:flex-row ${chatOpen ? 'h-[55%] flex-none md:h-auto md:flex-1' : 'flex-1'}`}>
+        <div className={`relative flex flex-col md:flex-row ${chatOpen ? 'h-[55%] flex-none md:h-auto md:flex-1' : 'flex-1'}`}>
 
           {/* Partner pane */}
           <div className="relative flex-1 overflow-hidden">
@@ -794,13 +794,14 @@ export default function SessionPage() {
               </div>
               <span className="font-mono text-xs text-white/50 tabular-nums">{formatTime(seconds)}</span>
             </div>
-            {/* Prompt card */}
-            {!chatOpen && (
-              <div className="absolute top-14 right-2 w-[260px] z-10 hidden md:block">
-                {promptCard}
-              </div>
-            )}
           </div>
+
+          {/* Prompt card — top-right over entire participant area */}
+          {!chatOpen && (
+            <div className="absolute top-14 right-3 w-[300px] z-20 hidden md:block">
+              {promptCard}
+            </div>
+          )}
 
           {/* Self pane */}
           <div className="relative flex-1 overflow-hidden border-t border-white/10 md:border-t-0 md:border-l md:border-white/10">
