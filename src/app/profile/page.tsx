@@ -202,18 +202,18 @@ export default function ProfilePage() {
     setAvatarUrl(localUrl);
 
     setUploading(true);
-    const path = `${profile.session_id}.jpg`;
-    const file = new File([blob], path, { type: 'image/jpeg' });
-    const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true });
-    if (error) {
-      console.error('Avatar upload error:', error);
-    } else {
-      const { data } = supabase.storage.from('avatars').getPublicUrl(path);
-      const url = data.publicUrl + '?t=' + Date.now();
-      setAvatarUrl(url); // replace blob URL with real persistent URL
-      await supabase.from('profiles').update({ avatar_url: url }).eq('session_id', profile.session_id);
+    const formData = new FormData();
+    formData.append('file', new File([blob], 'avatar.jpg', { type: 'image/jpeg' }));
+    formData.append('sessionId', profile.session_id);
+
+    const res = await fetch('/api/upload-avatar', { method: 'POST', body: formData });
+    if (res.ok) {
+      const { url } = await res.json();
+      setAvatarUrl(url);
       const stored = localStorage.getItem('mutua_profile');
       if (stored) localStorage.setItem('mutua_profile', JSON.stringify({ ...JSON.parse(stored), avatar_url: url }));
+    } else {
+      console.error('Avatar upload failed:', await res.text());
     }
     setUploading(false);
   };
@@ -294,11 +294,7 @@ export default function ProfilePage() {
                   <button className="block w-16 h-16 rounded-2xl overflow-hidden cursor-pointer group" onClick={handleAvatarClick}>
                     {avatarUrl ? (
                       <img src={avatarUrl} alt={name} className="w-full h-full object-cover"
-                        onError={() => {
-                          setAvatarUrl('');
-                          const s = localStorage.getItem('mutua_profile');
-                          if (s) localStorage.setItem('mutua_profile', JSON.stringify({ ...JSON.parse(s), avatar_url: '' }));
-                        }}
+                        onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
                       />
                     ) : (
                       <div style={{ backgroundColor: avatarBg }} className="w-full h-full flex items-center justify-center font-black text-white text-xl">
