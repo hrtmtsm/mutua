@@ -82,7 +82,7 @@ export default function HistoryPage() {
             {partners.map(p => (
               <div
                 key={p.partnerId || p.partnerName}
-                className="bg-white border border-neutral-200 rounded-2xl px-5 py-4 space-y-3"
+                className="bg-neutral-100/80 rounded-3xl px-5 py-4 space-y-3"
               >
                 {/* Partner info */}
                 <div className="flex items-start justify-between">
