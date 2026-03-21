@@ -204,7 +204,7 @@ export default function PartnerProfilePage() {
         <div className="px-6 pb-8 flex flex-col items-center text-center gap-3">
           <Avatar name={partner.name} lang={partner.nativeLang} />
           <div>
-            <h1 className="font-serif font-bold text-2xl text-[#171717]">{partner.name}</h1>
+            <h1 className="font-serif font-bold text-4xl text-[#171717] leading-tight">{partner.name}</h1>
             <p className="text-sm text-stone-400 mt-1">{nativeFlag} {partner.nativeLang} · Native</p>
           </div>
         </div>

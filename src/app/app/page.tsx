@@ -110,7 +110,7 @@ function SchedulingCard({
         <div className="px-6 pt-6 pb-5 flex items-end gap-4">
           <Avatar name={partner.name} lang={partner.nativeLang} size="lg" />
           <div className="flex-1 min-w-0 pb-0.5">
-            <p className="font-serif font-bold text-[#171717] text-xl leading-tight">{partner.name}</p>
+            <p className="font-serif font-bold text-[#171717] text-2xl leading-tight">{partner.name}</p>
             <p className="text-sm text-stone-500 mt-0.5">
               {nativeFlag} {partner.nativeLang} · learning {learningFlag} {partner.learningLang}
             </p>
@@ -363,7 +363,7 @@ export default function SessionPage() {
 
         {/* Context header */}
         <div>
-          <h1 className="font-serif font-bold text-2xl text-[#171717]">Your exchange</h1>
+          <h1 className="font-serif font-bold text-4xl text-[#171717] leading-tight">Your exchange</h1>
           <p className="text-sm text-stone-400 mt-1">
             {loading ? '' : partner
               ? 'You have an active language partner. Confirm your first session to get started.'
