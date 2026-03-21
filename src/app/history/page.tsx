@@ -71,7 +71,7 @@ export default function HistoryPage() {
   return (
     <AppShell>
       <main className="flex-1 px-6 py-10 max-w-2xl mx-auto w-full">
-        <h1 className="font-serif font-black text-2xl text-neutral-900 mb-6">History</h1>
+        <h1 className="font-serif font-black text-2xl text-neutral-600 mb-6">History</h1>
 
         {partners.length === 0 ? (
           <p className="text-sm text-neutral-400 text-center mt-20">
@@ -94,7 +94,7 @@ export default function HistoryPage() {
                 {/* Partner info */}
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="font-bold text-neutral-900 text-base">{p.partnerName}</p>
+                    <p className="font-bold text-neutral-600 text-base">{p.partnerName}</p>
                     {p.sessionCount > 1 ? (
                       <p className="text-xs text-neutral-400 mt-0.5">
                         Practiced together {p.sessionCount} times
@@ -140,7 +140,7 @@ export default function HistoryPage() {
       {modalPartner && (
         <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 px-4 pb-6 sm:pb-0">
           <div className="bg-stone-50 border border-stone-200 rounded-2xl px-5 py-5 w-full max-w-sm">
-            <p className="font-bold text-neutral-900 mb-1">Keep the momentum going</p>
+            <p className="font-bold text-neutral-600 mb-1">Keep the momentum going</p>
             <p className="text-sm text-neutral-500 leading-relaxed">
               We'll match you with {modalPartner} again using your current schedule.
             </p>

@@ -108,7 +108,7 @@ function SchedulingCard({
       <div className="px-6 pt-5 pb-4 flex items-center gap-4">
         <Avatar name={partner.name} lang={partner.nativeLang} />
         <div className="flex-1 min-w-0">
-          <p className="font-bold text-neutral-900 text-lg leading-tight">{partner.name}</p>
+          <p className="font-bold text-neutral-600 text-lg leading-tight">{partner.name}</p>
         </div>
         {s === 'scheduled' && (
           <span className="px-2.5 py-1 bg-green-50 border border-green-200 text-xs font-semibold text-green-700 rounded-full shrink-0">
@@ -136,11 +136,11 @@ function SchedulingCard({
       <div className="px-6 pb-4 grid grid-cols-2 gap-3">
         <div className="bg-white rounded-xl px-4 py-3">
           <p className="text-xs font-bold uppercase tracking-widest text-stone-400 mb-1">Native</p>
-          <p className="font-bold text-neutral-900 text-base">{nativeFlag} {partner.nativeLang}</p>
+          <p className="font-bold text-neutral-600 text-base">{nativeFlag} {partner.nativeLang}</p>
         </div>
         <div className="bg-white rounded-xl px-4 py-3">
           <p className="text-xs font-bold uppercase tracking-widest text-stone-400 mb-1">Practicing</p>
-          <p className="font-bold text-neutral-900 text-base">{learningFlag} {partner.learningLang}</p>
+          <p className="font-bold text-neutral-600 text-base">{learningFlag} {partner.learningLang}</p>
         </div>
       </div>
 
@@ -174,7 +174,7 @@ function SchedulingCard({
         {/* Waiting on partner */}
         {waitingOnPartner && (
           <p className="text-sm text-stone-500">
-            You're all set. Waiting for <span className="font-semibold text-neutral-900">{partner.name}</span> to share their availability.
+            You're all set. Waiting for <span className="font-semibold text-neutral-600">{partner.name}</span> to share their availability.
           </p>
         )}
 
@@ -205,12 +205,12 @@ function SchedulingCard({
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <p className="text-xs text-stone-400">We found your first session</p>
-              <p className="font-semibold text-neutral-900 text-sm mt-0.5">
+              <p className="font-semibold text-neutral-600 text-sm mt-0.5">
                 {fmtScheduledAt(partner.scheduledAt)}
               </p>
             </div>
             <div className="flex items-center gap-3">
-              <button onClick={onReschedule} className="text-sm text-stone-400 hover:text-neutral-900 font-medium transition-colors">
+              <button onClick={onReschedule} className="text-sm text-stone-400 hover:text-neutral-600 font-medium transition-colors">
                 Reschedule
               </button>
               <button
@@ -402,7 +402,7 @@ export default function SessionPage() {
     <AppShell>
       <main className="flex-1 px-6 py-10 max-w-2xl mx-auto w-full space-y-8">
 
-        <h1 className="font-serif font-black text-2xl text-neutral-900">Session</h1>
+        <h1 className="font-serif font-black text-2xl text-neutral-600">Session</h1>
 
         {loading ? (
           <p className="text-sm text-stone-400">Loading...</p>
@@ -434,9 +434,9 @@ export default function SessionPage() {
               </div>
             </div>
             <div className="space-y-1">
-              <p className="font-bold text-neutral-900 text-lg">Session confirmed</p>
+              <p className="font-bold text-neutral-600 text-lg">Session confirmed</p>
               <p className="text-sm text-stone-500">
-                Your first session with <span className="font-semibold text-neutral-900">{confirmed.name}</span>
+                Your first session with <span className="font-semibold text-neutral-600">{confirmed.name}</span>
               </p>
               <p className="font-bold text-[#2B8FFF] text-base">{confirmed.time}</p>
             </div>
