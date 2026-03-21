@@ -44,7 +44,7 @@ body {
 
 @layer components {
   .btn-primary {
-    font-family: 'Satoshi', sans-serif !important;
+    font-family: var(--font-heading), sans-serif !important;
     background: linear-gradient(160deg, #60bdff 0%, #2B8FFF 40%, #1060d8 100%);
     box-shadow: 0 4px 14px rgba(43, 143, 255, 0.35), inset 0 1px 0 rgba(255,255,255,0.2);
     transition: filter 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
