@@ -258,8 +258,7 @@ export default function ProfilePage() {
 
               <div className="flex items-center gap-5">
                 <div className="relative shrink-0">
-                  <div className={`block w-16 h-16 rounded-2xl overflow-hidden ${editingIdentity ? 'cursor-pointer group' : ''}`}
-                       onClick={editingIdentity ? handleAvatarClick : undefined}>
+                  <button className="block w-16 h-16 rounded-2xl overflow-hidden cursor-pointer group" onClick={handleAvatarClick}>
                     {avatarUrl ? (
                       <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
                     ) : (
@@ -267,12 +266,10 @@ export default function ProfilePage() {
                         {initials}
                       </div>
                     )}
-                    {editingIdentity && (
-                      <div className="absolute inset-0 rounded-2xl bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Camera className="w-4 h-4" />
-                      </div>
-                    )}
-                  </div>
+                    <div className="absolute inset-0 rounded-2xl bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Camera className="w-4 h-4 text-white" />
+                    </div>
+                  </button>
                   {uploading && (
                     <div className="absolute inset-0 rounded-2xl bg-white/70 flex items-center justify-center">
                       <div className="w-4 h-4 border-2 border-[#2B8FFF] border-t-transparent rounded-full animate-spin" />
