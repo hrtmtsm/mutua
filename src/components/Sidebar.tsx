@@ -49,7 +49,7 @@ function useNavState() {
   return { pathname, initials, avatarBg, hasUnread };
 }
 
-function MessagesPanel() {
+function MessagesPanel({ onOpen }: { onOpen: () => void }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [matchId, setMatchId]   = useState<string | null>(null);
   const [myId, setMyId]         = useState<string | null>(null);
@@ -102,12 +102,12 @@ function MessagesPanel() {
   const last = messages[messages.length - 1];
   return (
     <div className="divide-y divide-stone-100">
-      <div className="px-4 py-3">
+      <button onClick={onOpen} className="w-full px-4 py-3 text-left hover:bg-stone-50 transition-colors">
         <p className="text-xs font-semibold text-neutral-900 mb-0.5">{partnerName}</p>
         <p className="text-xs text-stone-400 truncate">
           {last.sender_id === myId ? 'You: ' : ''}{last.text}
         </p>
-      </div>
+      </button>
     </div>
   );
 }
@@ -205,7 +205,11 @@ export default function TopNav() {
                   </p>
                 </div>
               ) : (
-                <MessagesPanel />
+                <MessagesPanel onOpen={() => {
+                  setInboxOpen(false);
+                  localStorage.setItem('mutua_open_message', '1');
+                  router.push('/app');
+                }} />
               )}
             </div>
           )}

@@ -421,6 +421,12 @@ export default function SessionPage() {
       const found = await loadMatch(sid);
       if (!found) loadFromLocalStorage();
 
+      // Auto-open message modal if coming from notification dropdown
+      if (localStorage.getItem('mutua_open_message')) {
+        localStorage.removeItem('mutua_open_message');
+        setProfileOpen(true);
+      }
+
       // If user just saved availability, optimistically show computing state
       // so they don't see stale data while the server catches up
       if (localStorage.getItem('mutua_just_saved_availability')) {
