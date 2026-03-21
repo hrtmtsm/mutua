@@ -70,7 +70,7 @@ export default function HistoryPage() {
 
   return (
     <AppShell>
-      <main className="flex-1 px-6 py-10 max-w-2xl mx-auto w-full">
+      <main className="flex-1 px-6 py-10 max-w-2xl mx-auto w-full bg-[#f4f4f4]">
         <h1 className="font-serif font-black text-2xl text-neutral-900 mb-6">History</h1>
 
         {partners.length === 0 ? (
@@ -82,7 +82,14 @@ export default function HistoryPage() {
             {partners.map(p => (
               <div
                 key={p.partnerId || p.partnerName}
-                className="bg-neutral-100/80 rounded-3xl px-5 py-4 space-y-3"
+                className="px-5 py-4 space-y-3" style={{
+                  background: 'linear-gradient(#ffffff4d 0%, #f8f8f899 100%)',
+                  backdropFilter: 'blur(5px)',
+                  WebkitBackdropFilter: 'blur(5px)',
+                  border: '2px solid #f8f8f8',
+                  borderRadius: '30px',
+                  boxShadow: 'inset 10px -9px 22px 4px #0000000d',
+                }}
               >
                 {/* Partner info */}
                 <div className="flex items-start justify-between">

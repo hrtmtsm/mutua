@@ -95,7 +95,14 @@ function SchedulingCard({
     (s === 'pending_b' && partner.iAmA);
 
   return (
-    <div className="bg-neutral-100/80 rounded-3xl overflow-hidden">
+    <div className="overflow-hidden" style={{
+      background: 'linear-gradient(#ffffff4d 0%, #f8f8f899 100%)',
+      backdropFilter: 'blur(5px)',
+      WebkitBackdropFilter: 'blur(5px)',
+      border: '2px solid #f8f8f8',
+      borderRadius: '30px',
+      boxShadow: 'inset 10px -9px 22px 4px #0000000d',
+    }}>
 
       {/* Header */}
       <div className="px-6 pt-5 pb-4 flex items-center gap-4">
@@ -393,7 +400,7 @@ export default function SessionPage() {
 
   return (
     <AppShell>
-      <main className="flex-1 px-6 py-10 max-w-2xl mx-auto w-full space-y-8">
+      <main className="flex-1 px-6 py-10 max-w-2xl mx-auto w-full space-y-8 bg-[#f4f4f4]">
 
         <h1 className="font-serif font-black text-2xl text-neutral-900">Session</h1>
 
