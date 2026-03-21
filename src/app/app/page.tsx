@@ -216,12 +216,11 @@ function SchedulingCard({
           <button onClick={onViewProfile} className="text-left">
             <p className="font-bold text-neutral-500 text-lg leading-tight hover:underline">{partner.name}</p>
           </button>
+          <p className="text-xs text-stone-400 mt-0.5">{nativeFlag} {partner.nativeLang} · Native</p>
           <div className="flex flex-wrap gap-1.5 mt-2">
+            <span className="text-xs font-semibold text-stone-400 self-center">Learning</span>
             <span className="px-2.5 py-1 bg-stone-100 border border-stone-200 text-xs font-medium text-stone-600 rounded-full">
-              {nativeFlag} {partner.nativeLang}
-            </span>
-            <span className="px-2.5 py-1 bg-stone-100 border border-stone-200 text-xs font-medium text-stone-600 rounded-full">
-              Learning {learningFlag} {partner.learningLang}
+              {learningFlag} {partner.learningLang}
             </span>
           </div>
         </div>
