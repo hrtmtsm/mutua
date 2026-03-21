@@ -262,7 +262,7 @@ export default function TopNav() {
   }, [inboxOpen]);
 
   return (
-    <header className="sticky top-0 z-20 bg-[#F7F5F2] border-b border-stone-200/60">
+    <header className="sticky top-0 z-20 bg-[#EEF1F8] border-b border-stone-200/60">
       <div className="max-w-5xl mx-auto px-4 md:px-6 flex items-center h-14">
 
         {/* Wordmark */}
@@ -375,7 +375,7 @@ export function BottomNav() {
   const { pathname } = useNavState();
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-20 bg-[#F7F5F2] border-t border-stone-200/60 flex items-center">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-20 bg-[#EEF1F8] border-t border-stone-200/60 flex items-center">
       {BOTTOM_NAV.map(({ href, label, icon: Icon, match }) => {
         const active = match.some(p => pathname === p || pathname.startsWith(p + '/'));
         return (

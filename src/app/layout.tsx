@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${inter.variable} ${outfit.variable}`}>
-      <body className="font-sans text-neutral-900 antialiased overflow-x-hidden bg-[#F7F5F2]">
+      <body className="font-sans text-neutral-900 antialiased overflow-x-hidden bg-[#EEF1F8]">
         {children}
       </body>
     </html>
