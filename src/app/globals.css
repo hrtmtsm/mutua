@@ -1,6 +1,4 @@
 
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -10,7 +8,7 @@ body {
 }
 
 .font-serif {
-  font-family: 'Outfit', sans-serif !important;
+  font-family: var(--font-heading), sans-serif !important;
 }
 
 /* Thin scrollbar for availability grid */
@@ -40,7 +38,7 @@ body {
 
 @layer components {
   .btn-primary {
-    font-family: 'Outfit', sans-serif !important;
+    font-family: var(--font-heading), sans-serif !important;
     background: linear-gradient(160deg, #60bdff 0%, #2B8FFF 40%, #1060d8 100%);
     box-shadow: 0 4px 14px rgba(43, 143, 255, 0.35), inset 0 1px 0 rgba(255,255,255,0.2);
     transition: filter 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
