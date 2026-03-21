@@ -294,7 +294,14 @@ export default function ProfilePage() {
                   <button className="block w-16 h-16 rounded-2xl overflow-hidden cursor-pointer group" onClick={handleAvatarClick}>
                     {avatarUrl ? (
                       <img src={avatarUrl} alt={name} className="w-full h-full object-cover"
-                        onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                        onError={() => {
+                          // Clear state so initials show; also wipe stale blob URLs from localStorage
+                          setAvatarUrl('');
+                          if (avatarUrl.startsWith('blob:')) {
+                            const s = localStorage.getItem('mutua_profile');
+                            if (s) localStorage.setItem('mutua_profile', JSON.stringify({ ...JSON.parse(s), avatar_url: '' }));
+                          }
+                        }}
                       />
                     ) : (
                       <div style={{ backgroundColor: avatarBg }} className="w-full h-full flex items-center justify-center font-black text-white text-xl">
