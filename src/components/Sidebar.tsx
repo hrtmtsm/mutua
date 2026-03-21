@@ -113,9 +113,19 @@ function MessageChat({
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Sync when server messages update (e.g. incoming from partner)
+  // Sync incoming messages from partner (avoid overwriting optimistic ones)
   useEffect(() => {
-    setLocalMessages(serverMessages);
+    setLocalMessages(prev => {
+      const optimistics = prev.filter(m => m.id.startsWith('optimistic-'));
+      const merged = [...serverMessages];
+      // Re-append any optimistic messages not yet in server list
+      for (const opt of optimistics) {
+        if (!merged.some(m => m.text === opt.text && m.sender_id === opt.sender_id)) {
+          merged.push(opt);
+        }
+      }
+      return merged;
+    });
   }, [serverMessages]);
 
   useEffect(() => {

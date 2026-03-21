@@ -60,7 +60,13 @@ function ChatPanel({ matchId, myId, partnerName, onClose }: {
       .channel(`partner-chat:${matchId}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
         const msg = payload.new as Message;
-        if (msg.match_id === matchId) setMessages(prev => [...prev, msg]);
+        if (msg.match_id === matchId) {
+          setMessages(prev => {
+            // Skip if already added optimistically
+            if (prev.some(m => m.id === msg.id)) return prev;
+            return [...prev.filter(m => !m.id.startsWith('opt-')), msg];
+          });
+        }
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -71,9 +77,21 @@ function ChatPanel({ matchId, myId, partnerName, onClose }: {
 
   const send = async () => {
     const text = draft.trim();
-    if (!text) return;
+    if (!text || !myId) return;
     setDraft('');
-    await sendMessage(matchId, myId, text);
+    const optimistic: Message = {
+      id: `opt-${Date.now()}`,
+      match_id: matchId,
+      sender_id: myId,
+      text,
+      created_at: new Date().toISOString(),
+    };
+    setMessages(prev => [...prev, optimistic]);
+    try {
+      await sendMessage(matchId, myId, text);
+    } catch {
+      setMessages(prev => prev.filter(m => m.id !== optimistic.id));
+    }
   };
 
   return (
