@@ -1,11 +1,10 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase, getMatchBySessionId, getMessages, sendMessage, type Match, type SchedulingState, type Message } from '@/lib/supabase';
+import { supabase, getMatchBySessionId, type Match, type SchedulingState } from '@/lib/supabase';
 import { LANG_FLAGS, LANG_AVATAR_COLOR } from '@/lib/constants';
 import AppShell from '@/components/AppShell';
-import { MessageCircle, ArrowLeft, Send } from 'lucide-react';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -63,150 +62,6 @@ function partnerFromMatch(m: Match, sessionId: string): PartnerCard {
     scheduledAt:     m.scheduled_at ?? null,
     iAmA:            isA,
   };
-}
-
-// ── Partner profile + message modal ──────────────────────────────────────────
-
-function PartnerModal({ partner, mySessionId, onClose }: { partner: PartnerCard; mySessionId: string; onClose: () => void }) {
-  const nativeFlag   = LANG_FLAGS[partner.nativeLang]   ?? '';
-  const learningFlag = LANG_FLAGS[partner.learningLang] ?? '';
-
-  const [view, setView]         = useState<'profile' | 'chat'>('profile');
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [draft, setDraft]       = useState('');
-  const bottomRef               = useRef<HTMLDivElement>(null);
-  const inputRef                = useRef<HTMLInputElement>(null);
-
-  // Load messages + subscribe to realtime
-  useEffect(() => {
-    if (!partner.matchId) return;
-    getMessages(partner.matchId).then(setMessages);
-
-    const channel = supabase
-      .channel(`messages:${partner.matchId}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
-        const msg = payload.new as Message;
-        if (msg.match_id === partner.matchId) setMessages(prev => [...prev, msg]);
-      })
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, [partner.matchId]);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  useEffect(() => {
-    if (view === 'chat') setTimeout(() => inputRef.current?.focus(), 50);
-  }, [view]);
-
-  const send = async () => {
-    const text = draft.trim();
-    if (!text || !partner.matchId) return;
-    setDraft('');
-    await sendMessage(partner.matchId, mySessionId, text);
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 px-4 pb-4 sm:pb-0">
-      <div className="bg-white border border-stone-200 rounded-3xl w-full max-w-sm overflow-hidden flex flex-col" style={{ maxHeight: '85vh' }}>
-
-        {view === 'profile' ? (
-          <>
-            {/* Profile header */}
-            <div className="flex items-center justify-between px-5 pt-5 pb-3">
-              <button onClick={onClose} className="text-stone-300 hover:text-neutral-500 transition-colors text-xl leading-none">&times;</button>
-              <button
-                onClick={() => setView('chat')}
-                className="p-2 rounded-xl bg-stone-100 text-stone-500 hover:bg-stone-200 transition-colors"
-              >
-                <MessageCircle className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Avatar + name */}
-            <div className="flex flex-col items-center px-5 pb-6 gap-3">
-              <Avatar name={partner.name} lang={partner.nativeLang} size="md" />
-              <div className="text-center">
-                <p className="font-bold text-neutral-900 text-lg leading-tight">{partner.name}</p>
-                <p className="text-sm text-stone-400 mt-0.5">{nativeFlag} {partner.nativeLang} · Native</p>
-              </div>
-            </div>
-
-            {/* Learning */}
-            <div className="px-5 pb-4">
-              <p className="text-xs font-semibold text-stone-400 mb-2">Learning</p>
-              <div className="flex flex-wrap gap-1.5">
-                <span className="px-2.5 py-1 bg-stone-100 text-xs font-medium text-stone-500 rounded-full">
-                  {learningFlag} {partner.learningLang}
-                </span>
-              </div>
-            </div>
-
-            {/* In common */}
-            <div className="px-5 pb-6">
-              <p className="text-xs font-semibold text-stone-400 mb-2">In common</p>
-              <div className="flex flex-wrap gap-1.5">
-                {[partner.goal, partner.commStyle, partner.frequency].filter(Boolean).map((v, i) => (
-                  <span key={i} className="px-2.5 py-1 bg-stone-100 text-xs font-medium text-stone-500 rounded-full">{v}</span>
-                ))}
-              </div>
-            </div>
-          </>
-        ) : (
-          <>
-            {/* Chat header */}
-            <div className="flex items-center gap-3 px-4 py-3 border-b border-stone-100">
-              <button onClick={() => setView('profile')} className="text-stone-400 hover:text-neutral-700 transition-colors">
-                <ArrowLeft className="w-4 h-4" />
-              </button>
-              <Avatar name={partner.name} lang={partner.nativeLang} size="sm" />
-              <p className="text-sm font-semibold text-neutral-900">{partner.name}</p>
-            </div>
-
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-2">
-              {messages.length === 0 ? (
-                <p className="text-xs text-stone-400 text-center mt-4">No messages yet. Say hello!</p>
-              ) : messages.map(m => {
-                const isMe = m.sender_id === mySessionId;
-                return (
-                  <div key={m.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                    <span className={`px-3 py-2 rounded-2xl text-sm max-w-[75%] ${
-                      isMe ? 'bg-neutral-900 text-white rounded-br-sm' : 'bg-stone-100 text-neutral-500 rounded-bl-sm'
-                    }`}>{m.text}</span>
-                  </div>
-                );
-              })}
-              <div ref={bottomRef} />
-            </div>
-
-            {/* Compose */}
-            <div className="px-4 py-3 border-t border-stone-100 flex gap-2 items-center">
-              <input
-                ref={inputRef}
-                type="text"
-                value={draft}
-                onChange={e => setDraft(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && send()}
-                placeholder="Send a message..."
-                className="flex-1 text-sm px-3 py-2 border border-stone-200 rounded-xl focus:outline-none focus:border-neutral-400 bg-stone-50"
-              />
-              <button
-                onClick={send}
-                disabled={!draft.trim()}
-                className="p-2.5 btn-primary text-white rounded-xl disabled:opacity-40"
-              >
-                <Send className="w-4 h-4" />
-              </button>
-            </div>
-          </>
-        )}
-
-      </div>
-    </div>
-  );
 }
 
 // ── Scheduling partner card ───────────────────────────────────────────────────
@@ -378,7 +233,6 @@ export default function SessionPage() {
   const [matchId,   setMatchId]   = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState<{ name: string; time: string } | null>(null);
-  const [profileOpen, setProfileOpen] = useState(false);
 
   const loadMatch = useCallback(async (sid: string) => {
     try {
@@ -449,12 +303,6 @@ export default function SessionPage() {
 
       const found = await loadMatch(sid);
       if (!found) loadFromLocalStorage();
-
-      // Auto-open message modal if coming from notification dropdown
-      if (localStorage.getItem('mutua_open_message')) {
-        localStorage.removeItem('mutua_open_message');
-        setProfileOpen(true);
-      }
 
       // If user just saved availability, optimistically show computing state
       // so they don't see stale data while the server catches up
@@ -561,7 +409,7 @@ export default function SessionPage() {
             onReschedule={handleReschedule}
             onJoin={handleJoin}
             onBookExchange={handleBookExchange}
-            onViewProfile={() => setProfileOpen(true)}
+            onViewProfile={() => router.push(`/partner/${partner.matchId}`)}
           />
         ) : (
           <div className="bg-stone-50 border border-stone-200 border-dashed rounded-2xl px-6 py-10 text-center">
@@ -570,11 +418,6 @@ export default function SessionPage() {
         )}
 
       </main>
-
-      {/* Partner profile modal */}
-      {profileOpen && partner && sessionId && (
-        <PartnerModal partner={partner} mySessionId={sessionId} onClose={() => setProfileOpen(false)} />
-      )}
 
       {/* Confirmation toast */}
       {confirmed && (

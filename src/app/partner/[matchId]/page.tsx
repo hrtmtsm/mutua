@@ -1,0 +1,266 @@
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { supabase, getMessages, sendMessage, type Message } from '@/lib/supabase';
+import { LANG_FLAGS, LANG_AVATAR_COLOR } from '@/lib/constants';
+import AppShell from '@/components/AppShell';
+import { ArrowLeft, MessageCircle, Send, X } from 'lucide-react';
+
+interface PartnerData {
+  name: string;
+  nativeLang: string;
+  learningLang: string;
+  goal: string;
+  commStyle: string;
+  frequency: string;
+  interests?: string;
+}
+
+function Avatar({ name, lang }: { name: string; lang: string }) {
+  const bg = LANG_AVATAR_COLOR[lang] ?? '#3b82f6';
+  return (
+    <div
+      style={{ backgroundColor: bg }}
+      className="w-20 h-20 rounded-2xl flex items-center justify-center font-black text-white text-2xl shrink-0"
+    >
+      {name.trim().slice(0, 2).toUpperCase()}
+    </div>
+  );
+}
+
+function ChatPanel({
+  matchId, myId, partnerName, onClose,
+}: {
+  matchId: string; myId: string; partnerName: string; onClose: () => void;
+}) {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [draft, setDraft] = useState('');
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef  = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    getMessages(matchId).then(setMessages);
+
+    const channel = supabase
+      .channel(`partner-chat:${matchId}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
+        const msg = payload.new as Message;
+        if (msg.match_id === matchId) setMessages(prev => [...prev, msg]);
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [matchId]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  useEffect(() => {
+    setTimeout(() => inputRef.current?.focus(), 50);
+  }, []);
+
+  const send = async () => {
+    const text = draft.trim();
+    if (!text) return;
+    setDraft('');
+    await sendMessage(matchId, myId, text);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 px-4 pb-4 sm:pb-0">
+      <div className="bg-white border border-stone-200 rounded-3xl w-full max-w-sm flex flex-col overflow-hidden" style={{ height: '70vh' }}>
+
+        {/* Header */}
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-stone-100 shrink-0">
+          <button onClick={onClose} className="text-stone-400 hover:text-neutral-700 transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+          <p className="text-sm font-semibold text-neutral-900 flex-1">{partnerName}</p>
+        </div>
+
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-2">
+          {messages.length === 0 ? (
+            <p className="text-xs text-stone-400 text-center mt-6">No messages yet. Say hello!</p>
+          ) : messages.map(m => {
+            const isMe = m.sender_id === myId;
+            return (
+              <div key={m.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                <span className={`px-3 py-2 rounded-2xl text-sm max-w-[75%] leading-relaxed ${
+                  isMe ? 'bg-neutral-900 text-white rounded-br-sm' : 'bg-stone-100 text-neutral-500 rounded-bl-sm'
+                }`}>{m.text}</span>
+              </div>
+            );
+          })}
+          <div ref={bottomRef} />
+        </div>
+
+        {/* Compose */}
+        <div className="px-4 py-3 border-t border-stone-100 flex gap-2 items-center shrink-0">
+          <input
+            ref={inputRef}
+            type="text"
+            value={draft}
+            onChange={e => setDraft(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && send()}
+            placeholder="Send a message..."
+            className="flex-1 text-sm px-3 py-2 border border-stone-200 rounded-xl focus:outline-none focus:border-neutral-400 bg-stone-50"
+          />
+          <button
+            onClick={send}
+            disabled={!draft.trim()}
+            className="p-2.5 btn-primary text-white rounded-xl disabled:opacity-40"
+          >
+            <Send className="w-4 h-4" />
+          </button>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+export default function PartnerProfilePage() {
+  const { matchId } = useParams<{ matchId: string }>();
+  const router = useRouter();
+
+  const [partner, setPartner] = useState<PartnerData | null>(null);
+  const [myId, setMyId]       = useState('');
+  const [chatOpen, setChatOpen] = useState(false);
+  const [loading, setLoading]  = useState(true);
+
+  useEffect(() => {
+    const sid = localStorage.getItem('mutua_session_id') ?? '';
+    setMyId(sid);
+
+    async function load() {
+      const { data: match } = await supabase
+        .from('matches')
+        .select('*')
+        .eq('id', matchId)
+        .maybeSingle();
+
+      if (!match) { setLoading(false); return; }
+
+      const isA = match.session_id_a === sid;
+      const partnerSessionId = isA ? match.session_id_b : match.session_id_a;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('name, interests')
+        .eq('session_id', partnerSessionId)
+        .maybeSingle();
+
+      setPartner({
+        name:        isA ? (match.name_b ?? 'Partner') : (match.name_a ?? 'Partner'),
+        nativeLang:  isA ? match.native_language_b : match.native_language_a,
+        learningLang: isA ? match.native_language_a : match.native_language_b,
+        goal:        match.goal        ?? '',
+        commStyle:   match.comm_style  ?? '',
+        frequency:   match.practice_frequency ?? '',
+        interests:   profile?.interests ?? '',
+        ...(profile?.name ? { name: profile.name } : {}),
+      });
+
+      setLoading(false);
+    }
+
+    load();
+  }, [matchId]);
+
+  if (loading) {
+    return (
+      <AppShell>
+        <main className="flex-1 px-6 py-10 max-w-2xl mx-auto w-full">
+          <p className="text-sm text-stone-400">Loading...</p>
+        </main>
+      </AppShell>
+    );
+  }
+
+  if (!partner) {
+    return (
+      <AppShell>
+        <main className="flex-1 px-6 py-10 max-w-2xl mx-auto w-full">
+          <p className="text-sm text-stone-400">Partner not found.</p>
+        </main>
+      </AppShell>
+    );
+  }
+
+  const nativeFlag   = LANG_FLAGS[partner.nativeLang]   ?? '';
+  const learningFlag = LANG_FLAGS[partner.learningLang] ?? '';
+
+  return (
+    <AppShell>
+      <main className="flex-1 max-w-2xl mx-auto w-full">
+
+        {/* Top bar */}
+        <div className="flex items-center justify-between px-6 py-4">
+          <button onClick={() => router.back()} className="text-stone-400 hover:text-neutral-700 transition-colors">
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => setChatOpen(true)}
+            className="flex items-center gap-1.5 px-4 py-2 bg-stone-100 hover:bg-stone-200 transition-colors rounded-full text-sm font-semibold text-neutral-700"
+          >
+            <MessageCircle className="w-4 h-4" />
+            Message
+          </button>
+        </div>
+
+        {/* Hero */}
+        <div className="px-6 pb-8 flex flex-col items-center text-center gap-4">
+          <Avatar name={partner.name} lang={partner.nativeLang} />
+          <div>
+            <h1 className="font-serif font-bold text-2xl text-[#171717]">{partner.name}</h1>
+            <p className="text-sm text-stone-400 mt-1">{nativeFlag} {partner.nativeLang} · Native</p>
+          </div>
+        </div>
+
+        {/* Info cards */}
+        <div className="px-6 space-y-4">
+
+          {/* Learning */}
+          <div className="bg-white border border-stone-200 rounded-2xl p-5">
+            <p className="text-xs font-semibold text-stone-400 mb-3">Learning</p>
+            <span className="px-3 py-1.5 bg-stone-100 text-sm font-medium text-stone-600 rounded-full">
+              {learningFlag} {partner.learningLang}
+            </span>
+          </div>
+
+          {/* In common */}
+          <div className="bg-white border border-stone-200 rounded-2xl p-5">
+            <p className="text-xs font-semibold text-stone-400 mb-3">In common</p>
+            <div className="flex flex-wrap gap-2">
+              {[partner.goal, partner.commStyle, partner.frequency].filter(Boolean).map((v, i) => (
+                <span key={i} className="px-3 py-1.5 bg-stone-100 text-sm font-medium text-stone-600 rounded-full">{v}</span>
+              ))}
+            </div>
+          </div>
+
+          {/* Interests */}
+          {partner.interests && (
+            <div className="bg-white border border-stone-200 rounded-2xl p-5">
+              <p className="text-xs font-semibold text-stone-400 mb-2">Interests</p>
+              <p className="text-sm text-neutral-600">{partner.interests}</p>
+            </div>
+          )}
+
+        </div>
+
+      </main>
+
+      {chatOpen && (
+        <ChatPanel
+          matchId={matchId}
+          myId={myId}
+          partnerName={partner.name}
+          onClose={() => setChatOpen(false)}
+        />
+      )}
+    </AppShell>
+  );
+}
