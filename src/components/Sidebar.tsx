@@ -384,7 +384,7 @@ export default function TopNav() {
             style={avatarUrl ? undefined : { backgroundColor: avatarBg }}>
             {avatarUrl
               ? <img src={avatarUrl} alt="" className="w-full h-full object-cover"
-                  onError={() => setAvatarUrl('')}
+                  onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
                 />
               : (initials || <User className="w-4 h-4" />)
             }
