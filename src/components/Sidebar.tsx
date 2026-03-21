@@ -99,7 +99,7 @@ function MessagesList({
 // ── Chat detail ───────────────────────────────────────────────────────────────
 
 function MessageChat({
-  matchId, partnerName, messages, myId, onBack,
+  matchId, partnerName, messages: serverMessages, myId, onBack,
 }: {
   matchId: string;
   partnerName: string;
@@ -109,12 +109,18 @@ function MessageChat({
 }) {
   const [draft, setDraft] = useState('');
   const [error, setError] = useState('');
+  const [localMessages, setLocalMessages] = useState<Message[]>(serverMessages);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Sync when server messages update (e.g. incoming from partner)
+  useEffect(() => {
+    setLocalMessages(serverMessages);
+  }, [serverMessages]);
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [localMessages]);
 
   // Focus input when chat opens
   useEffect(() => {
@@ -126,13 +132,25 @@ function MessageChat({
     if (!text || !myId) return;
     setDraft('');
     setError('');
+    // Optimistic update — show immediately
+    const optimistic: Message = {
+      id: `optimistic-${Date.now()}`,
+      match_id: matchId,
+      sender_id: myId,
+      text,
+      created_at: new Date().toISOString(),
+    };
+    setLocalMessages(prev => [...prev, optimistic]);
     try {
       await sendMessage(matchId, myId, text);
     } catch (e: any) {
       setError('Failed to send. Try again.');
+      setLocalMessages(prev => prev.filter(m => m.id !== optimistic.id));
       console.error('sendMessage error:', e);
     }
   };
+
+  const messages = localMessages;
 
   const initials = partnerName.trim().slice(0, 2).toUpperCase();
 
