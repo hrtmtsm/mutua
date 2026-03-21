@@ -197,11 +197,9 @@ export default function ProfilePage() {
     if (!profile) return;
     setCropSrc(null);
 
-    // Show immediately via object URL (instant feedback)
+    // Show immediately via object URL (current page only — not saved to localStorage)
     const localUrl = URL.createObjectURL(blob);
     setAvatarUrl(localUrl);
-    const stored0 = localStorage.getItem('mutua_profile');
-    if (stored0) localStorage.setItem('mutua_profile', JSON.stringify({ ...JSON.parse(stored0), avatar_url: localUrl }));
 
     setUploading(true);
     const path = `${profile.session_id}.jpg`;
@@ -212,7 +210,7 @@ export default function ProfilePage() {
     } else {
       const { data } = supabase.storage.from('avatars').getPublicUrl(path);
       const url = data.publicUrl + '?t=' + Date.now();
-      setAvatarUrl(url);
+      setAvatarUrl(url); // replace blob URL with real persistent URL
       await supabase.from('profiles').update({ avatar_url: url }).eq('session_id', profile.session_id);
       const stored = localStorage.getItem('mutua_profile');
       if (stored) localStorage.setItem('mutua_profile', JSON.stringify({ ...JSON.parse(stored), avatar_url: url }));
