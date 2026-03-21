@@ -144,12 +144,19 @@ export default function ProfilePage() {
     <AppShell>
       <main className="flex-1 px-6 py-10 max-w-2xl mx-auto w-full space-y-5">
 
-        <h1 className="font-serif font-black text-2xl text-neutral-900">Profile</h1>
+        <h1 className="font-serif font-black text-2xl text-neutral-500">Profile</h1>
 
         {profile ? (
           <>
             {/* ── Identity card ── */}
-            <div className="bg-white border border-stone-200 rounded-2xl shadow-sm p-6 space-y-4">
+            <div className="p-6 space-y-4" style={{
+              background: 'linear-gradient(#ffffff4d 0%, #f8f8f899 100%)',
+              backdropFilter: 'blur(5px)',
+              WebkitBackdropFilter: 'blur(5px)',
+              border: '2px solid #f8f8f8',
+              borderRadius: '30px',
+              boxShadow: 'inset 10px -9px 22px 4px #0000000d',
+            }}>
 
               <div className="flex items-center justify-between">
                 <p className="text-xs font-bold uppercase tracking-widest text-stone-400">Your identity</p>
@@ -202,7 +209,7 @@ export default function ProfilePage() {
                       className="w-full text-base font-bold text-neutral-900 border border-stone-200 rounded-lg px-3 py-1.5 focus:outline-none focus:border-[#2B8FFF] transition-colors"
                     />
                   ) : (
-                    <p className="text-base font-bold text-neutral-900">{name || '—'}</p>
+                    <p className="text-base font-bold text-neutral-500">{name || '—'}</p>
                   )}
                 </div>
 
@@ -217,7 +224,14 @@ export default function ProfilePage() {
             </div>
 
             {/* ── Preferences card ── */}
-            <div className="bg-white border border-stone-200 rounded-2xl shadow-sm p-6 space-y-4">
+            <div className="p-6 space-y-4" style={{
+              background: 'linear-gradient(#ffffff4d 0%, #f8f8f899 100%)',
+              backdropFilter: 'blur(5px)',
+              WebkitBackdropFilter: 'blur(5px)',
+              border: '2px solid #f8f8f8',
+              borderRadius: '30px',
+              boxShadow: 'inset 10px -9px 22px 4px #0000000d',
+            }}>
 
               <div className="flex items-center justify-between">
                 <p className="text-xs font-bold uppercase tracking-widest text-stone-400">Your preferences</p>
@@ -240,7 +254,7 @@ export default function ProfilePage() {
                 ].map(({ label, value, editor }) => (
                   <div key={label} className="flex items-center justify-between py-3 border-b border-stone-100 last:border-0">
                     <span className="text-xs font-bold uppercase tracking-widest text-stone-400">{label}</span>
-                    {editing ? editor : <span className="text-sm font-semibold text-neutral-900">{value}</span>}
+                    {editing ? editor : <span className="text-sm font-semibold text-neutral-500">{value}</span>}
                   </div>
                 ))}
               </div>
@@ -253,7 +267,14 @@ export default function ProfilePage() {
 
             </div>
             {/* ── Availability card ── */}
-            <div className="bg-white border border-stone-200 rounded-2xl shadow-sm p-6 space-y-4">
+            <div className="p-6 space-y-4" style={{
+              background: 'linear-gradient(#ffffff4d 0%, #f8f8f899 100%)',
+              backdropFilter: 'blur(5px)',
+              WebkitBackdropFilter: 'blur(5px)',
+              border: '2px solid #f8f8f8',
+              borderRadius: '30px',
+              boxShadow: 'inset 10px -9px 22px 4px #0000000d',
+            }}>
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-widest text-stone-400">Weekly availability</p>
@@ -304,7 +325,14 @@ export default function ProfilePage() {
 
           </>
         ) : (
-          <div className="bg-white border border-stone-200 rounded-2xl shadow-sm px-8 py-12 text-center space-y-3">
+          <div className="px-8 py-12 text-center space-y-3" style={{
+            background: 'linear-gradient(#ffffff4d 0%, #f8f8f899 100%)',
+            backdropFilter: 'blur(5px)',
+            WebkitBackdropFilter: 'blur(5px)',
+            border: '2px solid #f8f8f8',
+            borderRadius: '30px',
+            boxShadow: 'inset 10px -9px 22px 4px #0000000d',
+          }}>
             <p className="font-serif font-black text-xl text-neutral-900">No profile yet</p>
             <p className="text-sm text-stone-500">Complete onboarding to set up your profile.</p>
             <button onClick={() => router.push('/onboarding')} className="mt-2 inline-block px-6 py-2.5 btn-primary text-white font-bold text-sm rounded-full shadow-md">
