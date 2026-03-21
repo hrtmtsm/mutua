@@ -266,8 +266,8 @@ export default function TopNav() {
       <div className="max-w-5xl mx-auto px-4 md:px-6 flex items-center h-14">
 
         {/* Wordmark */}
-        <Link href="/app" className="font-serif font-black text-xl tracking-tight text-neutral-900 shrink-0">
-          Mutua
+        <Link href="/app" className="font-serif font-bold text-xl tracking-tight text-neutral-900 shrink-0">
+          mutua
         </Link>
 
         {/* Nav links — desktop only */}
