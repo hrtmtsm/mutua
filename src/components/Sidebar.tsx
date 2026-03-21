@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { User, ArrowLeftRight, TrendingUp, MessageSquare } from 'lucide-react';
+import { User, ArrowLeftRight, TrendingUp, Bell } from 'lucide-react';
 import { LANG_AVATAR_COLOR } from '@/lib/constants';
 
 const BOTTOM_NAV = [
@@ -21,10 +21,7 @@ const BOTTOM_NAV = [
   },
 ];
 
-const DESKTOP_NAV = [
-  ...BOTTOM_NAV,
-  { href: '/messages', label: 'Messages', match: ['/messages'] },
-];
+const DESKTOP_NAV = [...BOTTOM_NAV];
 
 function useNavState() {
   const pathname = usePathname();
@@ -55,7 +52,6 @@ export default function TopNav() {
   const { pathname, initials, avatarBg, hasUnread } = useNavState();
   const router = useRouter();
   const [inboxOpen, setInboxOpen] = useState(false);
-  const [inboxTab,  setInboxTab]  = useState<'messages' | 'notifications'>('messages');
   const inboxRef = useRef<HTMLDivElement>(null);
 
   // Close on outside click
@@ -105,55 +101,29 @@ export default function TopNav() {
         {/* Right side: inbox icon + profile avatar */}
         <div className="flex items-center gap-3 shrink-0" ref={inboxRef}>
 
-          {/* Inbox toggle */}
+          {/* Notification toggle */}
           <button
             onClick={() => setInboxOpen(o => !o)}
             className="relative p-1.5 text-stone-400 hover:text-neutral-700 transition-colors"
           >
-            <MessageSquare className="w-5 h-5" />
+            <Bell className="w-5 h-5" />
             {hasUnread && (
               <span className="absolute top-1 right-1 w-2 h-2 bg-rose-500 rounded-full" />
             )}
           </button>
 
-          {/* Inbox dropdown */}
+          {/* Notifications dropdown */}
           {inboxOpen && (
             <div className="absolute top-14 right-4 w-80 bg-white border border-stone-200 rounded-2xl shadow-xl overflow-hidden z-30">
-
-              {/* Tabs */}
-              <div className="flex border-b border-stone-100">
-                {(['messages', 'notifications'] as const).map(tab => (
-                  <button
-                    key={tab}
-                    onClick={() => setInboxTab(tab)}
-                    className={`flex-1 py-3 text-sm font-semibold capitalize transition-colors ${
-                      inboxTab === tab ? 'text-neutral-900 border-b-2 border-neutral-900' : 'text-stone-400'
-                    }`}
-                  >
-                    {tab}
-                  </button>
-                ))}
+              <div className="px-4 py-3 border-b border-stone-100">
+                <p className="text-sm font-semibold text-neutral-900">Notifications</p>
               </div>
-
-              {/* Content */}
               <div className="px-4 py-6 text-center">
-                {inboxTab === 'messages' ? (
-                  <>
-                    <p className="text-sm font-semibold text-neutral-900 mb-1">No messages yet</p>
-                    <p className="text-xs text-stone-400 leading-relaxed">
-                      Direct messaging is coming soon. For now, connect in your live session.
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-sm font-semibold text-neutral-900 mb-1">No notifications</p>
-                    <p className="text-xs text-stone-400 leading-relaxed">
-                      We'll let you know when your session is confirmed or your partner messages you.
-                    </p>
-                  </>
-                )}
+                <p className="text-sm font-semibold text-neutral-900 mb-1">No notifications</p>
+                <p className="text-xs text-stone-400 leading-relaxed">
+                  We'll let you know when your session is confirmed or your partner reaches out.
+                </p>
               </div>
-
             </div>
           )}
 
