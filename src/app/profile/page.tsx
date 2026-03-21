@@ -21,19 +21,16 @@ export default function ProfilePage() {
   const [editingIdentity, setEditingIdentity] = useState(false);
   const [saving,         setSaving]         = useState(false);
 
-  // Identity fields
   const [name,      setName]      = useState('');
   const [draftName, setDraftName] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
   const [uploading, setUploading] = useState(false);
 
-  // Availability
   const [availSlots,    setAvailSlots]    = useState<UserAvailability[]>([]);
   const [availTimezone, setAvailTimezone] = useState('');
   const [savingAvail,   setSavingAvail]   = useState(false);
   const [editingAvail,  setEditingAvail]  = useState(false);
 
-  // Preference fields
   const [native,     setNative]     = useState<Language>('English');
   const [learning,   setLearning]   = useState<Language>('Japanese');
   const [goal,       setGoal]       = useState<Goal>('Casual conversation');
@@ -55,7 +52,6 @@ export default function ProfilePage() {
       if (p.practice_frequency) setPracticeFrequency(p.practice_frequency);
     }
 
-    // Load existing availability (requires auth session)
     async function loadAvailability() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) return;
@@ -96,13 +92,11 @@ export default function ProfilePage() {
     if (!profile || !draftName.trim()) return;
     setSaving(true);
     const trimmed = draftName.trim();
-
     await fetch('/api/update-profile', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sessionId: profile.session_id, name: trimmed }),
     });
-
     const stored = localStorage.getItem('mutua_profile');
     if (stored) localStorage.setItem('mutua_profile', JSON.stringify({ ...JSON.parse(stored), name: trimmed }));
     setProfile(p => p ? { ...p, name: trimmed } : p);
@@ -149,7 +143,7 @@ export default function ProfilePage() {
         {profile ? (
           <>
             {/* ── Identity card ── */}
-            <div className="p-6 space-y-4 bg-stone-50 rounded-2xl">
+            <div className="bg-stone-50 rounded-2xl p-6 space-y-4">
 
               <div className="flex items-center justify-between">
                 <p className="text-xs font-bold uppercase tracking-widest text-stone-400">Your identity</p>
@@ -163,15 +157,57 @@ export default function ProfilePage() {
               </div>
 
               <div className="flex items-center gap-5">
-
-                {/* Avatar */}
                 <div className="relative shrink-0">
                   <div className={`block w-16 h-16 rounded-2xl overflow-hidden ${editingIdentity ? 'cursor-pointer group' : ''}`}
                        onClick={editingIdentity ? handleAvatarClick : undefined}>
                     {avatarUrl ? (
                       <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
                     ) : (
-                      <div>
+                      <div style={{ backgroundColor: avatarBg }} className="w-full h-full flex items-center justify-center font-black text-white text-xl">
+                        {initials}
+                      </div>
+                    )}
+                    {editingIdentity && (
+                      <div className="absolute inset-0 rounded-2xl bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Camera className="w-4 h-4" />
+                      </div>
+                    )}
+                  </div>
+                  {uploading && (
+                    <div className="absolute inset-0 rounded-2xl bg-white/70 flex items-center justify-center">
+                      <div className="w-4 h-4 border-2 border-[#2B8FFF] border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  )}
+                  <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold uppercase tracking-widest text-stone-400 mb-1.5">Name</p>
+                  {editingIdentity ? (
+                    <input
+                      type="text"
+                      value={draftName}
+                      onChange={e => setDraftName(e.target.value)}
+                      autoFocus
+                      placeholder="Your name"
+                      className="w-full text-base font-bold text-neutral-900 border border-stone-200 rounded-lg px-3 py-1.5 focus:outline-none focus:border-[#2B8FFF] transition-colors"
+                    />
+                  ) : (
+                    <p className="text-base font-bold text-neutral-500">{name || '—'}</p>
+                  )}
+                </div>
+              </div>
+
+              {editingIdentity && (
+                <button onClick={handleSaveIdentity} disabled={saving} className="w-full py-2.5 btn-primary text-white font-bold text-sm rounded-full shadow-md disabled:opacity-50">
+                  {saving ? 'Saving...' : 'Save changes'}
+                </button>
+              )}
+
+            </div>
+
+            {/* ── Preferences card ── */}
+            <div className="bg-stone-50 rounded-2xl p-6 space-y-4">
 
               <div className="flex items-center justify-between">
                 <p className="text-xs font-bold uppercase tracking-widest text-stone-400">Your preferences</p>
@@ -206,8 +242,9 @@ export default function ProfilePage() {
               )}
 
             </div>
+
             {/* ── Availability card ── */}
-            <div className="p-6 space-y-4 bg-stone-50 rounded-2xl">
+            <div className="bg-stone-50 rounded-2xl p-6 space-y-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-widest text-stone-400">Weekly availability</p>
@@ -258,7 +295,7 @@ export default function ProfilePage() {
 
           </>
         ) : (
-          <div className="px-8 py-12 text-center space-y-3 bg-stone-50 rounded-2xl">
+          <div className="bg-stone-50 rounded-2xl px-8 py-12 text-center space-y-3">
             <p className="font-serif font-black text-xl text-neutral-900">No profile yet</p>
             <p className="text-sm text-stone-500">Complete onboarding to set up your profile.</p>
             <button onClick={() => router.push('/onboarding')} className="mt-2 inline-block px-6 py-2.5 btn-primary text-white font-bold text-sm rounded-full shadow-md">
