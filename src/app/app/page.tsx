@@ -195,14 +195,14 @@ function SchedulingCard({
 
         {/* Scheduled */}
         {s === 'scheduled' && partner.scheduledAt && (
-          <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <p className="text-xs text-stone-400">We found your first session</p>
               <p className="font-semibold text-neutral-900 text-sm mt-0.5">
                 {fmtScheduledAt(partner.scheduledAt)}
               </p>
             </div>
-            <div className="flex items-center gap-3 shrink-0">
+            <div className="flex items-center gap-3">
               <button onClick={onReschedule} className="text-sm text-stone-400 hover:text-neutral-900 font-medium transition-colors">
                 Reschedule
               </button>

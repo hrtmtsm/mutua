@@ -48,7 +48,7 @@ export default function TopNav() {
 
   return (
     <header className="sticky top-0 z-20 bg-white border-b border-stone-100">
-      <div className="max-w-5xl mx-auto px-6 flex items-center h-14 gap-8">
+      <div className="max-w-5xl mx-auto px-4 md:px-6 flex items-center h-14 gap-3 md:gap-8">
 
         {/* Wordmark */}
         <Link href="/app" className="font-serif font-black text-xl tracking-tight text-neutral-900 shrink-0">
