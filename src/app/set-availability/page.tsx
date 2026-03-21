@@ -19,6 +19,7 @@ function SetAvailabilityInner() {
   const [timezone,     setTimezone]     = useState(Intl.DateTimeFormat().resolvedOptions().timeZone);
   const [showTzSelect, setShowTzSelect] = useState(false);
   const [saving,       setSaving]       = useState(false);
+  const [saved,        setSaved]        = useState(false);
   const [cancelling,   setCancelling]   = useState(false);
   const [loading,      setLoading]      = useState(true);
   const [partnerName,  setPartnerName]  = useState('your partner');
@@ -102,7 +103,8 @@ function SetAvailabilityInner() {
       },
       body: JSON.stringify({ slots, timezone }),
     }).catch(() => null);
-    window.location.href = '/app';
+    setSaving(false);
+    setSaved(true);
   };
 
   return (
@@ -198,34 +200,58 @@ function SetAvailabilityInner() {
 
       </div>
 
-      {/* Sticky save button — always visible */}
+      {/* Sticky bottom — save button or post-save confirmation */}
       <div className="shrink-0 px-6 pt-3 pb-6 bg-white border-t border-stone-100 max-w-2xl mx-auto w-full">
-        <button
-          onClick={handleSave}
-          disabled={saving || cancelling || slots.length === 0}
-          className="w-full py-3.5 btn-primary text-white font-bold text-sm rounded-xl disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2"
-        >
-          {saving ? (
-            <span>Saving...</span>
-          ) : (
-            <span>
-              {schedulingState === 'scheduled' ? 'Find a new time' : 'Match our schedules'}
-              {slots.length > 0 && (
-                <span className="font-normal opacity-80"> · {slots.length} slots</span>
+        {saved ? (
+          <div className="space-y-3">
+            <p className="text-sm text-stone-500 text-center leading-relaxed">
+              We'll match you with <span className="font-semibold text-neutral-900">{partnerName}</span> using your schedule.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => { window.location.href = '/app'; }}
+                className="flex-1 py-3 btn-primary text-white font-bold text-sm rounded-xl"
+              >
+                Sounds good
+              </button>
+              <button
+                onClick={() => setSaved(false)}
+                className="flex-1 py-3 border border-stone-200 text-stone-500 font-medium text-sm rounded-xl hover:bg-stone-100 transition-colors"
+              >
+                Update schedule
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <button
+              onClick={handleSave}
+              disabled={saving || cancelling || slots.length === 0}
+              className="w-full py-3.5 btn-primary text-white font-bold text-sm rounded-xl disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2"
+            >
+              {saving ? (
+                <span>Saving...</span>
+              ) : (
+                <span>
+                  {schedulingState === 'scheduled' ? 'Find a new time' : 'Match our schedules'}
+                  {slots.length > 0 && (
+                    <span className="font-normal opacity-80"> · {slots.length} slots</span>
+                  )}
+                  {' →'}
+                </span>
               )}
-              {' →'}
-            </span>
-          )}
-        </button>
+            </button>
 
-        {schedulingState === 'scheduled' && matchId && (
-          <button
-            onClick={handleCancel}
-            disabled={saving || cancelling}
-            className="w-full mt-3 text-sm text-stone-400 hover:text-rose-500 transition-colors disabled:opacity-40 disabled:pointer-events-none"
-          >
-            {cancelling ? 'Cancelling...' : "Actually, I can't make it :("}
-          </button>
+            {schedulingState === 'scheduled' && matchId && (
+              <button
+                onClick={handleCancel}
+                disabled={saving || cancelling}
+                className="w-full mt-3 text-sm text-stone-400 hover:text-rose-500 transition-colors disabled:opacity-40 disabled:pointer-events-none"
+              >
+                {cancelling ? 'Cancelling...' : "Actually, I can't make it :("}
+              </button>
+            )}
+          </>
         )}
       </div>
     </div>
