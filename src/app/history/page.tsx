@@ -110,7 +110,7 @@ function computeStats(sessions: SessionEntry[]): Stats {
 
 function StatCard({ value, label }: { value: string; label: string }) {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center py-4 px-2 bg-stone-50 rounded-2xl">
+    <div className="flex-1 flex flex-col items-center justify-center py-4 px-2 bg-white border border-stone-200 rounded-2xl">
       <p className="font-black text-xl text-neutral-500 leading-none">{value}</p>
       <p className="text-[10px] font-semibold text-stone-400 mt-1 text-center leading-tight">{label}</p>
     </div>
@@ -149,7 +149,7 @@ export default function HistoryPage() {
 
         {/* ── Weekly goal ── */}
         {stats && (
-          <div className="px-5 py-4 space-y-3 bg-stone-50 rounded-2xl">
+          <div className="px-5 py-4 space-y-3 bg-white border border-stone-200 rounded-2xl">
             <div className="flex items-center justify-between">
               <p className="text-sm font-bold text-neutral-500">This week</p>
               <p className="text-xs font-semibold text-stone-400">
@@ -188,7 +188,7 @@ export default function HistoryPage() {
               {partners.map(p => (
                 <div
                   key={p.partnerId || p.partnerName}
-                  className="px-5 py-4 space-y-3 bg-stone-50 rounded-2xl"
+                  className="px-5 py-4 space-y-3 bg-white border border-stone-200 rounded-2xl"
                 >
                   <div className="flex items-start justify-between">
                     <div>
