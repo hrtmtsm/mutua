@@ -117,7 +117,7 @@ export default function HistoryPage() {
                 {/* CTA — only show when not yet scheduled */}
                 {!p.scheduledFor && (
                   <button
-                    onClick={() => router.push('/set-availability')}
+                    onClick={() => router.push(`/session-review?partner=${encodeURIComponent(p.partnerName)}`)}
                     className="w-full py-2.5 btn-primary text-white text-sm font-semibold rounded-xl"
                   >
                     Schedule next session
