@@ -365,7 +365,9 @@ export default function TopNav() {
           <Link href="/profile" className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center text-white text-xs font-bold hover:opacity-80 transition-opacity shrink-0"
             style={avatarUrl ? undefined : { backgroundColor: avatarBg }}>
             {avatarUrl
-              ? <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+              ? <img src={avatarUrl} alt="" className="w-full h-full object-cover"
+                  onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                />
               : (initials || <User className="w-4 h-4" />)
             }
           </Link>

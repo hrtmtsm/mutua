@@ -293,7 +293,13 @@ export default function ProfilePage() {
                 <div className="relative shrink-0">
                   <button className="block w-16 h-16 rounded-2xl overflow-hidden cursor-pointer group" onClick={handleAvatarClick}>
                     {avatarUrl ? (
-                      <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
+                      <img src={avatarUrl} alt={name} className="w-full h-full object-cover"
+                        onError={() => {
+                          setAvatarUrl('');
+                          const s = localStorage.getItem('mutua_profile');
+                          if (s) localStorage.setItem('mutua_profile', JSON.stringify({ ...JSON.parse(s), avatar_url: '' }));
+                        }}
+                      />
                     ) : (
                       <div style={{ backgroundColor: avatarBg }} className="w-full h-full flex items-center justify-center font-black text-white text-xl">
                         {initials}
