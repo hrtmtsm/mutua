@@ -384,7 +384,7 @@ export default function TopNav() {
                 href={href}
                 className={`px-4 py-1.5 text-sm font-semibold transition-all rounded-full ${
                   active
-                    ? 'text-neutral-900 bg-[#FAFAFA]'
+                    ? 'text-neutral-900 bg-stone-100'
                     : 'text-stone-400 hover:text-neutral-700'
                 }`}
               >

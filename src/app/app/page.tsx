@@ -85,6 +85,14 @@ function isJoinable(scheduledAt: string, now: number): boolean {
   return (t - now) <= 30 * 60 * 1000 && (now - t) <= 60 * 60 * 1000;
 }
 
+function daysLabel(scheduledAt: string): string {
+  const diff = new Date(scheduledAt).getTime() - Date.now();
+  const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+  if (days <= 0) return 'Today';
+  if (days === 1) return 'Tomorrow';
+  return `In ${days} days`;
+}
+
 // ── Scheduling partner card ───────────────────────────────────────────────────
 
 function SchedulingCard({
@@ -93,12 +101,14 @@ function SchedulingCard({
   onJoin,
   onBookExchange,
   onViewProfile,
+  onMessage,
 }: {
   partner:         PartnerCard;
   onReschedule:    () => void;
   onJoin:          () => void;
   onBookExchange:  () => void;
   onViewProfile:   () => void;
+  onMessage:       () => void;
 }) {
   const nativeFlag   = LANG_FLAGS[partner.nativeLang]   ?? '';
   const learningFlag = LANG_FLAGS[partner.learningLang] ?? '';
@@ -203,19 +213,29 @@ function SchedulingCard({
       )}
 
       {s === 'scheduled' && partner.scheduledAt && (
-        <div className="px-6 pb-6 flex items-center justify-between gap-3">
-          <div>
-            <p className="text-xs font-medium text-stone-400">First session</p>
-            <p className="font-semibold text-neutral-800 text-sm mt-1">{fmtScheduledAt(partner.scheduledAt)}</p>
+        <div className="px-6 pb-6 space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-medium text-stone-400">First session</p>
+              <p className="font-semibold text-neutral-800 text-sm mt-1">{fmtScheduledAt(partner.scheduledAt)}</p>
+            </div>
+            <span className="text-xs font-semibold text-[#2B8FFF] bg-blue-50 px-2.5 py-1 rounded-full shrink-0">
+              {daysLabel(partner.scheduledAt)}
+            </span>
           </div>
           {isJoinable(partner.scheduledAt, now) ? (
-            <button onClick={onJoin} className="px-5 py-2.5 btn-primary text-white text-sm rounded-xl">
+            <button onClick={onJoin} className="w-full py-3 btn-primary text-white text-sm rounded-xl">
               Join session →
             </button>
           ) : (
-            <button onClick={onReschedule} className="px-4 py-2.5 border border-stone-200 bg-white text-sm text-neutral-500 font-medium rounded-xl hover:bg-stone-50 transition-colors">
-              Reschedule
-            </button>
+            <div className="flex items-center gap-2">
+              <button onClick={onMessage} className="flex-1 py-3 btn-primary text-white text-sm rounded-xl">
+                Message {partner.name.split(' ')[0]} →
+              </button>
+              <button onClick={onReschedule} className="px-4 py-3 border border-stone-200 text-sm text-neutral-500 font-medium rounded-xl hover:bg-stone-50 transition-colors">
+                Reschedule
+              </button>
+            </div>
           )}
         </div>
       )}
@@ -413,7 +433,8 @@ export default function SessionPage() {
     router.push(`/set-availability?${params.toString()}`);
   };
 
-  const handleJoin = () => router.push('/pre-session');
+  const handleJoin    = () => router.push('/pre-session');
+  const handleMessage = () => router.push('/messages');
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
@@ -423,10 +444,14 @@ export default function SessionPage() {
 
         {/* Context header */}
         <div>
-          <h1 className="font-serif font-semibold text-2xl text-[#171717]">Your exchange</h1>
+          <h1 className="font-serif font-semibold text-2xl text-[#171717]">
+            {!loading && partner?.schedulingState === 'scheduled' ? 'Upcoming session' : 'Your exchange'}
+          </h1>
           <p className="text-sm text-stone-400 mt-1">
             {loading ? '' : partner
-              ? 'You have an active language partner.'
+              ? partner.schedulingState === 'scheduled'
+                ? `You're all set with ${partner.name}. Say hello before you meet.`
+                : 'You have an active language partner.'
               : 'No partner yet — we\'ll reach out when we find your match.'}
           </p>
         </div>
@@ -440,6 +465,7 @@ export default function SessionPage() {
             onJoin={handleJoin}
             onBookExchange={handleBookExchange}
             onViewProfile={() => router.push(`/partner/${partner.matchId}`)}
+            onMessage={handleMessage}
           />
         ) : (
           <div className="bg-white/60 border border-stone-200 border-dashed rounded-2xl px-6 py-10 text-center">
