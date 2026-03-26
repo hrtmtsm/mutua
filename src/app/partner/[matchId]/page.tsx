@@ -40,8 +40,8 @@ function Avatar({ name, lang, avatarUrl }: { name: string; lang: string; avatarU
     <div className="relative inline-block shrink-0">
       {inner}
       {countryCode && (
-        <div className="absolute -bottom-2 -left-2 w-7 h-7 rounded-full border-2 border-white shadow-sm overflow-hidden bg-white">
-          <ReactCountryFlag countryCode={countryCode} svg style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
+        <div className="absolute -bottom-2.5 -left-2.5 rounded border-2 border-white shadow-sm overflow-hidden" style={{ width: 30, height: 20 }}>
+          <ReactCountryFlag countryCode={countryCode} svg style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
         </div>
       )}
     </div>
