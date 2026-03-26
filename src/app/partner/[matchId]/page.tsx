@@ -3,8 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { supabase, getMessages, sendMessage, type Message } from '@/lib/supabase';
-import ReactCountryFlag from 'react-country-flag';
-import { LANG_FLAGS, LANG_AVATAR_COLOR, LANG_COUNTRY_CODE } from '@/lib/constants';
+import { LANG_FLAGS, LANG_AVATAR_COLOR, LANG_FLAG_CODE } from '@/lib/constants';
 import AppShell from '@/components/AppShell';
 import { ArrowLeft, MessageCircle, Send, X, Calendar } from 'lucide-react';
 
@@ -23,7 +22,7 @@ interface PartnerData {
 
 function Avatar({ name, lang, avatarUrl }: { name: string; lang: string; avatarUrl?: string | null }) {
   const bg = LANG_AVATAR_COLOR[lang] ?? '#3b82f6';
-  const countryCode = LANG_COUNTRY_CODE[lang];
+  const flagCode = LANG_FLAG_CODE[lang];
   const inner = avatarUrl ? (
     <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0">
       <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
@@ -39,10 +38,11 @@ function Avatar({ name, lang, avatarUrl }: { name: string; lang: string; avatarU
   return (
     <div className="relative inline-block shrink-0">
       {inner}
-      {countryCode && (
-        <div className="absolute -bottom-2 -right-2 w-7 h-7 rounded-full overflow-hidden border-2 border-white shadow-sm">
-          <ReactCountryFlag countryCode={countryCode} svg style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-        </div>
+      {flagCode && (
+        <span
+          className={`fi fi-${flagCode} fis absolute -bottom-2 -right-2 w-7 h-7 rounded-full border-2 border-white shadow-sm overflow-hidden`}
+          style={{ backgroundSize: 'cover' }}
+        />
       )}
     </div>
   );

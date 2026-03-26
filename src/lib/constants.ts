@@ -53,6 +53,20 @@ export const LANG_COUNTRY_CODE: Record<string, string> = {
   Arabic:     'SA',
 };
 
+// Lowercase for flag-icons CSS classes (fi fi-xx fis)
+export const LANG_FLAG_CODE: Record<string, string> = {
+  English:    'us',
+  Japanese:   'jp',
+  Spanish:    'es',
+  French:     'fr',
+  Korean:     'kr',
+  Mandarin:   'cn',
+  Portuguese: 'br',
+  German:     'de',
+  Italian:    'it',
+  Arabic:     'sa',
+};
+
 // Hex values so they work as inline styles (avoids Tailwind JIT detection issues)
 export const LANG_AVATAR_COLOR: Record<string, string> = {
   Japanese:   '#3b82f6',
