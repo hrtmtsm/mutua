@@ -40,6 +40,19 @@ export const LANG_FLAGS: Record<string, string> = {
   Arabic:     '🇸🇦',
 };
 
+export const LANG_COUNTRY_CODE: Record<string, string> = {
+  English:    'US',
+  Japanese:   'JP',
+  Spanish:    'ES',
+  French:     'FR',
+  Korean:     'KR',
+  Mandarin:   'CN',
+  Portuguese: 'BR',
+  German:     'DE',
+  Italian:    'IT',
+  Arabic:     'SA',
+};
+
 // Hex values so they work as inline styles (avoids Tailwind JIT detection issues)
 export const LANG_AVATAR_COLOR: Record<string, string> = {
   Japanese:   '#3b82f6',
