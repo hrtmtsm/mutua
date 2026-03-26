@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase, getMatchBySessionId, type Match, type SchedulingState } from '@/lib/supabase';
-import { LANG_FLAGS, LANG_AVATAR_COLOR } from '@/lib/constants';
+import { LANG_FLAGS, LANG_AVATAR_COLOR, INTEREST_CATEGORIES } from '@/lib/constants';
 import AppShell from '@/components/AppShell';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -219,11 +219,16 @@ export default function SessionPage() {
       const { data: partnerProfile } = await supabase
         .from('profiles').select('name, avatar_url, interests').eq('session_id', partnerSessionId).maybeSingle();
 
-      const toTags = (s?: string | null) => s ? [...new Set(s.split(',').map(t => t.trim()).filter(Boolean))] : [];
+      const allTags = INTEREST_CATEGORIES.flatMap(c => c.tags);
+      const normalizeTags = (s?: string | null) => s
+        ? [...new Set(s.split(',').map(t => t.trim()).filter(Boolean)
+            .map(t => allTags.find(tag => tag.toLowerCase() === t.toLowerCase()) ?? null)
+            .filter(Boolean) as string[])]
+        : [];
       const myStoredProfile = localStorage.getItem('mutua_profile');
-      const myInterests = myStoredProfile ? toTags(JSON.parse(myStoredProfile).interests) : [];
-      const partnerTags = toTags(partnerProfile?.interests).map(t => t.toLowerCase());
-      const sharedInterests = myInterests.filter(t => partnerTags.includes(t.toLowerCase()));
+      const myInterests = normalizeTags(myStoredProfile ? JSON.parse(myStoredProfile).interests : null);
+      const partnerInterests = normalizeTags(partnerProfile?.interests);
+      const sharedInterests = myInterests.filter(t => partnerInterests.includes(t));
 
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
       const storageAvatarUrl = `${supabaseUrl}/storage/v1/object/public/avatars/${partnerSessionId}.jpg`;

@@ -171,7 +171,15 @@ export default function ProfilePage() {
           .filter(Boolean)
           .map((s: string) => allTags.find(t => t.toLowerCase() === s.toLowerCase()) ?? null)
           .filter(Boolean) as string[];
-        setInterests([...new Set(normalized)].slice(0, 5));
+        const deduped = [...new Set(normalized)].slice(0, 5);
+        setInterests(deduped);
+        // Write normalized value back to localStorage so loadMatch reads clean data
+        const stored = localStorage.getItem('mutua_profile');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          parsed.interests = deduped.join(', ');
+          localStorage.setItem('mutua_profile', JSON.stringify(parsed));
+        }
       }
     }
 
