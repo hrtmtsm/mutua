@@ -22,6 +22,7 @@ interface PartnerCard {
   scheduledAt:      string | null;   // UTC ISO string when scheduled
   iAmA:             boolean;         // true = I am session_id_a
   avatarUrl:        string | null;
+  sharedInterests:  string[];
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -70,6 +71,7 @@ function partnerFromMatch(m: Match, sessionId: string): PartnerCard {
     scheduledAt:     m.scheduled_at ?? null,
     iAmA:            isA,
     avatarUrl:       null,
+    sharedInterests: [],
   };
 }
 
@@ -139,7 +141,7 @@ function SchedulingCard({
       <div className="px-6 py-4">
         <p className="text-xs font-semibold text-stone-400 mb-2">In common</p>
         <div className="flex flex-wrap gap-1.5">
-          {[partner.goal, partner.commStyle, partner.frequency].filter(Boolean).map((v, i) => (
+          {[partner.goal, partner.commStyle, partner.frequency, ...partner.sharedInterests].filter(Boolean).map((v, i) => (
             <span key={i} className="px-2.5 py-1 bg-stone-100 text-xs font-medium text-stone-500 rounded-full">{v}</span>
           ))}
         </div>
@@ -213,15 +215,18 @@ export default function SessionPage() {
       const isA = m.session_id_a === sid;
       const partnerSessionId = isA ? m.session_id_b : m.session_id_a;
 
-      const { data: partnerProfile } = await supabase
-        .from('profiles')
-        .select('name, avatar_url')
-        .eq('session_id', partnerSessionId)
-        .maybeSingle();
+      const [{ data: partnerProfile }, { data: myProfile }] = await Promise.all([
+        supabase.from('profiles').select('name, avatar_url, interests').eq('session_id', partnerSessionId).maybeSingle(),
+        supabase.from('profiles').select('interests').eq('session_id', sid).maybeSingle(),
+      ]);
+
+      const toTags = (s?: string | null) => s ? s.split(',').map(t => t.trim()).filter(Boolean) : [];
+      const sharedInterests = toTags(myProfile?.interests).filter(t => toTags(partnerProfile?.interests).includes(t));
 
       const card = partnerFromMatch(m, sid);
       if (partnerProfile?.name) card.name = partnerProfile.name;
       if (partnerProfile?.avatar_url) card.avatarUrl = partnerProfile.avatar_url;
+      card.sharedInterests = sharedInterests;
 
       setPartner(card);
       setMatchId(m.id);
@@ -264,6 +269,7 @@ export default function SessionPage() {
       scheduledAt:     null,
       iAmA:            true,
       avatarUrl:       null,
+      sharedInterests: [],
     });
     return true;
   }, []);
