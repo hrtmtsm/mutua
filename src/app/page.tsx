@@ -73,7 +73,7 @@ export default function LandingPage() {
 
           <div className="text-center px-6 pt-10 pb-2">
             <h1
-              className="font-serif font-black text-white leading-[0.97] tracking-[-0.02em] mb-5"
+              className="font-serif font-semibold text-white leading-[0.97] tracking-[-0.02em] mb-5"
               style={{ fontSize: 'clamp(38px, 5vw, 68px)' }}
             >
               Find someone who actually<br />wants to practice.
