@@ -135,15 +135,18 @@ function SchedulingCard({
         </div>
       </button>
 
-      {/* Shared context — no section label */}
-      <div className="px-6 py-4 flex flex-wrap gap-1.5 border-t border-stone-100">
-        {[partner.goal, partner.commStyle, partner.frequency].filter(Boolean).map((v, i) => (
-          <span key={i} className="px-2.5 py-1 bg-stone-100 text-xs font-medium text-stone-500 rounded-full">{v}</span>
-        ))}
+      {/* In common */}
+      <div className="px-6 py-4">
+        <p className="text-xs font-semibold text-stone-400 mb-2">In common</p>
+        <div className="flex flex-wrap gap-1.5">
+          {[partner.goal, partner.commStyle, partner.frequency].filter(Boolean).map((v, i) => (
+            <span key={i} className="px-2.5 py-1 bg-stone-100 text-xs font-medium text-stone-500 rounded-full">{v}</span>
+          ))}
+        </div>
       </div>
 
       {/* State-driven footer */}
-      <div className="px-6 pb-5 pt-1 border-t border-stone-100">
+      <div className="px-6 pb-5 pt-1">
 
         {iNeedToSet && (
           <button onClick={onBookExchange} className="w-full py-3 btn-primary text-white font-bold text-sm rounded-xl mt-3">
