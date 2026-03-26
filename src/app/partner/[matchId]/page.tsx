@@ -22,10 +22,11 @@ interface PartnerData {
 
 function Avatar({ name, lang, avatarUrl }: { name: string; lang: string; avatarUrl?: string | null }) {
   const bg = LANG_AVATAR_COLOR[lang] ?? '#3b82f6';
-  if (avatarUrl) {
+  const [imgFailed, setImgFailed] = useState(false);
+  if (avatarUrl && !imgFailed) {
     return (
       <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0">
-        <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
+        <img src={avatarUrl} alt={name} className="w-full h-full object-cover" onError={() => setImgFailed(true)} />
       </div>
     );
   }
@@ -170,6 +171,10 @@ export default function PartnerProfilePage() {
 
       const baseName = isA ? (match.name_b ?? 'Partner') : (match.name_a ?? 'Partner');
 
+      // Construct avatar URL directly from storage path — more reliable than DB column
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+      const storageAvatarUrl = `${supabaseUrl}/storage/v1/object/public/avatars/${partnerSessionId}.jpg`;
+
       setPartner({
         name:             profile?.name ?? baseName,
         nativeLang:       isA ? match.native_language_b : match.native_language_a,
@@ -180,7 +185,7 @@ export default function PartnerProfilePage() {
         interests:        profile?.interests      ?? '',
         schedulingState:  match.scheduling_state  ?? 'pending_both',
         scheduledAt:      match.scheduled_at      ?? null,
-        avatarUrl:        profile?.avatar_url     ?? null,
+        avatarUrl:        profile?.avatar_url     ?? storageAvatarUrl,
       });
 
       setLoading(false);
