@@ -75,6 +75,17 @@ export const LANG_FLAGS: Record<string, string> = {
   German:     '🇩🇪',
   Italian:    '🇮🇹',
   Arabic:     '🇸🇦',
+  Hindi:      '🇮🇳',
+  Turkish:    '🇹🇷',
+  Vietnamese: '🇻🇳',
+  Thai:       '🇹🇭',
+  Indonesian: '🇮🇩',
+  Dutch:      '🇳🇱',
+  Polish:     '🇵🇱',
+  Swedish:    '🇸🇪',
+  Russian:    '🇷🇺',
+  Tagalog:    '🇵🇭',
+  Swahili:    '🇰🇪',
 };
 
 export const LANG_COUNTRY_CODE: Record<string, string> = {
@@ -88,6 +99,17 @@ export const LANG_COUNTRY_CODE: Record<string, string> = {
   German:     'DE',
   Italian:    'IT',
   Arabic:     'SA',
+  Hindi:      'IN',
+  Turkish:    'TR',
+  Vietnamese: 'VN',
+  Thai:       'TH',
+  Indonesian: 'ID',
+  Dutch:      'NL',
+  Polish:     'PL',
+  Swedish:    'SE',
+  Russian:    'RU',
+  Tagalog:    'PH',
+  Swahili:    'KE',
 };
 
 // Lowercase for flag-icons CSS classes (fi fi-xx fis)
@@ -102,6 +124,17 @@ export const LANG_FLAG_CODE: Record<string, string> = {
   German:     'de',
   Italian:    'it',
   Arabic:     'sa',
+  Hindi:      'in',
+  Turkish:    'tr',
+  Vietnamese: 'vn',
+  Thai:       'th',
+  Indonesian: 'id',
+  Dutch:      'nl',
+  Polish:     'pl',
+  Swedish:    'se',
+  Russian:    'ru',
+  Tagalog:    'ph',
+  Swahili:    'ke',
 };
 
 // Hex values so they work as inline styles (avoids Tailwind JIT detection issues)
@@ -116,4 +149,15 @@ export const LANG_AVATAR_COLOR: Record<string, string> = {
   German:     '#64748b',
   Italian:    '#ec4899',
   Arabic:     '#14b8a6',
+  Hindi:      '#f43f5e',
+  Turkish:    '#dc2626',
+  Vietnamese: '#16a34a',
+  Thai:       '#7c3aed',
+  Indonesian: '#b45309',
+  Dutch:      '#0369a1',
+  Polish:     '#be123c',
+  Swedish:    '#1d4ed8',
+  Russian:    '#1e40af',
+  Tagalog:    '#0891b2',
+  Swahili:    '#15803d',
 };

@@ -1,6 +1,8 @@
 export const LANGUAGES = [
   'English', 'Japanese', 'Spanish', 'French', 'Korean',
   'Mandarin', 'Portuguese', 'German', 'Italian', 'Arabic',
+  'Hindi', 'Turkish', 'Vietnamese', 'Thai', 'Indonesian',
+  'Dutch', 'Polish', 'Swedish', 'Russian', 'Tagalog', 'Swahili',
 ] as const;
 
 export const GOALS = [
