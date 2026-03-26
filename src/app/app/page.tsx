@@ -142,14 +142,14 @@ function SchedulingCard({
 
       {/* Bio */}
       {partner.bio && (
-        <div className="px-6 py-4 border-t border-stone-100">
+        <div className="px-6 pb-5">
           <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-widest mb-1.5">About</p>
           <p className="text-sm text-stone-500 leading-relaxed">{partner.bio}</p>
         </div>
       )}
 
       {/* In common */}
-      <div className="px-6 py-4 border-t border-stone-100">
+      <div className="px-6 pb-5">
         <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-widest mb-2.5">In common</p>
         <div className="flex flex-wrap gap-1.5">
           {[partner.goal, partner.commStyle, partner.frequency, ...partner.sharedInterests].filter(Boolean).map((v, i) => (
@@ -160,7 +160,7 @@ function SchedulingCard({
 
       {/* State-driven footer */}
       {iNeedToSet && (
-        <div className="px-6 py-5 border-t border-stone-100">
+        <div className="px-6 pb-6">
           <button onClick={onBookExchange} className="w-full py-3 btn-primary text-white text-sm rounded-xl">
             Pick a time to meet →
           </button>
@@ -168,7 +168,7 @@ function SchedulingCard({
       )}
 
       {waitingOnPartner && (
-        <div className="px-6 py-5 border-t border-stone-100">
+        <div className="px-6 pb-6">
           <p className="text-sm text-stone-400">
             You're set — waiting on <span className="font-medium text-neutral-600">{partner.name}</span> to share their availability.
           </p>
@@ -176,13 +176,13 @@ function SchedulingCard({
       )}
 
       {s === 'computing' && (
-        <div className="px-6 py-5 border-t border-stone-100">
+        <div className="px-6 pb-6">
           <p className="text-sm text-stone-400">Finding a time that works for both of you…</p>
         </div>
       )}
 
       {s === 'no_overlap' && (
-        <div className="px-6 py-5 border-t border-stone-100 space-y-3">
+        <div className="px-6 pb-6 space-y-3">
           <p className="text-sm text-stone-400">No overlapping slots yet. Update your free times and we'll keep trying.</p>
           <button onClick={onBookExchange} className="w-full py-3 btn-primary text-white text-sm rounded-xl">
             Update my availability →
@@ -191,7 +191,7 @@ function SchedulingCard({
       )}
 
       {s === 'scheduled' && partner.scheduledAt && (
-        <div className="px-6 py-4 bg-stone-50 border-t border-stone-100 flex items-center justify-between gap-3">
+        <div className="px-6 pb-6 flex items-center justify-between gap-3">
           <div>
             <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-widest">First session</p>
             <p className="font-semibold text-neutral-800 text-sm mt-1">{fmtScheduledAt(partner.scheduledAt)}</p>
