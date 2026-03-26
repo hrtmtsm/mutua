@@ -276,7 +276,7 @@ export default function ProfilePage() {
         {profile ? (
           <>
             {/* ── Identity card ── */}
-            <div className="bg-[#F4F4F4] rounded-2xl shadow-sm p-6 space-y-4">
+            <div className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
 
               <div className="flex items-center justify-between">
                 <p className="text-xs font-semibold text-stone-400">Your identity</p>
@@ -346,7 +346,7 @@ export default function ProfilePage() {
             </div>
 
             {/* ── Preferences card ── */}
-            <div className="bg-[#F4F4F4] rounded-2xl shadow-sm p-6 space-y-4">
+            <div className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
 
               <div className="flex items-center justify-between">
                 <p className="text-xs font-semibold text-stone-400">Your preferences</p>
@@ -384,7 +384,7 @@ export default function ProfilePage() {
             </div>
 
             {/* ── Availability card ── */}
-            <div className="bg-[#F4F4F4] rounded-2xl shadow-sm p-6 space-y-4">
+            <div className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-semibold text-stone-400">Weekly availability</p>
@@ -435,7 +435,7 @@ export default function ProfilePage() {
 
           </>
         ) : (
-          <div className="bg-[#F4F4F4] rounded-2xl shadow-sm px-8 py-12 text-center space-y-3">
+          <div className="bg-white rounded-2xl shadow-sm px-8 py-12 text-center space-y-3">
             <p className="font-serif font-black text-xl text-neutral-900">No profile yet</p>
             <p className="text-sm text-stone-500">Complete onboarding to set up your profile.</p>
             <button onClick={() => router.push('/onboarding')} className="mt-2 inline-block px-6 py-2.5 btn-primary text-white font-bold text-sm rounded-full shadow-md">

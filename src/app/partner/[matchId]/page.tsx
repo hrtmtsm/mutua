@@ -239,7 +239,7 @@ export default function PartnerProfilePage() {
         <div className="px-6 space-y-4">
 
           {/* Session */}
-          <div className="bg-[#F4F4F4] rounded-2xl shadow-sm p-5 space-y-3">
+          <div className="bg-white rounded-2xl shadow-sm p-5 space-y-3">
             <p className="text-xs font-semibold text-stone-400">Session</p>
 
             {s === 'scheduled' && partner.scheduledAt ? (
@@ -262,7 +262,7 @@ export default function PartnerProfilePage() {
           </div>
 
           {/* Preferences */}
-          <div className="bg-[#F4F4F4] rounded-2xl shadow-sm overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
             <p className="text-xs font-semibold text-stone-400 px-5 pt-5 pb-3">Preferences</p>
             {[
               { label: 'Learning',   value: `${learningFlag} ${partner.learningLang}` },
