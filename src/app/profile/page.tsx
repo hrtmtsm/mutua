@@ -378,9 +378,7 @@ export default function ProfilePage() {
               <div className="pt-2 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-stone-400">Interests</span>
-                  {interests.length > 0 && !editing && (
-                    <span className="text-xs text-stone-400">{interests.length} selected</span>
-                  )}
+                  <span className="text-xs text-stone-400">{editing ? `${interests.length}/5` : interests.length > 0 ? `${interests.length} selected` : ''}</span>
                 </div>
                 {editing ? (
                   <div className="space-y-3">
@@ -390,16 +388,20 @@ export default function ProfilePage() {
                         <div className="flex flex-wrap gap-1.5">
                           {cat.tags.map(tag => {
                             const selected = interests.includes(tag);
+                            const maxed = interests.length >= 5 && !selected;
                             return (
                               <button
                                 key={tag}
                                 type="button"
+                                disabled={maxed}
                                 onClick={() => setInterests(prev =>
                                   selected ? prev.filter(t => t !== tag) : [...prev, tag]
                                 )}
                                 className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
                                   selected
                                     ? 'bg-neutral-900 text-white'
+                                    : maxed
+                                    ? 'bg-stone-100 text-stone-300 cursor-not-allowed'
                                     : 'bg-stone-100 text-stone-500 hover:bg-stone-200'
                                 }`}
                               >
