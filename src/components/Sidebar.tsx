@@ -242,7 +242,7 @@ export default function TopNav() {
   const [messages, setMessages]             = useState<Message[]>([]);
   const [scheduleState, setScheduleState]   = useState<string | null>(null);
 
-  // Watch for scheduling updates and set unread dot
+  // Always-on: watch for scheduling updates + new messages → set unread dot
   useEffect(() => {
     const sessionId = localStorage.getItem('mutua_session_id');
     if (!sessionId) return;
@@ -260,7 +260,7 @@ export default function TopNav() {
       if (!match) return;
       prevState = match.scheduling_state;
 
-      const channel = supabase
+      const scheduleChannel = supabase
         .channel(`nav-schedule:${match.id}`)
         .on('postgres_changes', {
           event: 'UPDATE', schema: 'public', table: 'matches', filter: `id=eq.${match.id}`,
@@ -274,7 +274,23 @@ export default function TopNav() {
         })
         .subscribe();
 
-      return () => { supabase.removeChannel(channel); };
+      const msgChannel = supabase
+        .channel(`nav-messages:${match.id}`)
+        .on('postgres_changes', {
+          event: 'INSERT', schema: 'public', table: 'messages', filter: `match_id=eq.${match.id}`,
+        }, payload => {
+          const msg = payload.new as Message;
+          if (msg.sender_id !== sessionId) {
+            localStorage.setItem('mutua_unread_message', '1');
+            setHasUnread(true);
+          }
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(scheduleChannel);
+        supabase.removeChannel(msgChannel);
+      };
     }
 
     const cleanup = init();
@@ -333,11 +349,6 @@ export default function TopNav() {
           const msg = payload.new as Message;
           if (msg.match_id === match.id) {
             setMessages(prev => [...prev, msg]);
-            // Only flag unread if the message is from the partner
-            if (msg.sender_id !== sessionId) {
-              localStorage.setItem('mutua_unread_message', '1');
-              setHasUnread(true);
-            }
           }
         })
         .subscribe();
