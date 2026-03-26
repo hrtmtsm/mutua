@@ -141,7 +141,8 @@ function SchedulingCard({
 
       {/* Bio */}
       {partner.bio && (
-        <div className="px-6 pb-1 pt-3">
+        <div className="px-6 pb-1 pt-3 space-y-1">
+          <p className="text-xs font-semibold text-stone-400">About</p>
           <p className="text-sm text-stone-500 leading-relaxed">{partner.bio}</p>
         </div>
       )}
