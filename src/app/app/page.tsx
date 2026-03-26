@@ -226,9 +226,17 @@ export default function SessionPage() {
             .filter(Boolean) as string[])]
         : [];
       const myStoredProfile = localStorage.getItem('mutua_profile');
-      const myInterests = normalizeTags(myStoredProfile ? JSON.parse(myStoredProfile).interests : null);
+      const myRaw = myStoredProfile ? JSON.parse(myStoredProfile).interests : null;
+      const myInterests = normalizeTags(myRaw);
       const partnerInterests = normalizeTags(partnerProfile?.interests);
       const sharedInterests = myInterests.filter(t => partnerInterests.includes(t));
+      console.log('[shared interests debug]', {
+        myRaw,
+        partnerRaw: partnerProfile?.interests,
+        myInterests,
+        partnerInterests,
+        sharedInterests,
+      });
 
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
       const storageAvatarUrl = `${supabaseUrl}/storage/v1/object/public/avatars/${partnerSessionId}.jpg`;
@@ -289,6 +297,17 @@ export default function SessionPage() {
       const sid = localStorage.getItem('mutua_session_id');
       if (!sid) { router.replace('/onboarding'); return; }
       setSessionId(sid);
+
+      // Sync interests from localStorage → DB so partner can see them
+      const storedProfile = localStorage.getItem('mutua_profile');
+      if (storedProfile) {
+        try {
+          const p = JSON.parse(storedProfile);
+          if (p.interests) {
+            supabase.from('profiles').update({ interests: p.interests }).eq('session_id', sid).then(() => {});
+          }
+        } catch { /* ignore */ }
+      }
 
       const found = await loadMatch(sid);
       if (!found) loadFromLocalStorage();

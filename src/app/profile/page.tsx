@@ -149,6 +149,7 @@ export default function ProfilePage() {
   const [commStyle,  setCommStyle]  = useState<CommStyle>('Voice call');
   const [practiceFrequency, setPracticeFrequency] = useState<Frequency>('Once a week');
   const [interests, setInterests] = useState<string[]>([]);
+  const [bio,       setBio]       = useState('');
 
   useEffect(() => {
     const stored = localStorage.getItem('mutua_profile');
@@ -163,6 +164,7 @@ export default function ProfilePage() {
       setGoal(p.goal);
       setCommStyle(p.comm_style);
       if (p.practice_frequency) setPracticeFrequency(p.practice_frequency);
+      if (p.bio) setBio(p.bio);
       if (p.interests) {
         const allTags = INTEREST_CATEGORIES.flatMap(c => c.tags);
         const normalized = p.interests
@@ -263,6 +265,7 @@ export default function ProfilePage() {
       comm_style:         commStyle,
       practice_frequency: practiceFrequency,
       interests:          interests.length ? interests.join(', ') : undefined,
+      bio:                bio.trim() || undefined,
     };
     localStorage.setItem('mutua_profile', JSON.stringify(updated));
     setProfile(updated);
@@ -389,6 +392,27 @@ export default function ProfilePage() {
                     {editing ? editor : <span className="text-sm font-semibold text-neutral-500">{value}</span>}
                   </div>
                 ))}
+              </div>
+
+              {/* Bio */}
+              <div className="pt-2 space-y-2 border-t border-stone-100">
+                <div className="flex items-center justify-between pt-3">
+                  <span className="text-xs font-semibold text-stone-400">About me</span>
+                  {editing && <span className="text-xs text-stone-400">{bio.length}/150</span>}
+                </div>
+                {editing ? (
+                  <textarea
+                    value={bio}
+                    onChange={e => setBio(e.target.value.slice(0, 150))}
+                    placeholder="Tell your partner a bit about yourself..."
+                    rows={3}
+                    className="w-full px-3 py-2 border border-stone-200 rounded-xl text-sm text-neutral-900 placeholder:text-stone-300 focus:outline-none focus:border-neutral-400 transition-all resize-none leading-relaxed"
+                  />
+                ) : (
+                  <p className="text-sm text-neutral-500 leading-relaxed">
+                    {bio || <span className="text-stone-300">Not set</span>}
+                  </p>
+                )}
               </div>
 
               {/* Interests tag picker */}

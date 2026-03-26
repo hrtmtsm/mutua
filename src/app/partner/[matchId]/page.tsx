@@ -15,6 +15,7 @@ interface PartnerData {
   commStyle: string;
   frequency: string;
   interests?: string;
+  bio?: string;
   schedulingState: string;
   scheduledAt: string | null;
   avatarUrl: string | null;
@@ -165,7 +166,7 @@ export default function PartnerProfilePage() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('name, interests, avatar_url')
+        .select('name, interests, bio, avatar_url')
         .eq('session_id', partnerSessionId)
         .maybeSingle();
 
@@ -183,6 +184,7 @@ export default function PartnerProfilePage() {
         commStyle:        match.comm_style        ?? '',
         frequency:        match.practice_frequency ?? '',
         interests:        profile?.interests      ?? '',
+        bio:              profile?.bio            ?? '',
         schedulingState:  match.scheduling_state  ?? 'pending_both',
         scheduledAt:      match.scheduled_at      ?? null,
         avatarUrl:        profile?.avatar_url     ?? storageAvatarUrl,
@@ -238,6 +240,9 @@ export default function PartnerProfilePage() {
           <div>
             <h1 className="font-serif font-bold text-3xl text-[#171717]">{partner.name}</h1>
             <p className="text-sm text-stone-400 mt-1">{nativeFlag} {partner.nativeLang} · Native</p>
+            {partner.bio && (
+              <p className="text-sm text-stone-500 mt-3 leading-relaxed max-w-xs">{partner.bio}</p>
+            )}
           </div>
         </div>
 
