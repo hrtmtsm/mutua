@@ -104,6 +104,7 @@ function SchedulingCard({
   const learningFlag = LANG_FLAGS[partner.learningLang] ?? '';
 
   const [showPicker, setShowPicker] = useState(false);
+  const [showNotYet, setShowNotYet] = useState(false);
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 60_000);
@@ -203,21 +204,46 @@ function SchedulingCard({
       )}
 
       {s === 'scheduled' && partner.scheduledAt && (
-        <div className="px-6 pb-6 flex items-center justify-between gap-3">
-          <div>
-            <p className="text-xs font-medium text-stone-400">First session</p>
-            <p className="font-semibold text-neutral-800 text-sm mt-1">{fmtScheduledAt(partner.scheduledAt)}</p>
+        <>
+          <div className="px-6 pb-6 flex items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-medium text-stone-400">First session</p>
+              <p className="font-semibold text-neutral-800 text-sm mt-1">{fmtScheduledAt(partner.scheduledAt)}</p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button onClick={onReschedule} className="px-4 py-2.5 border border-stone-200 bg-white text-sm text-neutral-500 font-medium rounded-xl hover:bg-stone-50 transition-colors">
+                Reschedule
+              </button>
+              <button
+                onClick={() => isJoinable(partner.scheduledAt!, now) ? onJoin() : setShowNotYet(true)}
+                className="px-5 py-2.5 btn-primary text-white text-sm rounded-xl"
+              >
+                Join session →
+              </button>
+            </div>
           </div>
-          {isJoinable(partner.scheduledAt, now) ? (
-            <button onClick={onJoin} className="px-5 py-2.5 btn-primary text-white text-sm rounded-xl">
-              Join session →
-            </button>
-          ) : (
-            <button onClick={onReschedule} className="px-4 py-2.5 border border-stone-200 bg-white text-sm text-neutral-500 font-medium rounded-xl hover:bg-stone-50 transition-colors">
-              Reschedule
-            </button>
+
+          {showNotYet && (
+            <div className="fixed inset-0 bg-black/40 flex items-center justify-center px-6 z-50">
+              <div className="bg-white rounded-2xl p-7 max-w-sm w-full space-y-4 shadow-xl">
+                <div>
+                  <p className="font-semibold text-neutral-900 text-base">Session not started yet</p>
+                  <p className="text-sm text-stone-500 mt-1 leading-relaxed">
+                    Your session with <span className="font-medium text-neutral-700">{partner.name}</span> begins on{' '}
+                    <span className="font-medium text-neutral-700">{fmtScheduledAt(partner.scheduledAt!)}</span>.
+                    Come back then to join.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowNotYet(false)}
+                  className="w-full py-3 bg-stone-100 hover:bg-stone-200 transition-colors text-neutral-700 font-semibold text-sm rounded-xl"
+                >
+                  Got it
+                </button>
+              </div>
+            </div>
           )}
-        </div>
+        </>
       )}
 
     </div>
