@@ -87,6 +87,7 @@ function SchedulingCard({
   onJoin,
   onBookExchange,
   onViewProfile,
+  hasConfirmed,
 }: {
   partner:         PartnerCard;
   onConfirm:       (matchId: string, scheduledAt: string) => void;
@@ -94,6 +95,7 @@ function SchedulingCard({
   onJoin:          () => void;
   onBookExchange:  () => void;
   onViewProfile:   () => void;
+  hasConfirmed:    boolean;
 }) {
   const nativeFlag   = LANG_FLAGS[partner.nativeLang]   ?? '';
   const learningFlag = LANG_FLAGS[partner.learningLang] ?? '';
@@ -198,14 +200,18 @@ function SchedulingCard({
             <p className="text-xs font-medium text-stone-400">First session</p>
             <p className="font-semibold text-neutral-800 text-sm mt-1">{fmtScheduledAt(partner.scheduledAt)}</p>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <button onClick={onReschedule} className="px-4 py-2.5 border border-stone-200 bg-white text-sm text-neutral-500 font-medium rounded-xl hover:bg-stone-50 transition-colors">
-              Reschedule
-            </button>
-            <button onClick={() => onConfirm(partner.matchId, partner.scheduledAt!)} className="px-5 py-2.5 btn-primary text-white text-sm rounded-xl">
-              I'm in →
-            </button>
-          </div>
+          {hasConfirmed ? (
+            <span className="text-sm font-medium text-green-600">You're confirmed ✓</span>
+          ) : (
+            <div className="flex items-center gap-2 shrink-0">
+              <button onClick={onReschedule} className="px-4 py-2.5 border border-stone-200 bg-white text-sm text-neutral-500 font-medium rounded-xl hover:bg-stone-50 transition-colors">
+                Reschedule
+              </button>
+              <button onClick={() => onConfirm(partner.matchId, partner.scheduledAt!)} className="px-5 py-2.5 btn-primary text-white text-sm rounded-xl">
+                I'm in →
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -221,7 +227,8 @@ export default function SessionPage() {
   const [loading,   setLoading]   = useState(true);
   const [matchId,   setMatchId]   = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [confirmed, setConfirmed] = useState<{ name: string; time: string } | null>(null);
+  const [confirmed,    setConfirmed]    = useState<{ name: string; time: string } | null>(null);
+  const [hasConfirmed, setHasConfirmed] = useState(false);
 
   const loadMatch = useCallback(async (sid: string) => {
     try {
@@ -263,6 +270,7 @@ export default function SessionPage() {
 
       setPartner(card);
       setMatchId(m.id);
+      setHasConfirmed(!!localStorage.getItem(`mutua_confirmed_${m.id}`));
       if (card.schedulingState === 'scheduled' && card.scheduledAt) {
         localStorage.setItem('mutua_last_notification', JSON.stringify({
           type: 'session_scheduled',
@@ -402,6 +410,8 @@ export default function SessionPage() {
     }).catch(() => {});
 
     track('session_confirmed', { partner_name: p.name, scheduled_at: scheduledAt });
+    localStorage.setItem(`mutua_confirmed_${mId}`, '1');
+    setHasConfirmed(true);
     setConfirmed({ name: p.name, time: fmtScheduledAt(scheduledAt) });
     setPartner(prev => prev ? { ...prev, schedulingState: 'scheduled' } : prev);
   };
@@ -442,6 +452,7 @@ export default function SessionPage() {
             onJoin={handleJoin}
             onBookExchange={handleBookExchange}
             onViewProfile={() => router.push(`/partner/${partner.matchId}`)}
+            hasConfirmed={hasConfirmed}
           />
         ) : (
           <div className="bg-white/60 border border-stone-200 border-dashed rounded-2xl px-6 py-10 text-center">
