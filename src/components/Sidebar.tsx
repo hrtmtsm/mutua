@@ -279,13 +279,14 @@ export default function TopNav() {
         .on('postgres_changes', {
           event: 'INSERT', schema: 'public', table: 'messages',
         }, payload => {
+          console.log('[nav-messages] received', payload.new);
           const msg = payload.new as Message;
           if (msg.match_id === match.id && msg.sender_id !== sessionId) {
             localStorage.setItem('mutua_unread_message', '1');
             setHasUnread(true);
           }
         })
-        .subscribe();
+        .subscribe(status => console.log('[nav-messages] status', status));
 
       return () => {
         supabase.removeChannel(scheduleChannel);
