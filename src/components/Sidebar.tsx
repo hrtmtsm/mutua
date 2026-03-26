@@ -277,10 +277,10 @@ export default function TopNav() {
       const msgChannel = supabase
         .channel(`nav-messages:${match.id}`)
         .on('postgres_changes', {
-          event: 'INSERT', schema: 'public', table: 'messages', filter: `match_id=eq.${match.id}`,
+          event: 'INSERT', schema: 'public', table: 'messages',
         }, payload => {
           const msg = payload.new as Message;
-          if (msg.sender_id !== sessionId) {
+          if (msg.match_id === match.id && msg.sender_id !== sessionId) {
             localStorage.setItem('mutua_unread_message', '1');
             setHasUnread(true);
           }
