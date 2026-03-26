@@ -30,10 +30,13 @@ export async function POST(request: Request) {
   const { data } = adminClient.storage.from('avatars').getPublicUrl(path);
   const url = data.publicUrl + '?t=' + Date.now();
 
-  await adminClient
+  const { error: dbError } = await adminClient
     .from('profiles')
-    .update({ avatar_url: url })
-    .eq('session_id', sessionId);
+    .upsert({ session_id: sessionId, avatar_url: url }, { onConflict: 'session_id' });
+
+  if (dbError) {
+    console.error('Profile avatar_url update failed:', dbError.message);
+  }
 
   return NextResponse.json({ url });
 }
