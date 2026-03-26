@@ -45,7 +45,10 @@ function useNavState() {
       setAvatarBg(LANG_AVATAR_COLOR[lang] ?? '#171717');
       setAvatarUrl(profile.avatar_url ?? '');
     }
-    setHasUnreadState(!!localStorage.getItem('mutua_unread_notification'));
+    setHasUnreadState(
+      !!localStorage.getItem('mutua_unread_notification') ||
+      !!localStorage.getItem('mutua_unread_message')
+    );
   }, [pathname]);
 
   const setHasUnread = (v: boolean) => setHasUnreadState(v);
@@ -330,6 +333,11 @@ export default function TopNav() {
           const msg = payload.new as Message;
           if (msg.match_id === match.id) {
             setMessages(prev => [...prev, msg]);
+            // Only flag unread if the message is from the partner
+            if (msg.sender_id !== sessionId) {
+              localStorage.setItem('mutua_unread_message', '1');
+              setHasUnread(true);
+            }
           }
         })
         .subscribe();
@@ -382,6 +390,7 @@ export default function TopNav() {
               setMsgView('list');
               setHasUnread(false);
               localStorage.removeItem('mutua_unread_notification');
+              localStorage.removeItem('mutua_unread_message');
             }}
             className="relative p-1.5 text-stone-400 hover:text-neutral-700 transition-colors"
           >
