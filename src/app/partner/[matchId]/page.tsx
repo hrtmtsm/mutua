@@ -22,19 +22,25 @@ interface PartnerData {
 
 function Avatar({ name, lang, avatarUrl }: { name: string; lang: string; avatarUrl?: string | null }) {
   const bg = LANG_AVATAR_COLOR[lang] ?? '#3b82f6';
-  if (avatarUrl) {
-    return (
-      <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0">
-        <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
-      </div>
-    );
-  }
-  return (
+  const flag = LANG_FLAGS[lang] ?? '';
+  const inner = avatarUrl ? (
+    <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0">
+      <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
+    </div>
+  ) : (
     <div
       style={{ backgroundColor: bg }}
       className="w-20 h-20 rounded-2xl flex items-center justify-center font-black text-white text-2xl shrink-0"
     >
       {name.trim().slice(0, 2).toUpperCase()}
+    </div>
+  );
+  return (
+    <div className="relative inline-block shrink-0">
+      {inner}
+      {flag && (
+        <span className="absolute -bottom-1.5 -right-1.5 text-xl leading-none">{flag}</span>
+      )}
     </div>
   );
 }

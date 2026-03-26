@@ -29,19 +29,25 @@ interface PartnerCard {
 function Avatar({ name, lang, avatarUrl, size = 'md' }: { name: string; lang: string; avatarUrl?: string | null; size?: 'sm' | 'md' | 'lg' }) {
   const bg  = LANG_AVATAR_COLOR[lang] ?? '#3b82f6';
   const cls = size === 'lg' ? 'w-16 h-16 text-xl' : size === 'sm' ? 'w-10 h-10 text-sm' : 'w-12 h-12 text-base';
-  if (avatarUrl) {
-    return (
-      <div className={`${cls} rounded-2xl overflow-hidden shrink-0`}>
-        <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
-      </div>
-    );
-  }
-  return (
+  const flag = LANG_FLAGS[lang] ?? '';
+  const inner = avatarUrl ? (
+    <div className={`${cls} rounded-2xl overflow-hidden shrink-0`}>
+      <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
+    </div>
+  ) : (
     <div
       style={{ backgroundColor: bg }}
       className={`${cls} rounded-2xl flex items-center justify-center font-black text-white shrink-0`}
     >
       {name.trim().slice(0, 2).toUpperCase()}
+    </div>
+  );
+  return (
+    <div className="relative shrink-0 inline-block">
+      {inner}
+      {flag && (
+        <span className="absolute -bottom-1 -right-1 text-base leading-none">{flag}</span>
+      )}
     </div>
   );
 }
@@ -105,16 +111,12 @@ function SchedulingCard({
     (s === 'pending_a' && !partner.iAmA) ||
     (s === 'pending_b' && partner.iAmA);
 
-  const avatarBg = LANG_AVATAR_COLOR[partner.nativeLang] ?? '#3b82f6';
-
   return (
     <div className="overflow-hidden bg-white rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.07)]">
 
-      {/* Colored hero strip */}
       <button
         onClick={onViewProfile}
         className="w-full text-left block"
-        style={{ backgroundColor: avatarBg + '18' }}
       >
         <div className="px-6 pt-6 pb-5 flex items-end gap-4">
           <Avatar name={partner.name} lang={partner.nativeLang} avatarUrl={partner.avatarUrl} size="lg" />
