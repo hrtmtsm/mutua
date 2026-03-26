@@ -302,7 +302,7 @@ export default function ProfilePage() {
     <AppShell>
       <main className="flex-1 px-6 py-10 max-w-2xl mx-auto w-full space-y-5">
 
-        <h1 className="font-serif font-bold text-3xl text-[#171717]">Profile</h1>
+        <h1 className="font-serif font-semibold text-2xl text-[#171717] uppercase tracking-widest">Profile</h1>
 
         {profile ? (
           <>

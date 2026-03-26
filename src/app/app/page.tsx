@@ -419,7 +419,7 @@ export default function SessionPage() {
 
         {/* Context header */}
         <div>
-          <h1 className="font-serif font-bold text-3xl text-[#171717]">Your exchange</h1>
+          <h1 className="font-serif font-semibold text-2xl text-[#171717] uppercase tracking-widest">Your exchange</h1>
           <p className="text-sm text-stone-400 mt-1">
             {loading ? '' : partner
               ? 'You have an active language partner. Confirm your first session to get started.'

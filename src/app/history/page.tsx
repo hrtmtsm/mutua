@@ -138,7 +138,7 @@ export default function HistoryPage() {
   return (
     <AppShell>
       <main className="flex-1 px-6 py-10 max-w-2xl mx-auto w-full space-y-6">
-        <h1 className="font-serif font-bold text-3xl text-[#171717]">Progress</h1>
+        <h1 className="font-serif font-semibold text-2xl text-[#171717] uppercase tracking-widest">Progress</h1>
 
         {/* ── Stats row ── */}
         {stats && (
