@@ -30,10 +30,11 @@ interface PartnerCard {
 function Avatar({ name, lang, avatarUrl, size = 'md' }: { name: string; lang: string; avatarUrl?: string | null; size?: 'sm' | 'md' | 'lg' }) {
   const bg  = LANG_AVATAR_COLOR[lang] ?? '#3b82f6';
   const cls = size === 'lg' ? 'w-16 h-16 text-xl' : size === 'sm' ? 'w-10 h-10 text-sm' : 'w-12 h-12 text-base';
-  if (avatarUrl) {
+  const [imgFailed, setImgFailed] = useState(false);
+  if (avatarUrl && !imgFailed) {
     return (
       <div className={`${cls} rounded-2xl overflow-hidden shrink-0`}>
-        <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
+        <img src={avatarUrl} alt={name} className="w-full h-full object-cover" onError={() => setImgFailed(true)} />
       </div>
     );
   }
@@ -223,9 +224,12 @@ export default function SessionPage() {
       const toTags = (s?: string | null) => s ? s.split(',').map(t => t.trim()).filter(Boolean) : [];
       const sharedInterests = toTags(myProfile?.interests).filter(t => toTags(partnerProfile?.interests).includes(t));
 
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+      const storageAvatarUrl = `${supabaseUrl}/storage/v1/object/public/avatars/${partnerSessionId}.jpg`;
+
       const card = partnerFromMatch(m, sid);
       if (partnerProfile?.name) card.name = partnerProfile.name;
-      if (partnerProfile?.avatar_url) card.avatarUrl = partnerProfile.avatar_url;
+      card.avatarUrl = partnerProfile?.avatar_url ?? storageAvatarUrl;
       card.sharedInterests = sharedInterests;
 
       setPartner(card);
