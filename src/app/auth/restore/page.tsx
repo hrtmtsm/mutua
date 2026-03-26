@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { initAnalytics, identifyUser, track } from '@/lib/analytics';
 
 export default function AuthRestorePage() {
   const router = useRouter();
@@ -21,6 +22,12 @@ export default function AuthRestorePage() {
         if (profile) {
           localStorage.setItem('mutua_session_id', profile.session_id);
           localStorage.setItem('mutua_profile', JSON.stringify(profile));
+          initAnalytics();
+          identifyUser(profile.session_id, {
+            native_language:   profile.native_language,
+            learning_language: profile.learning_language,
+          });
+          track('waitlist_activated');
           router.replace('/find-match');
         } else {
           setError(true);

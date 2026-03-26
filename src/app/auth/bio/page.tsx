@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { track } from '@/lib/analytics';
 
 const MAX = 150;
 
@@ -24,10 +25,14 @@ export default function BioPage() {
         localStorage.setItem('mutua_profile', JSON.stringify({ ...JSON.parse(stored), bio: text }));
       }
     }
+    track('bio_submitted', { skipped: !text });
     router.replace('/find-match');
   };
 
-  const skip = () => router.replace('/find-match');
+  const skip = () => {
+    track('bio_submitted', { skipped: true });
+    router.replace('/find-match');
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-white">

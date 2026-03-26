@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { User, ArrowLeftRight, TrendingUp, Bell, ArrowLeft, Send } from 'lucide-react';
 import { LANG_AVATAR_COLOR } from '@/lib/constants';
 import { supabase, getMessages, sendMessage, type Message } from '@/lib/supabase';
+import { track } from '@/lib/analytics';
 
 const BOTTOM_NAV = [
   {
@@ -161,6 +162,7 @@ function MessageChat({
     setLocalMessages(prev => [...prev, optimistic]);
     try {
       await sendMessage(matchId, myId, text);
+      track('message_sent');
     } catch (e: any) {
       setError('Failed to send. Try again.');
       setLocalMessages(prev => prev.filter(m => m.id !== optimistic.id));

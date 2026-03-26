@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import type { UserProfile } from '@/lib/types';
 import { LANGUAGES, GOALS, COMM_STYLES, FREQUENCY, type Language, type Goal, type CommStyle, type Frequency } from '@/lib/types';
 import { LANG_FLAGS, LANG_AVATAR_COLOR, INTEREST_CATEGORIES, INTEREST_MIGRATION } from '@/lib/constants';
+import { track } from '@/lib/analytics';
 import { supabase, saveProfile } from '@/lib/supabase';
 import type { UserAvailability } from '@/lib/supabase';
 import AppShell from '@/components/AppShell';
@@ -279,6 +280,7 @@ export default function ProfilePage() {
     localStorage.setItem('mutua_profile', JSON.stringify(updated));
     setProfile(updated);
     try { await saveProfile(updated); } catch { /* offline */ }
+    track('profile_updated', { has_bio: !!bio.trim(), interests_count: interests.length });
     setSaving(false);
     setEditing(false);
   };

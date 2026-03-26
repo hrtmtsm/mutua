@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter, Outfit } from 'next/font/google';
 import './globals.css';
 import 'flag-icons/css/flag-icons.min.css';
+import PostHogProvider from '@/components/PostHogProvider';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -24,7 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${inter.variable} ${outfit.variable}`}>
       <body className="font-sans text-neutral-900 antialiased overflow-x-hidden bg-white">
-        {children}
+        <PostHogProvider>{children}</PostHogProvider>
       </body>
     </html>
   );

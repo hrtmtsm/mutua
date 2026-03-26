@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase, getMatchBySessionId, type Match, type SchedulingState } from '@/lib/supabase';
 import { LANG_FLAGS, LANG_AVATAR_COLOR, INTEREST_CATEGORIES, INTEREST_MIGRATION } from '@/lib/constants';
+import { track } from '@/lib/analytics';
 import AppShell from '@/components/AppShell';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -395,6 +396,7 @@ export default function SessionPage() {
       }),
     }).catch(() => {});
 
+    track('session_confirmed', { partner_name: p.name, scheduled_at: scheduledAt });
     setConfirmed({ name: p.name, time: fmtScheduledAt(scheduledAt) });
     setPartner(prev => prev ? { ...prev, schedulingState: 'scheduled' } : prev);
   };
