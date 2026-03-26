@@ -246,8 +246,12 @@ export default function ProfilePage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sessionId: profile.session_id, name: trimmed }),
     });
+    const bioTrimmed = bio.trim();
+    if (bioTrimmed) {
+      await supabase.from('profiles').update({ bio: bioTrimmed }).eq('session_id', profile.session_id);
+    }
     const stored = localStorage.getItem('mutua_profile');
-    if (stored) localStorage.setItem('mutua_profile', JSON.stringify({ ...JSON.parse(stored), name: trimmed }));
+    if (stored) localStorage.setItem('mutua_profile', JSON.stringify({ ...JSON.parse(stored), name: trimmed, bio: bioTrimmed || undefined }));
     setProfile(p => p ? { ...p, name: trimmed } : p);
     setName(trimmed);
     setSaving(false);
@@ -357,6 +361,27 @@ export default function ProfilePage() {
                 </div>
               </div>
 
+              {/* About me */}
+              <div className="space-y-1.5 pt-1">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold text-stone-400">About me</p>
+                  {editingIdentity && <span className="text-xs text-stone-400">{bio.length}/150</span>}
+                </div>
+                {editingIdentity ? (
+                  <textarea
+                    value={bio}
+                    onChange={e => setBio(e.target.value.slice(0, 150))}
+                    placeholder="Tell your partner a bit about yourself..."
+                    rows={3}
+                    className="w-full px-3 py-2 border border-stone-200 rounded-xl text-sm text-neutral-900 placeholder:text-stone-300 focus:outline-none focus:border-neutral-400 transition-all resize-none leading-relaxed"
+                  />
+                ) : (
+                  <p className="text-sm text-neutral-500 leading-relaxed">
+                    {bio || <span className="text-stone-300">Not set</span>}
+                  </p>
+                )}
+              </div>
+
               {editingIdentity && (
                 <button onClick={handleSaveIdentity} disabled={saving} className="w-full py-2.5 btn-primary text-white font-bold text-sm rounded-full shadow-md disabled:opacity-50">
                   {saving ? 'Saving...' : 'Save changes'}
@@ -392,27 +417,6 @@ export default function ProfilePage() {
                     {editing ? editor : <span className="text-sm font-semibold text-neutral-500">{value}</span>}
                   </div>
                 ))}
-              </div>
-
-              {/* Bio */}
-              <div className="pt-2 space-y-2 border-t border-stone-100">
-                <div className="flex items-center justify-between pt-3">
-                  <span className="text-xs font-semibold text-stone-400">About me</span>
-                  {editing && <span className="text-xs text-stone-400">{bio.length}/150</span>}
-                </div>
-                {editing ? (
-                  <textarea
-                    value={bio}
-                    onChange={e => setBio(e.target.value.slice(0, 150))}
-                    placeholder="Tell your partner a bit about yourself..."
-                    rows={3}
-                    className="w-full px-3 py-2 border border-stone-200 rounded-xl text-sm text-neutral-900 placeholder:text-stone-300 focus:outline-none focus:border-neutral-400 transition-all resize-none leading-relaxed"
-                  />
-                ) : (
-                  <p className="text-sm text-neutral-500 leading-relaxed">
-                    {bio || <span className="text-stone-300">Not set</span>}
-                  </p>
-                )}
               </div>
 
               {/* Interests tag picker */}
