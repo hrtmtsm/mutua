@@ -244,16 +244,15 @@ function RhythmChart({ sessions, targetLang }: { sessions: SessionEntry[]; targe
               </div>
             ))}
 
-            {/* Per-month totals row */}
+            {/* Per-month totals row — always rendered to hold height */}
             <div className="mt-1" style={{ display: 'grid', gridTemplateColumns: `repeat(${WEEKS}, 1fr)`, gap: '6px' }}>
               {grid.map((_, wi) => {
                 const mt = monthTotals.find(m => m.col === wi);
+                const label = mt && mt.min > 0 ? `${mt.min}m` : mt && mt.count > 0 ? `${mt.count}×` : '';
                 return (
-                  <div key={wi} className="overflow-visible">
-                    {mt && (mt.min > 0 || mt.count > 0) && (
-                      <span className="text-[10px] text-stone-400 whitespace-nowrap">
-                        {mt.min > 0 ? `${mt.min}m` : `${mt.count}×`}
-                      </span>
+                  <div key={wi} className="h-4 overflow-visible">
+                    {label && (
+                      <span className="text-[10px] text-stone-400 whitespace-nowrap">{label}</span>
                     )}
                   </div>
                 );
@@ -273,10 +272,10 @@ function RhythmChart({ sessions, targetLang }: { sessions: SessionEntry[]; targe
         </button>
       </div>
 
-      {/* Total */}
-      {visibleTotal > 0 && (
-        <p className="text-xs text-stone-400 mt-3 text-right">{visibleTotal} min total</p>
-      )}
+      {/* Total — always rendered to hold height */}
+      <p className="text-xs text-stone-400 mt-3 text-right h-4">
+        {visibleTotal > 0 ? `${visibleTotal} min total` : ''}
+      </p>
 
       {/* Tooltip */}
       {tooltip && tooltipData && (
