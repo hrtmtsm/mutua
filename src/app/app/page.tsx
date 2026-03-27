@@ -6,6 +6,7 @@ import { supabase, getMatchBySessionId, type Match, type SchedulingState } from 
 import { LANG_FLAGS, LANG_AVATAR_COLOR, INTEREST_CATEGORIES, INTEREST_MIGRATION } from '@/lib/constants';
 import { track } from '@/lib/analytics';
 import AppShell from '@/components/AppShell';
+import { ArrowLeftRight } from 'lucide-react';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -150,8 +151,8 @@ function SchedulingCard({
             <p className="font-serif font-bold text-[#171717] text-2xl leading-tight">{partner.name}</p>
             <div className="flex items-center gap-1.5 mt-1 text-sm">
               <span className="text-stone-500">{nativeFlag} {partner.nativeLang}</span>
-              <span className="text-stone-300">→</span>
-              <span className="text-[#2B8FFF] font-medium">{learningFlag} {partner.learningLang}</span>
+              <ArrowLeftRight size={12} className="text-stone-300 shrink-0" />
+              <span className="text-stone-500">{learningFlag} {partner.learningLang}</span>
             </div>
           </div>
           {/* Three-dot overflow */}
@@ -230,8 +231,8 @@ function SchedulingCard({
           <p className="font-serif font-bold text-[#171717] text-2xl leading-tight">{partner.name}</p>
           <div className="flex items-center gap-1.5 mt-1.5 text-sm">
             <span className="text-stone-500">{nativeFlag} {partner.nativeLang}</span>
-            <span className="text-stone-300">→</span>
-            <span className="text-[#2B8FFF] font-medium">{learningFlag} {partner.learningLang}</span>
+            <ArrowLeftRight size={12} className="text-stone-300 shrink-0" />
+            <span className="text-stone-500">{learningFlag} {partner.learningLang}</span>
           </div>
         </button>
         <div className="relative shrink-0">
