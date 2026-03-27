@@ -3,6 +3,26 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: 'PangramSansRounded';
+  src: url('/fonts/PPPangramSansRounded-Semibold.otf') format('opentype');
+  font-weight: 600;
+}
+@font-face {
+  font-family: 'PangramSansRounded';
+  src: url('/fonts/PPPangramSansRounded-Bold.otf') format('opentype');
+  font-weight: 700;
+}
+@font-face {
+  font-family: 'PangramSansRounded';
+  src: url('/fonts/PPPangramSansRounded-Medium.otf') format('opentype');
+  font-weight: 500;
+}
+
+:root {
+  --font-heading: 'PangramSansRounded', sans-serif;
+}
+
 body {
   background-color: #FAFAFA;
 }
