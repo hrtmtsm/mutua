@@ -208,31 +208,38 @@ function SchedulingCard({
   return (
     <div className="overflow-hidden bg-white rounded-2xl shadow-[0_2px_16px_rgba(0,0,0,0.06)]">
 
-      {/* Header — avatar + name + badge */}
-      <button onClick={onViewProfile} className="w-full text-left">
-        <div className="px-6 pt-6 pb-5 flex items-start gap-4">
+      {/* Header — avatar + name + overflow */}
+      <div className="px-6 pt-6 pb-5 flex items-start gap-4">
+        <button onClick={onViewProfile} className="shrink-0">
           <Avatar name={partner.name} lang={partner.nativeLang} avatarUrl={partner.avatarUrl} size="lg" />
-          <div className="flex-1 min-w-0 pt-0.5">
-            <p className="font-serif font-bold text-[#171717] text-2xl leading-tight">{partner.name}</p>
-            <div className="flex items-center gap-1.5 mt-1.5 text-sm">
-              <span className="text-stone-500">{nativeFlag} {partner.nativeLang}</span>
-              <span className="text-stone-300">→</span>
-              <span className="text-[#2B8FFF] font-medium">{learningFlag} {partner.learningLang}</span>
-            </div>
+        </button>
+        <button onClick={onViewProfile} className="flex-1 min-w-0 pt-0.5 text-left">
+          <p className="font-serif font-bold text-[#171717] text-2xl leading-tight">{partner.name}</p>
+          <div className="flex items-center gap-1.5 mt-1.5 text-sm">
+            <span className="text-stone-500">{nativeFlag} {partner.nativeLang}</span>
+            <span className="text-stone-300">→</span>
+            <span className="text-[#2B8FFF] font-medium">{learningFlag} {partner.learningLang}</span>
           </div>
-          <div className="shrink-0">
-            {waitingOnPartner && (
-              <span className="text-xs font-semibold text-stone-500 bg-stone-100 px-2.5 py-1 rounded-full block">Waiting</span>
-            )}
-            {s === 'no_overlap' && (
-              <span className="text-xs font-semibold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full block">No overlap</span>
-            )}
-            {s === 'computing' && (
-              <span className="text-xs font-semibold text-[#2B8FFF] bg-blue-50 px-2.5 py-1 rounded-full block">Matching…</span>
-            )}
-          </div>
+        </button>
+        <div className="relative shrink-0">
+          <button
+            onClick={() => setShowOverflow(v => !v)}
+            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100 transition-colors text-stone-400"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <circle cx="8" cy="3" r="1.4"/><circle cx="8" cy="8" r="1.4"/><circle cx="8" cy="13" r="1.4"/>
+            </svg>
+          </button>
+          {showOverflow && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setShowOverflow(false)} />
+              <div className="absolute right-0 top-9 z-50 bg-white rounded-xl shadow-lg border border-stone-100 py-1 w-44 text-sm">
+                <button onClick={() => { setShowOverflow(false); onViewProfile(); }} className="w-full px-4 py-2.5 text-left text-neutral-700 hover:bg-stone-50">View profile</button>
+              </div>
+            </>
+          )}
         </div>
-      </button>
+      </div>
 
       {/* Bio */}
       {partner.bio && (
