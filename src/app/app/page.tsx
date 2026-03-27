@@ -184,10 +184,16 @@ function SchedulingCard({
         </div>
 
         {/* CTA */}
-        <div className="px-6 pb-6">
+        <div className="px-6 pb-6 flex gap-2">
+          <button
+            onClick={() => window.dispatchEvent(new Event('mutua:open-chat'))}
+            className="px-5 py-3 border border-stone-200 bg-white text-sm text-neutral-500 font-medium rounded-xl hover:bg-stone-50 transition-colors shrink-0"
+          >
+            Say hi 👋
+          </button>
           <button
             onClick={() => isJoinable(partner.scheduledAt!, now) ? onJoin() : setShowNotYet(true)}
-            className="w-full py-3 btn-primary text-white text-sm rounded-xl"
+            className="flex-1 py-3 btn-primary text-white text-sm rounded-xl"
           >
             Start exchange →
           </button>
