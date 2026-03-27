@@ -34,6 +34,11 @@ interface MonthBucket {
   count: number;   // sessions that month
 }
 
+interface WeekBucket {
+  label: string;   // "Mar 17"
+  count: number;
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatDate(iso: string) {
@@ -102,33 +107,74 @@ function buildMonthlyData(sessions: SessionEntry[]): MonthBucket[] {
   });
 }
 
-// ── Monthly rhythm component ──────────────────────────────────────────────────
+// Build last 16 weeks of session counts
+function buildWeeklyData(sessions: SessionEntry[]): WeekBucket[] {
+  const weekStart = getWeekStart(new Date());
+  return Array.from({ length: 16 }, (_, i) => {
+    const offset = 15 - i;
+    const start  = new Date(weekStart);
+    start.setDate(start.getDate() - offset * 7);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 7);
+    const count = sessions.filter(s => { const d = new Date(s.date); return d >= start && d < end; }).length;
+    const label = start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return { label, count };
+  });
+}
 
-function MonthlyRhythm({ months }: { months: MonthBucket[] }) {
-  const maxCount = Math.max(...months.map(m => m.count), 1);
+// ── Rhythm chart component (monthly / weekly toggle) ─────────────────────────
+
+function RhythmChart({ sessions }: { sessions: SessionEntry[] }) {
+  const [view, setView] = useState<'monthly' | 'weekly'>('monthly');
+  const months = buildMonthlyData(sessions);
+  const weeks  = buildWeeklyData(sessions);
+  const buckets = view === 'monthly' ? months : weeks;
+  const maxCount = Math.max(...buckets.map(b => b.count), 1);
 
   return (
     <div className="bg-white border border-stone-200 rounded-2xl px-7 py-6">
-      <p className="text-xs font-medium text-stone-400 uppercase tracking-widest mb-5">Your practice rhythm</p>
-      <div className="flex items-end gap-2">
-        {months.map((m, i) => {
-          const filled  = m.count > 0;
-          const opacity = filled ? Math.max(0.35, m.count / maxCount) : 0;
+      <div className="flex items-center justify-between mb-5">
+        <p className="text-xs font-medium text-stone-400 uppercase tracking-widest">Your practice rhythm</p>
+        <div className="flex items-center gap-1 bg-stone-100 rounded-lg p-0.5">
+          <button
+            onClick={() => setView('monthly')}
+            className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+              view === 'monthly' ? 'bg-white text-neutral-800 shadow-sm' : 'text-stone-400 hover:text-stone-600'
+            }`}
+          >
+            Monthly
+          </button>
+          <button
+            onClick={() => setView('weekly')}
+            className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+              view === 'weekly' ? 'bg-white text-neutral-800 shadow-sm' : 'text-stone-400 hover:text-stone-600'
+            }`}
+          >
+            Weekly
+          </button>
+        </div>
+      </div>
+      <div className="flex items-end gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
+        {buckets.map((b, i) => {
+          const filled  = b.count > 0;
+          const opacity = filled ? Math.max(0.35, b.count / maxCount) : 0;
+          // Show every label in monthly, every other in weekly to avoid crowding
+          const showLabel = view === 'monthly' || i % 2 === 0;
           return (
-            <div key={i} className="flex-1 flex flex-col items-center gap-2">
-              {/* Bar */}
+            <div key={i} className="flex-1 flex flex-col items-center gap-2" style={{ minWidth: view === 'weekly' ? 28 : undefined }}>
               <div className="w-full rounded-md bg-stone-100 overflow-hidden" style={{ height: 48 }}>
                 <div
                   className="w-full rounded-md transition-all duration-500"
                   style={{
-                    height: filled ? `${Math.max(30, (m.count / maxCount) * 48)}px` : '0px',
+                    height: filled ? `${Math.max(28, (b.count / maxCount) * 48)}px` : '0px',
                     background: `rgba(43,143,255,${opacity + 0.2})`,
                     marginTop: 'auto',
                   }}
                 />
               </div>
-              {/* Month label */}
-              <span className="text-[10px] text-stone-400 font-medium">{m.label}</span>
+              <span className="text-[10px] text-stone-400 font-medium whitespace-nowrap">
+                {showLabel ? b.label : ''}
+              </span>
             </div>
           );
         })}
@@ -144,7 +190,7 @@ export default function HistoryPage() {
 
   const [partners,      setPartners]      = useState<PartnerSummary[]>([]);
   const [rhythm,        setRhythm]        = useState<RhythmData | null>(null);
-  const [months,        setMonths]        = useState<MonthBucket[]>([]);
+  const [sessions,      setSessions]      = useState<SessionEntry[]>([]);
   const [showAll,       setShowAll]       = useState(false);
   const [scheduleModal, setScheduleModal] = useState<string | null>(null);
   const [reviewModal,   setReviewModal]   = useState<string | null>(null);
@@ -152,18 +198,18 @@ export default function HistoryPage() {
   useEffect(() => {
     const raw     = localStorage.getItem('mutua_history');
     const profile = localStorage.getItem('mutua_profile');
-    const sessions: SessionEntry[] = raw ? JSON.parse(raw) : [];
+    const parsed: SessionEntry[] = raw ? JSON.parse(raw) : [];
     const freq = profile ? (JSON.parse(profile).practice_frequency ?? '') : '';
 
-    setPartners(groupByPartner(sessions));
-    setRhythm(computeRhythm(sessions, freq));
-    setMonths(buildMonthlyData(sessions));
+    setSessions(parsed);
+    setPartners(groupByPartner(parsed));
+    setRhythm(computeRhythm(parsed, freq));
   }, []);
 
   if (!rhythm) return null;
 
   const { thisWeekSessions, thisWeekDone, weekGoal, weeksRunning } = rhythm;
-  const hasAnySessions = months.some(m => m.count > 0);
+  const hasAnySessions = sessions.length > 0;
   const visiblePartners = showAll ? partners : partners.slice(0, 3);
 
   // Weekly rhythm supporting line
@@ -215,7 +261,7 @@ export default function HistoryPage() {
         </div>
 
         {/* ── 2. Monthly rhythm ────────────────────────────────── */}
-        {hasAnySessions && <MonthlyRhythm months={months} />}
+        {hasAnySessions && <RhythmChart sessions={sessions} />}
 
         {/* ── 3. Review your exchanges ─────────────────────────── */}
         {partners.length > 0 && (
