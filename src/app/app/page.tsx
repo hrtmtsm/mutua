@@ -134,9 +134,9 @@ function SchedulingCard({
     const timeLine = sessionDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 
     return (
-      <div>
+      <div className="overflow-hidden bg-white rounded-2xl border border-stone-200">
         {/* Identity block */}
-        <div className="px-7 py-5 border-t border-stone-100 flex items-center gap-4">
+        <div className="px-7 pt-6 pb-0 flex items-center gap-4">
           <div className="relative shrink-0 flex items-center" style={{ width: 104, height: 64 }}>
             <div className="absolute left-0" style={{ transform: 'rotate(-6deg)', zIndex: 1 }}>
               <Avatar name={myName ?? 'Me'} lang={partner.learningLang} avatarUrl={myAvatarUrl} size="lg" />
@@ -173,13 +173,13 @@ function SchedulingCard({
         </div>
 
         {/* Context block — session date */}
-        <div className="px-7 py-5 border-t border-stone-100">
+        <div className="px-7 mt-6">
           <p className="text-xs font-medium text-stone-400 mb-1.5">Next session</p>
           <p className="font-serif font-bold text-[#171717] text-2xl leading-snug">{dateLine}, {timeLine}</p>
         </div>
 
         {/* Action block */}
-        <div className="px-7 py-5 border-t border-stone-100 flex gap-2">
+        <div className="px-7 mt-6 pb-7 flex gap-2">
           <button
             onClick={() => window.dispatchEvent(new Event('mutua:open-chat'))}
             className="px-4 py-3 border border-stone-200 bg-white text-sm text-neutral-500 font-medium rounded-xl hover:bg-stone-50 transition-colors"
@@ -222,10 +222,10 @@ function SchedulingCard({
   const pills = [partner.goal, partner.commStyle, partner.frequency, ...partner.sharedInterests].filter(Boolean).slice(0, 4);
 
   return (
-    <div>
+    <div className="overflow-hidden bg-white rounded-2xl border border-stone-200">
 
       {/* Identity block */}
-      <div className="px-7 py-5 border-t border-stone-100 flex items-start gap-4">
+      <div className="px-7 pt-6 pb-0 flex items-start gap-4">
         <button onClick={onViewProfile} className="shrink-0">
           <Avatar name={partner.name} lang={partner.nativeLang} avatarUrl={partner.avatarUrl} size="lg" />
         </button>
@@ -254,16 +254,16 @@ function SchedulingCard({
         </div>
       </div>
 
-      {/* Bio block */}
+      {/* Context block — bio */}
       {partner.bio && (
-        <div className="px-7 py-4 border-t border-stone-100">
+        <div className="px-7 mt-4">
           <p className="text-sm text-stone-500 leading-relaxed">{partner.bio}</p>
         </div>
       )}
 
-      {/* Signals block */}
+      {/* Signals block — max 4, read as structured data */}
       {pills.length > 0 && (
-        <div className="px-7 py-4 border-t border-stone-100">
+        <div className="px-7 mt-4">
           <p className="text-xs text-stone-400 font-medium mb-2">In common</p>
           <div className="flex flex-wrap gap-1.5">
             {pills.map((v, i) => (
@@ -273,9 +273,9 @@ function SchedulingCard({
         </div>
       )}
 
-      {/* Action block */}
+      {/* Action block — large gap before CTA creates landing zone */}
       {iNeedToSet && (
-        <div className="px-7 py-5 border-t border-stone-100">
+        <div className="px-7 mt-6 pb-7">
           <button onClick={onBookExchange} className="px-5 py-3 btn-primary text-white text-sm rounded-xl">
             Pick a time to meet →
           </button>
@@ -283,7 +283,7 @@ function SchedulingCard({
       )}
 
       {waitingOnPartner && (
-        <div className="px-7 py-5 border-t border-stone-100">
+        <div className="px-7 mt-6 pb-7">
           <p className="text-sm text-stone-400">
             You're set — waiting on <span className="font-medium text-neutral-600">{partner.name}</span> to share their availability.
           </p>
@@ -291,13 +291,13 @@ function SchedulingCard({
       )}
 
       {s === 'computing' && (
-        <div className="px-7 py-5 border-t border-stone-100">
+        <div className="px-7 mt-6 pb-7">
           <p className="text-sm text-stone-400">Finding a time that works for both of you…</p>
         </div>
       )}
 
       {s === 'no_overlap' && (
-        <div className="px-7 py-5 border-t border-stone-100 space-y-3">
+        <div className="px-7 mt-6 pb-7 space-y-3">
           <p className="text-sm text-stone-400">No overlapping slots yet. Update your free times and we'll keep trying.</p>
           <button onClick={onBookExchange} className="px-5 py-3 btn-primary text-white text-sm rounded-xl">
             Update my availability →
@@ -516,83 +516,68 @@ export default function SessionPage() {
 
   return (
     <AppShell>
-      <main className="flex-1 px-6 py-10 max-w-xl mx-auto w-full">
+      <main className="flex-1 px-6 py-10 max-w-3xl mx-auto w-full space-y-6">
 
-        {/* Board */}
-        <div className="bg-white border border-stone-200 rounded-2xl overflow-hidden">
-          {/* Board header */}
-          <div className="px-7 py-5 flex items-center justify-between">
-            <h1 className="font-serif font-semibold text-lg text-[#171717]">Your exchange</h1>
-            {!loading && !partner && (
-              <span className="text-xs text-stone-400">No match yet</span>
-            )}
-          </div>
-
-          {loading ? (
-            <div className="px-7 py-6 border-t border-stone-100">
-              <p className="text-sm text-stone-400">Loading…</p>
-            </div>
-          ) : partner ? (
-            <SchedulingCard
-              partner={partner}
-              onReschedule={handleReschedule}
-              onJoin={handleJoin}
-              onBookExchange={handleBookExchange}
-              onViewProfile={() => router.push(`/partner/${partner.matchId}`)}
-              myName={myName}
-              myAvatarUrl={myAvatarUrl}
-            />
-          ) : (
-            <div className="px-7 py-10 border-t border-stone-100 text-center">
-              <p className="text-sm text-stone-400">No partners yet — we'll email you when we find a match.</p>
-            </div>
-          )}
+        {/* Context header */}
+        <div>
+          <h1 className="font-serif font-semibold text-2xl text-[#171717]">Your exchange</h1>
+          <p className="text-sm text-stone-400 mt-1">
+            {loading ? '' : partner
+              ? 'You have an active language partner.'
+              : 'No partner yet — we\'ll reach out when we find your match.'}
+          </p>
         </div>
 
-        {/* ── DEV PREVIEW: both card states ── */}
-        <div className="mt-10 space-y-6">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-stone-300 mb-3">Preview — unscheduled</p>
-            <div className="bg-white border border-stone-200 rounded-2xl overflow-hidden">
-              <div className="px-7 py-5">
-                <p className="font-serif font-semibold text-lg text-[#171717]">Your exchange</p>
-              </div>
-              <SchedulingCard
-                partner={{
-                  matchId: 'test-1', id: 'p1', name: 'Sofia Reyes',
-                  nativeLang: 'Spanish', learningLang: 'English',
-                  goal: 'Conversational', commStyle: 'Casual', frequency: 'Weekly',
-                  reasons: [], schedulingState: 'pending_both', scheduledAt: null,
-                  iAmA: true, avatarUrl: null,
-                  sharedInterests: ['Travel', 'Music'],
-                  bio: 'Software engineer based in Mexico City. I love hiking and indie music.',
-                }}
-                onReschedule={() => {}} onJoin={() => {}} onBookExchange={() => {}} onViewProfile={() => {}}
-              />
-            </div>
+        {loading ? (
+          <p className="text-sm text-stone-400">Loading...</p>
+        ) : partner ? (
+          <SchedulingCard
+            partner={partner}
+            onReschedule={handleReschedule}
+            onJoin={handleJoin}
+            onBookExchange={handleBookExchange}
+            onViewProfile={() => router.push(`/partner/${partner.matchId}`)}
+            myName={myName}
+            myAvatarUrl={myAvatarUrl}
+          />
+        ) : (
+          <div className="bg-white/60 border border-stone-200 border-dashed rounded-2xl px-6 py-10 text-center">
+            <p className="text-sm text-stone-400">No partners yet — we'll email you when we find a match.</p>
           </div>
+        )}
 
-          <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-stone-300 mb-3">Preview — scheduled</p>
-            <div className="bg-white border border-stone-200 rounded-2xl overflow-hidden">
-              <div className="px-7 py-5">
-                <p className="font-serif font-semibold text-lg text-[#171717]">Your exchange</p>
-              </div>
-              <SchedulingCard
-                partner={{
-                  matchId: 'test-2', id: 'p2', name: 'Sofia Reyes',
-                  nativeLang: 'Spanish', learningLang: 'English',
-                  goal: 'Conversational', commStyle: 'Casual', frequency: 'Weekly',
-                  reasons: [], schedulingState: 'scheduled',
-                  scheduledAt: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-                  iAmA: true, avatarUrl: null, sharedInterests: [], bio: undefined,
-                }}
-                myName={myName ?? 'You'}
-                myAvatarUrl={myAvatarUrl}
-                onReschedule={() => {}} onJoin={() => {}} onBookExchange={() => {}} onViewProfile={() => {}}
-              />
-            </div>
-          </div>
+        {/* ── DEV PREVIEW: both card states ── */}
+        <div className="mt-10 space-y-3">
+          <p className="text-xs font-bold uppercase tracking-widest text-stone-300">Preview — unscheduled</p>
+          <SchedulingCard
+            partner={{
+              matchId: 'test-1', id: 'p1', name: 'Sofia Reyes',
+              nativeLang: 'Spanish', learningLang: 'English',
+              goal: 'Conversational', commStyle: 'Casual', frequency: 'Weekly',
+              reasons: [], schedulingState: 'pending_both', scheduledAt: null,
+              iAmA: true, avatarUrl: null,
+              sharedInterests: ['Travel', 'Music'],
+              bio: 'Software engineer based in Mexico City. I love hiking and indie music.',
+            }}
+            onReschedule={() => {}} onJoin={() => {}} onBookExchange={() => {}} onViewProfile={() => {}}
+          />
+        </div>
+
+        <div className="space-y-3">
+          <p className="text-xs font-bold uppercase tracking-widest text-stone-300">Preview — scheduled</p>
+          <SchedulingCard
+            partner={{
+              matchId: 'test-2', id: 'p2', name: 'Sofia Reyes',
+              nativeLang: 'Spanish', learningLang: 'English',
+              goal: 'Conversational', commStyle: 'Casual', frequency: 'Weekly',
+              reasons: [], schedulingState: 'scheduled',
+              scheduledAt: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+              iAmA: true, avatarUrl: null, sharedInterests: [], bio: undefined,
+            }}
+            myName={myName ?? 'You'}
+            myAvatarUrl={myAvatarUrl}
+            onReschedule={() => {}} onJoin={() => {}} onBookExchange={() => {}} onViewProfile={() => {}}
+          />
         </div>
         {/* ── end DEV PREVIEW ── */}
 
