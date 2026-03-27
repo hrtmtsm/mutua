@@ -135,9 +135,8 @@ function SchedulingCard({
 
     return (
       <div className="overflow-hidden bg-white rounded-2xl shadow-[0_2px_16px_rgba(0,0,0,0.06)]">
-        {/* Header */}
-        <div className="px-6 pt-6 pb-5 flex items-center gap-4">
-          {/* Dual avatar */}
+        {/* Identity block */}
+        <div className="px-6 pt-5 pb-4 flex items-center gap-4">
           <div className="relative shrink-0 flex items-center" style={{ width: 104, height: 64 }}>
             <div className="absolute left-0" style={{ transform: 'rotate(-6deg)', zIndex: 1 }}>
               <Avatar name={myName ?? 'Me'} lang={partner.learningLang} avatarUrl={myAvatarUrl} size="lg" />
@@ -146,24 +145,19 @@ function SchedulingCard({
               <Avatar name={partner.name} lang={partner.nativeLang} avatarUrl={partner.avatarUrl} size="lg" />
             </div>
           </div>
-
           <div className="flex-1 min-w-0">
             <p className="font-serif font-bold text-[#171717] text-2xl leading-tight">{partner.name}</p>
-            <div className="flex items-center gap-1.5 mt-1 text-sm">
-              <span className="text-stone-500">{nativeFlag} {partner.nativeLang}</span>
-              <ArrowLeftRight size={12} className="text-stone-300 shrink-0" />
-              <span className="text-stone-500">{learningFlag} {partner.learningLang}</span>
+            <div className="flex items-center gap-1.5 mt-1 text-sm text-stone-400">
+              <span>{nativeFlag} {partner.nativeLang}</span>
+              <ArrowLeftRight size={11} className="shrink-0" />
+              <span>{learningFlag} {partner.learningLang}</span>
             </div>
           </div>
-          {/* Three-dot overflow */}
           <div className="relative shrink-0">
-            <button
-              onClick={() => setShowOverflow(v => !v)}
-              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100 transition-colors text-stone-400"
-            >
+            <button onClick={() => setShowOverflow(v => !v)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100 transition-colors text-stone-300">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
                 <circle cx="8" cy="3" r="1.4"/><circle cx="8" cy="8" r="1.4"/><circle cx="8" cy="13" r="1.4"/>
-              </svg>
+            </svg>
             </button>
             {showOverflow && (
               <>
@@ -178,22 +172,22 @@ function SchedulingCard({
           </div>
         </div>
 
-        {/* Date */}
-        <div className="px-6 pb-6">
-          <p className="font-serif font-black text-[#171717] text-3xl leading-tight">{dateLine}, {timeLine}</p>
+        {/* Context block — date as hero */}
+        <div className="px-6 pb-5">
+          <p className="font-serif font-black text-[#171717] text-3xl leading-snug">{dateLine}, {timeLine}</p>
         </div>
 
-        {/* CTA */}
+        {/* Action block */}
         <div className="px-6 pb-6 flex gap-2">
           <button
             onClick={() => window.dispatchEvent(new Event('mutua:open-chat'))}
-            className="px-5 py-3 border border-stone-200 bg-white text-sm text-neutral-500 font-medium rounded-xl hover:bg-stone-50 transition-colors"
+            className="px-4 py-2.5 border border-stone-200 bg-white text-sm text-neutral-500 font-medium rounded-xl hover:bg-stone-50 transition-colors"
           >
             Say hi 👋
           </button>
           <button
             onClick={() => isJoinable(partner.scheduledAt!, now) ? onJoin() : setShowNotYet(true)}
-            className="px-5 py-3 btn-primary text-white text-sm rounded-xl"
+            className="px-5 py-2.5 btn-primary text-white text-sm rounded-xl"
           >
             Start exchange →
           </button>
@@ -227,24 +221,21 @@ function SchedulingCard({
   return (
     <div className="overflow-hidden bg-white rounded-2xl shadow-[0_2px_16px_rgba(0,0,0,0.06)]">
 
-      {/* Header — avatar + name + overflow */}
-      <div className="px-6 pt-6 pb-5 flex items-start gap-4">
+      {/* Identity block */}
+      <div className="px-6 pt-5 pb-5 flex items-start gap-4">
         <button onClick={onViewProfile} className="shrink-0">
           <Avatar name={partner.name} lang={partner.nativeLang} avatarUrl={partner.avatarUrl} size="lg" />
         </button>
-        <button onClick={onViewProfile} className="flex-1 min-w-0 pt-0.5 text-left">
+        <button onClick={onViewProfile} className="flex-1 min-w-0 text-left">
           <p className="font-serif font-bold text-[#171717] text-2xl leading-tight">{partner.name}</p>
-          <div className="flex items-center gap-1.5 mt-1.5 text-sm">
-            <span className="text-stone-500">{nativeFlag} {partner.nativeLang}</span>
-            <ArrowLeftRight size={12} className="text-stone-300 shrink-0" />
-            <span className="text-stone-500">{learningFlag} {partner.learningLang}</span>
+          <div className="flex items-center gap-1.5 mt-1 text-sm text-stone-400">
+            <span>{nativeFlag} {partner.nativeLang}</span>
+            <ArrowLeftRight size={11} className="shrink-0" />
+            <span>{learningFlag} {partner.learningLang}</span>
           </div>
         </button>
         <div className="relative shrink-0">
-          <button
-            onClick={() => setShowOverflow(v => !v)}
-            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100 transition-colors text-stone-400"
-          >
+          <button onClick={() => setShowOverflow(v => !v)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100 transition-colors text-stone-300">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
               <circle cx="8" cy="3" r="1.4"/><circle cx="8" cy="8" r="1.4"/><circle cx="8" cy="13" r="1.4"/>
             </svg>
@@ -260,20 +251,19 @@ function SchedulingCard({
         </div>
       </div>
 
-      {/* Bio */}
+      {/* Context block — bio without label, reads naturally */}
       {partner.bio && (
-        <div className="px-6 pb-5">
-          <p className="text-xs font-medium text-stone-400 mb-1.5">About</p>
+        <div className="px-6 pb-4">
           <p className="text-sm text-stone-500 leading-relaxed">{partner.bio}</p>
         </div>
       )}
 
-      {/* In common */}
+      {/* Signals block — shared context as outlined tags */}
       <div className="px-6 pb-5">
-        <p className="text-xs font-medium text-stone-400 mb-2.5">In common</p>
+        <p className="text-xs text-stone-400 font-medium mb-2">In common</p>
         <div className="flex flex-wrap gap-1.5">
           {[partner.goal, partner.commStyle, partner.frequency, ...partner.sharedInterests].filter(Boolean).map((v, i) => (
-            <span key={i} className="px-2.5 py-1 bg-stone-100 text-xs font-medium text-stone-500 rounded-full">{v}</span>
+            <span key={i} className="px-2.5 py-1 border border-stone-200 text-xs font-medium text-stone-500 rounded-full">{v}</span>
           ))}
         </div>
       </div>
