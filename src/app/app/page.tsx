@@ -134,9 +134,9 @@ function SchedulingCard({
     const timeLine = sessionDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 
     return (
-      <div className="overflow-hidden bg-white rounded-2xl shadow-[0_2px_16px_rgba(0,0,0,0.06)]">
+      <div className="overflow-hidden bg-white rounded-2xl border border-stone-200">
         {/* Identity block */}
-        <div className="px-6 pt-5 pb-0 flex items-center gap-4">
+        <div className="px-7 pt-6 pb-0 flex items-center gap-4">
           <div className="relative shrink-0 flex items-center" style={{ width: 104, height: 64 }}>
             <div className="absolute left-0" style={{ transform: 'rotate(-6deg)', zIndex: 1 }}>
               <Avatar name={myName ?? 'Me'} lang={partner.learningLang} avatarUrl={myAvatarUrl} size="lg" />
@@ -173,13 +173,13 @@ function SchedulingCard({
         </div>
 
         {/* Context block — session date */}
-        <div className="px-6 mt-5 pb-0">
+        <div className="px-7 mt-6">
           <p className="text-xs font-medium text-stone-400 mb-1.5">Next session</p>
           <p className="font-serif font-bold text-[#171717] text-2xl leading-snug">{dateLine}, {timeLine}</p>
         </div>
 
-        {/* Action block — anchored close to date */}
-        <div className="px-6 mt-3 pb-6 flex gap-2">
+        {/* Action block */}
+        <div className="px-7 mt-6 pb-7 flex gap-2">
           <button
             onClick={() => window.dispatchEvent(new Event('mutua:open-chat'))}
             className="px-4 py-3 border border-stone-200 bg-white text-sm text-neutral-500 font-medium rounded-xl hover:bg-stone-50 transition-colors"
@@ -222,10 +222,10 @@ function SchedulingCard({
   const pills = [partner.goal, partner.commStyle, partner.frequency, ...partner.sharedInterests].filter(Boolean).slice(0, 4);
 
   return (
-    <div className="overflow-hidden bg-white rounded-2xl shadow-[0_2px_16px_rgba(0,0,0,0.06)]">
+    <div className="overflow-hidden bg-white rounded-2xl border border-stone-200">
 
       {/* Identity block */}
-      <div className="px-6 pt-5 pb-0 flex items-start gap-4">
+      <div className="px-7 pt-6 pb-0 flex items-start gap-4">
         <button onClick={onViewProfile} className="shrink-0">
           <Avatar name={partner.name} lang={partner.nativeLang} avatarUrl={partner.avatarUrl} size="lg" />
         </button>
@@ -256,26 +256,26 @@ function SchedulingCard({
 
       {/* Context block — bio */}
       {partner.bio && (
-        <div className="px-6 mt-4">
+        <div className="px-7 mt-4">
           <p className="text-sm text-stone-500 leading-relaxed">{partner.bio}</p>
         </div>
       )}
 
-      {/* Signals block — max 4 pills, slightly darker to read as data not decoration */}
+      {/* Signals block — max 4, read as structured data */}
       {pills.length > 0 && (
-        <div className="px-6 mt-4">
+        <div className="px-7 mt-4">
           <p className="text-xs text-stone-400 font-medium mb-2">In common</p>
           <div className="flex flex-wrap gap-1.5">
             {pills.map((v, i) => (
-              <span key={i} className="px-2.5 py-0.5 bg-stone-100 border border-stone-200 text-xs font-medium text-stone-600 rounded-full">{v}</span>
+              <span key={i} className="px-3 py-1 bg-stone-100 text-sm font-medium text-stone-600 rounded-full">{v}</span>
             ))}
           </div>
         </div>
       )}
 
-      {/* Action block — anchored mt-3 to content above */}
+      {/* Action block — large gap before CTA creates landing zone */}
       {iNeedToSet && (
-        <div className="px-6 mt-3 pb-6">
+        <div className="px-7 mt-6 pb-7">
           <button onClick={onBookExchange} className="px-5 py-3 btn-primary text-white text-sm rounded-xl">
             Pick a time to meet →
           </button>
@@ -283,7 +283,7 @@ function SchedulingCard({
       )}
 
       {waitingOnPartner && (
-        <div className="px-6 mt-3 pb-6">
+        <div className="px-7 mt-6 pb-7">
           <p className="text-sm text-stone-400">
             You're set — waiting on <span className="font-medium text-neutral-600">{partner.name}</span> to share their availability.
           </p>
@@ -291,13 +291,13 @@ function SchedulingCard({
       )}
 
       {s === 'computing' && (
-        <div className="px-6 mt-3 pb-6">
+        <div className="px-7 mt-6 pb-7">
           <p className="text-sm text-stone-400">Finding a time that works for both of you…</p>
         </div>
       )}
 
       {s === 'no_overlap' && (
-        <div className="px-6 mt-3 pb-6 space-y-3">
+        <div className="px-7 mt-6 pb-7 space-y-3">
           <p className="text-sm text-stone-400">No overlapping slots yet. Update your free times and we'll keep trying.</p>
           <button onClick={onBookExchange} className="px-5 py-3 btn-primary text-white text-sm rounded-xl">
             Update my availability →
@@ -516,7 +516,7 @@ export default function SessionPage() {
 
   return (
     <AppShell>
-      <main className="flex-1 px-6 py-10 max-w-2xl mx-auto w-full space-y-6">
+      <main className="flex-1 px-6 py-10 max-w-3xl mx-auto w-full space-y-6">
 
         {/* Context header */}
         <div>
