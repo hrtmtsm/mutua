@@ -88,24 +88,43 @@ function computeRhythm(sessions: SessionEntry[], freq: string): RhythmData {
 
 // ── GitHub-style consistency grid ────────────────────────────────────────────
 
-const WEEKS = 20; // columns — fills card width at max-w-3xl
+const WEEKS = 20;
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
-function RhythmChart({ sessions }: { sessions: SessionEntry[] }) {
-  // Count sessions per calendar day
-  const counts = new Map<string, number>();
+// 4-level intensity: 0 = empty, 1 = light, 2 = medium, 3 = strong
+const INTENSITY_COLORS = ['#E5E5E5', '#BFDBFE', '#60A5FA', '#1D4ED8'];
+
+const GREETINGS: Record<string, string> = {
+  spanish: 'Hola 👋', french: 'Bonjour 👋', japanese: 'こんにちは 👋',
+  portuguese: 'Olá 👋', german: 'Hallo 👋', italian: 'Ciao 👋',
+  korean: '안녕하세요 👋', mandarin: '你好 👋', chinese: '你好 👋', arabic: 'مرحبا 👋',
+};
+
+interface DayData    { count: number; totalDuration: number; partners: string[]; }
+interface TooltipPos { key: string; x: number; y: number; }
+
+function RhythmChart({ sessions, targetLang }: { sessions: SessionEntry[]; targetLang: string }) {
+  const [tooltip, setTooltip] = useState<TooltipPos | null>(null);
+
+  // Aggregate per-day
+  const dayMap = new Map<string, DayData>();
   for (const s of sessions) {
     const key = s.date.slice(0, 10);
-    counts.set(key, (counts.get(key) ?? 0) + 1);
+    const d = dayMap.get(key);
+    if (d) {
+      d.count++;
+      d.totalDuration += s.duration ?? 0;
+      if (!d.partners.includes(s.partnerName)) d.partners.push(s.partnerName);
+    } else {
+      dayMap.set(key, { count: 1, totalDuration: s.duration ?? 0, partners: [s.partnerName] });
+    }
   }
 
-  // Grid starts at Monday of the week (WEEKS-1) weeks ago
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const gridStart = getWeekStart(today);
   gridStart.setDate(gridStart.getDate() - (WEEKS - 1) * 7);
 
-  // Build WEEKS columns × 7 rows
   const grid: { date: Date; key: string }[][] = Array.from({ length: WEEKS }, (_, w) =>
     Array.from({ length: 7 }, (_, d) => {
       const date = new Date(gridStart);
@@ -114,7 +133,6 @@ function RhythmChart({ sessions }: { sessions: SessionEntry[] }) {
     })
   );
 
-  // Month labels: place label at the first cell of a new month in row 0
   const monthLabels: { col: number; label: string }[] = [];
   grid.forEach((week, wi) => {
     const firstDay = week[0].date;
@@ -123,12 +141,29 @@ function RhythmChart({ sessions }: { sessions: SessionEntry[] }) {
     }
   });
 
+  // Single summary line
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const thisMonth  = sessions.filter(s => new Date(s.date) >= monthStart);
+  const totalMin   = thisMonth.reduce((sum, s) => sum + (s.duration ?? 0), 0);
+  const summaryLine = totalMin > 0
+    ? `${totalMin} min practiced this month`
+    : thisMonth.length > 0
+      ? `${thisMonth.length} session${thisMonth.length !== 1 ? 's' : ''} this month`
+      : null;
+
+  const tooltipData = tooltip ? (dayMap.get(tooltip.key) ?? null) : null;
+  const greeting    = GREETINGS[targetLang.toLowerCase()] ?? '';
+
   return (
     <div className="bg-white border border-stone-200 rounded-2xl px-6 py-5">
-      <p className="text-xs font-medium text-stone-400 uppercase tracking-widest mb-4">Your practice rhythm</p>
+      <div className="flex items-baseline justify-between mb-4">
+        <p className="text-xs font-medium text-stone-400 uppercase tracking-widest">Your practice rhythm</p>
+        {summaryLine && <p className="text-xs text-stone-400">{summaryLine}</p>}
+      </div>
 
       <div className="flex gap-2 min-w-0">
-        {/* Day-of-week labels — height synced to grid rows via gap-1.5 */}
+        {/* Day-of-week labels */}
         <div className="flex flex-col gap-1.5 shrink-0 mt-6">
           {DAY_LABELS.map((l, i) => (
             <div key={i} className="flex items-center" style={{ height: 'calc((100% - 6px * 6) / 7)' }}>
@@ -139,47 +174,47 @@ function RhythmChart({ sessions }: { sessions: SessionEntry[] }) {
           ))}
         </div>
 
-        {/* Grid — stretches to fill remaining width */}
+        {/* Grid */}
         <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-          {/* Month labels row */}
+          {/* Month labels */}
           <div className="h-5" style={{ display: 'grid', gridTemplateColumns: `repeat(${WEEKS}, 1fr)`, gap: '6px' }}>
             {grid.map((_, wi) => {
               const ml = monthLabels.find(m => m.col === wi);
               return (
                 <div key={wi} className="flex items-center overflow-visible">
-                  {ml && (
-                    <span className="text-[10px] text-stone-400 font-medium whitespace-nowrap">
-                      {ml.label}
-                    </span>
-                  )}
+                  {ml && <span className="text-[10px] text-stone-400 font-medium whitespace-nowrap">{ml.label}</span>}
                 </div>
               );
             })}
           </div>
 
-          {/* Day cells: each row is a CSS grid so columns fill width; aspect-square keeps cells square */}
+          {/* Day cells */}
           {Array.from({ length: 7 }, (_, di) => (
-            <div
-              key={di}
-              style={{ display: 'grid', gridTemplateColumns: `repeat(${WEEKS}, 1fr)`, gap: '6px' }}
-            >
+            <div key={di} style={{ display: 'grid', gridTemplateColumns: `repeat(${WEEKS}, 1fr)`, gap: '6px' }}>
               {grid.map((week, wi) => {
                 const { date, key } = week[di];
                 const isFuture = date > today;
-                const n = counts.get(key) ?? 0;
-                let bg: string;
-                if (isFuture || n === 0) {
-                  bg = '#E5E5E5';
-                } else if (n === 1) {
-                  bg = '#60A5FA'; // blue-400
-                } else {
-                  bg = '#2563EB'; // blue-600
+                const data     = isFuture ? null : (dayMap.get(key) ?? null);
+                let intensity  = 0;
+                if (data) {
+                  const dur = data.totalDuration;
+                  if      (dur >= 30)     intensity = 3;
+                  else if (dur >= 15)     intensity = 2;
+                  else if (dur >  0)      intensity = 1;
+                  else if (data.count >= 3) intensity = 3;
+                  else if (data.count >= 2) intensity = 2;
+                  else                    intensity = 1;
                 }
                 return (
                   <div
                     key={wi}
                     className="rounded-[3px] aspect-square"
-                    style={{ background: bg }}
+                    style={{
+                      background: INTENSITY_COLORS[intensity],
+                      cursor: data ? 'default' : undefined,
+                    }}
+                    onMouseEnter={e => { if (data) setTooltip({ key, x: e.clientX, y: e.clientY }); }}
+                    onMouseLeave={() => setTooltip(null)}
                   />
                 );
               })}
@@ -187,6 +222,25 @@ function RhythmChart({ sessions }: { sessions: SessionEntry[] }) {
           ))}
         </div>
       </div>
+
+      {/* Tooltip */}
+      {tooltip && tooltipData && (
+        <div
+          className="fixed z-50 bg-white border border-stone-200 rounded-xl px-3 py-2.5 pointer-events-none"
+          style={{ left: tooltip.x + 14, top: tooltip.y - 72, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
+        >
+          {greeting && <p className="text-[11px] text-stone-400 mb-1">{greeting}</p>}
+          <p className="font-semibold text-neutral-800 text-xs">
+            {new Date(tooltip.key + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+          </p>
+          <p className="text-xs text-stone-500 mt-0.5">{tooltipData.partners.slice(0, 2).join(', ')}</p>
+          <p className="text-xs text-stone-400 mt-0.5">
+            {tooltipData.totalDuration > 0
+              ? `${tooltipData.totalDuration} min`
+              : `${tooltipData.count} session${tooltipData.count !== 1 ? 's' : ''}`}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
@@ -199,6 +253,7 @@ export default function HistoryPage() {
   const [partners,      setPartners]      = useState<PartnerSummary[]>([]);
   const [rhythm,        setRhythm]        = useState<RhythmData | null>(null);
   const [sessions,      setSessions]      = useState<SessionEntry[]>([]);
+  const [targetLang,    setTargetLang]    = useState('');
   const [showAll,       setShowAll]       = useState(false);
   const [scheduleModal, setScheduleModal] = useState<string | null>(null);
   const [reviewModal,   setReviewModal]   = useState<string | null>(null);
@@ -207,11 +262,13 @@ export default function HistoryPage() {
     const raw     = localStorage.getItem('mutua_history');
     const profile = localStorage.getItem('mutua_profile');
     const parsed: SessionEntry[] = raw ? JSON.parse(raw) : [];
-    const freq = profile ? (JSON.parse(profile).practice_frequency ?? '') : '';
+    const prof = profile ? JSON.parse(profile) : {};
+    const freq = prof.practice_frequency ?? '';
 
     setSessions(parsed);
     setPartners(groupByPartner(parsed));
     setRhythm(computeRhythm(parsed, freq));
+    setTargetLang(prof.target_language ?? '');
   }, []);
 
   if (!rhythm) return null;
@@ -269,7 +326,7 @@ export default function HistoryPage() {
         </div>
 
         {/* ── 2. Monthly rhythm ────────────────────────────────── */}
-        {hasAnySessions && <RhythmChart sessions={sessions} />}
+        {hasAnySessions && <RhythmChart sessions={sessions} targetLang={targetLang} />}
 
         {/* ── 3. Review your exchanges ─────────────────────────── */}
         {partners.length > 0 && (
