@@ -99,7 +99,7 @@ function buildConsistencyGrid(sessions: SessionEntry[], weeks = 12): boolean[] {
 
 // ── Consistency graph ─────────────────────────────────────────────────────────
 
-const GRAPH_WEEKS = 12;
+const GRAPH_WEEKS = 24;
 
 function ConsistencyGraph({ grid }: { grid: boolean[] }) {
   const weekStart = getWeekStart(new Date());
@@ -123,22 +123,22 @@ function ConsistencyGraph({ grid }: { grid: boolean[] }) {
       <p className="text-xs font-semibold uppercase tracking-widest text-stone-400 mb-3">Your practice rhythm</p>
       <div className="flex gap-1.5 items-start">
         {/* Day labels — M W F only */}
-        <div className="flex flex-col gap-1 pt-0.5 mr-0.5">
+        <div className="flex flex-col gap-1.5 pt-0.5 mr-1">
           {['M','','W','','F','',''].map((label, i) => (
-            <div key={i} className="h-2.5 flex items-center">
-              <span className="text-[9px] text-stone-300 font-medium w-2">{label}</span>
+            <div key={i} className="h-3.5 flex items-center">
+              <span className="text-[10px] text-stone-300 font-medium w-2">{label}</span>
             </div>
           ))}
         </div>
         {/* Grid */}
         <div className="flex flex-col gap-1.5">
           {/* Month labels */}
-          <div className="flex gap-1.5 h-3">
+          <div className="flex gap-1.5 h-3.5">
             {Array.from({ length: GRAPH_WEEKS }, (_, w) => {
               const label = monthLabels.find(m => m.col === w);
               return (
-                <div key={w} className="w-2.5 relative">
-                  {label && <span className="absolute left-0 text-[9px] text-stone-300 whitespace-nowrap">{label.label}</span>}
+                <div key={w} className="w-3.5 relative">
+                  {label && <span className="absolute left-0 text-[10px] text-stone-300 whitespace-nowrap">{label.label}</span>}
                 </div>
               );
             })}
@@ -149,7 +149,7 @@ function ConsistencyGraph({ grid }: { grid: boolean[] }) {
               {Array.from({ length: GRAPH_WEEKS }, (_, weekIdx) => (
                 <div
                   key={weekIdx}
-                  className={`w-2.5 h-2.5 rounded-sm ${
+                  className={`w-3.5 h-3.5 rounded-sm ${
                     grid[weekIdx * 7 + dayIdx] ? 'bg-[#2B8FFF]/65' : 'bg-stone-100'
                   }`}
                 />
@@ -205,7 +205,7 @@ export default function HistoryPage() {
 
   return (
     <AppShell>
-      <main className="flex-1 px-6 py-10 max-w-xl mx-auto w-full">
+      <main className="flex-1 px-6 py-10 max-w-3xl mx-auto w-full">
 
         {/* Page title — quiet */}
         <p className="text-xs font-semibold uppercase tracking-widest text-stone-400 mb-10">Progress</p>
