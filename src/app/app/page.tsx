@@ -589,40 +589,6 @@ export default function SessionPage() {
           </div>
         )}
 
-        {/* ── DEV PREVIEW: both card states ── */}
-        <div className="mt-10 space-y-3">
-          <p className="text-xs font-bold uppercase tracking-widest text-stone-300">Preview — unscheduled</p>
-          <SchedulingCard
-            partner={{
-              matchId: 'test-1', id: 'p1', name: 'Sofia Reyes',
-              nativeLang: 'Spanish', learningLang: 'English',
-              goal: 'Conversational', commStyle: 'Casual', frequency: 'Weekly',
-              reasons: [], schedulingState: 'pending_both', scheduledAt: null,
-              iAmA: true, avatarUrl: null,
-              sharedInterests: ['Travel', 'Music'],
-              bio: 'Software engineer based in Mexico City. I love hiking and indie music.',
-            }}
-            onReschedule={() => {}} onJoin={() => {}} onBookExchange={() => {}} onViewProfile={() => {}}
-          />
-        </div>
-
-        <div className="space-y-3">
-          <p className="text-xs font-bold uppercase tracking-widest text-stone-300">Preview — scheduled</p>
-          <SchedulingCard
-            partner={{
-              matchId: 'test-2', id: 'p2', name: 'Sofia Reyes',
-              nativeLang: 'Spanish', learningLang: 'English',
-              goal: 'Conversational', commStyle: 'Casual', frequency: 'Weekly',
-              reasons: [], schedulingState: 'scheduled',
-              scheduledAt: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-              iAmA: true, avatarUrl: null, sharedInterests: [], bio: undefined,
-            }}
-            myName={myName ?? 'You'}
-            myAvatarUrl={myAvatarUrl}
-            onReschedule={() => {}} onJoin={() => {}} onBookExchange={() => {}} onViewProfile={() => {}}
-          />
-        </div>
-        {/* ── end DEV PREVIEW ── */}
 
       </main>
 
