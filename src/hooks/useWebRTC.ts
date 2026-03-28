@@ -3,9 +3,20 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 
+// Free TURN relay — needed for cross-network connections (cellular ↔ WiFi).
+// Replace with your own TURN server credentials in production.
 const ICE_SERVERS: RTCIceServer[] = [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
+  {
+    urls: [
+      'turn:openrelay.metered.ca:80',
+      'turn:openrelay.metered.ca:443',
+      'turn:openrelay.metered.ca:443?transport=tcp',
+    ],
+    username: 'openrelayproject',
+    credential: 'openrelayproject',
+  },
 ];
 
 export type RTCState = 'idle' | 'connecting' | 'connected' | 'disconnected' | 'failed';
@@ -18,9 +29,6 @@ interface Options {
 }
 
 // ── DB-based signaling (polling) ──────────────────────────────────────────────
-// Writes messages to the `signaling` table and polls for incoming ones.
-// This avoids Supabase Realtime broadcast which falls back to REST and
-// doesn't deliver messages to subscribers in real-time.
 
 async function dbSend(channel: string, fromId: string, toId: string, event: string, payload: Record<string, unknown>) {
   await supabase.from('signaling').insert({ channel, from_id: fromId, to_id: toId, event, payload });
@@ -124,6 +132,7 @@ export function useWebRTC({ myId, partnerId, muted, cameraOn }: Options) {
     }
 
     if (event === 'offer' && !isCaller) {
+      if (pcRef.current) return; // guard against duplicate offers
       const pc = buildPC();
       addTracks(pc);
       await pc.setRemoteDescription(new RTCSessionDescription(payload.sdp));
@@ -161,59 +170,62 @@ export function useWebRTC({ myId, partnerId, muted, cameraOn }: Options) {
   }, [isCaller, buildPC, addTracks, send, flushIce]);
 
   // ── main effect: media + signaling ─────────────────────────────────────────
+  // IMPORTANT: We start signaling only AFTER getUserMedia resolves so that
+  // local tracks are always attached before the offer/answer exchange.
 
   useEffect(() => {
     if (!myId || !partnerId) return;
     setRtcState('connecting');
-
-    // Record join time so we only process messages sent after we joined
     sinceRef.current = new Date(Date.now() - 500).toISOString();
 
-    // Acquire local media
+    let cancelled = false;
+
     navigator.mediaDevices
       .getUserMedia({ audio: true, video: true })
       .catch(() => navigator.mediaDevices.getUserMedia({ audio: true, video: false }))
       .catch(() => new MediaStream())
       .then(stream => {
+        if (cancelled) { stream.getTracks().forEach(t => t.stop()); return; }
+
         localStreamRef.current = stream;
         stream.getAudioTracks().forEach(t => { t.enabled = !mutedRef.current; });
         stream.getVideoTracks().forEach(t => { t.enabled = cameraOnRef.current; });
         setLocalStream(stream);
+
+        // Announce ready now that we have media
+        send('ready');
+
+        // Caller retries every 2s until partner responds
+        if (isCaller) {
+          readyTimer.current = setInterval(() => {
+            if (partnerReady.current) {
+              clearInterval(readyTimer.current!);
+              readyTimer.current = null;
+            } else {
+              send('ready');
+            }
+          }, 2000);
+        }
+
+        // Poll for incoming messages every 600ms
+        pollTimer.current = setInterval(async () => {
+          const msgs = await dbPoll(channelName, myId, sinceRef.current);
+          if (msgs.length === 0) return;
+
+          sinceRef.current = new Date().toISOString();
+
+          const ids: string[] = [];
+          for (const msg of msgs) {
+            if (msg.from_id !== partnerId) continue;
+            ids.push(msg.id);
+            await handleMessage(msg.event, msg.payload);
+          }
+          dbDelete(ids).catch(() => {});
+        }, 600);
       });
 
-    // Announce ready
-    send('ready');
-
-    // Caller retries ready every 2s until partner responds
-    if (isCaller) {
-      readyTimer.current = setInterval(() => {
-        if (partnerReady.current) {
-          clearInterval(readyTimer.current!);
-          readyTimer.current = null;
-        } else {
-          send('ready');
-        }
-      }, 2000);
-    }
-
-    // Poll for incoming messages every 600ms
-    pollTimer.current = setInterval(async () => {
-      const msgs = await dbPoll(channelName, myId, sinceRef.current);
-      if (msgs.length === 0) return;
-
-      // Advance the cursor so we don't reprocess
-      sinceRef.current = new Date().toISOString();
-
-      const ids: string[] = [];
-      for (const msg of msgs) {
-        if (msg.from_id !== partnerId) continue;
-        ids.push(msg.id);
-        await handleMessage(msg.event, msg.payload);
-      }
-      dbDelete(ids).catch(() => {});
-    }, 600);
-
     return () => {
+      cancelled = true;
       if (readyTimer.current)  clearInterval(readyTimer.current);
       if (pollTimer.current)   clearInterval(pollTimer.current);
       pcRef.current?.close();
