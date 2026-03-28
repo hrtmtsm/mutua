@@ -759,6 +759,16 @@ export default function SessionPage() {
         </div>
       )}
 
+      {/* ── DEBUG overlay (remove after testing) ── */}
+      {process.env.NODE_ENV !== 'production' || true ? (
+        <div className="fixed bottom-20 left-2 z-[9999] bg-black/80 text-white text-[10px] font-mono rounded p-2 leading-tight pointer-events-none">
+          <div>caller: {myId < (match?.partner.session_id ?? '') ? 'YES' : 'NO'}</div>
+          <div>rtc: {rtcState}</div>
+          <div>me: {myId.slice(0, 8)}</div>
+          <div>partner: {(match?.partner.session_id ?? '').slice(0, 8)}</div>
+        </div>
+      ) : null}
+
       {/* ── Content: participant area + right sidebar ── */}
       <div className="flex-1 flex flex-col md:flex-row min-h-0">
 
