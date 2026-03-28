@@ -39,13 +39,17 @@ export async function POST(request: Request) {
   );
 
   // Create both profiles if they don't exist (A=English native, B=Japanese native)
-  const [profileA, profileB] = await Promise.all([
-    ensureProfile(admin, emailA, 'English', 'Japanese'),
-    ensureProfile(admin, emailB, 'Japanese', 'English'),
-  ]);
-
-  if (!profileA) return NextResponse.json({ error: `Failed to get/create profile for ${emailA}` }, { status: 500 });
-  if (!profileB) return NextResponse.json({ error: `Failed to get/create profile for ${emailB}` }, { status: 500 });
+  let profileA: any, profileB: any;
+  try {
+    profileA = await ensureProfile(admin, emailA, 'English', 'Japanese');
+  } catch (e: any) {
+    return NextResponse.json({ error: e.message }, { status: 500 });
+  }
+  try {
+    profileB = await ensureProfile(admin, emailB, 'Japanese', 'English');
+  } catch (e: any) {
+    return NextResponse.json({ error: e.message }, { status: 500 });
+  }
 
   const scheduledAt = new Date(Date.now() + minutesFromNow * 60 * 1000).toISOString();
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://trymutua.com';
