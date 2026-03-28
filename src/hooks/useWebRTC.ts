@@ -20,7 +20,8 @@ interface Options {
 // ── DB-based signaling (polling) ──────────────────────────────────────────────
 
 async function dbSend(channel: string, fromId: string, toId: string, event: string, payload: Record<string, unknown>) {
-  await supabase.from('signaling').insert({ channel, from_id: fromId, to_id: toId, event, payload });
+  const { error } = await supabase.from('signaling').insert({ channel, from_id: fromId, to_id: toId, event, payload });
+  if (error) console.error('[signal] send failed:', event, error.message, error.code);
 }
 
 async function dbPoll(channel: string, toId: string, since: string): Promise<Array<{ id: string; event: string; payload: any; from_id: string }>> {
@@ -64,7 +65,8 @@ export function useWebRTC({ myId, partnerId, muted, cameraOn }: Options) {
   // ── helpers ────────────────────────────────────────────────────────────────
 
   const send = useCallback((event: string, payload: Record<string, unknown> = {}) => {
-    dbSend(channelName, myId, partnerId, event, payload).catch(() => {});
+    console.log('[signal] →', event);
+    dbSend(channelName, myId, partnerId, event, payload).catch(e => console.error('[signal] send error:', e));
   }, [channelName, myId, partnerId]);
 
   const flushIce = useCallback(async () => {
@@ -89,9 +91,14 @@ export function useWebRTC({ myId, partnerId, muted, cameraOn }: Options) {
 
     pc.onconnectionstatechange = () => {
       const s = pc.connectionState;
+      console.log('[rtc] connectionState:', s);
       if (s === 'connected')    setRtcState('connected');
       if (s === 'disconnected') setRtcState('disconnected');
       if (s === 'failed')       setRtcState('failed');
+    };
+
+    pc.oniceconnectionstatechange = () => {
+      console.log('[rtc] iceConnectionState:', pc.iceConnectionState);
     };
 
     pcRef.current = pc;
@@ -212,6 +219,7 @@ export function useWebRTC({ myId, partnerId, muted, cameraOn }: Options) {
           const ids: string[] = [];
           for (const msg of msgs) {
             if (msg.from_id !== partnerId) continue;
+            console.log('[signal] ←', msg.event);
             ids.push(msg.id);
             await handleMessage(msg.event, msg.payload);
           }
