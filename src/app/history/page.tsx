@@ -88,7 +88,7 @@ function computeRhythm(sessions: SessionEntry[], freq: string): RhythmData {
 
 // ── GitHub-style consistency grid ────────────────────────────────────────────
 
-const WEEKS = 52; // one full year
+const WEEKS = 20; // ~5 months visible
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
 // 4-level intensity: 0 = empty, 1 = light, 2 = medium, 3 = strong
@@ -103,7 +103,7 @@ const GREETINGS: Record<string, string> = {
 interface DayData    { count: number; totalDuration: number; partners: string[]; }
 interface TooltipPos { key: string; x: number; y: number; }
 
-const SHIFT      = 52;  // one year per arrow click
+const SHIFT      = 4;   // ~1 month per arrow click
 const MAX_OFFSET = 260; // up to 5 years back
 
 function RhythmChart({ sessions, targetLang }: { sessions: SessionEntry[]; targetLang: string }) {
