@@ -3,20 +3,9 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 
-// Free TURN relay — needed for cross-network connections (cellular ↔ WiFi).
-// Replace with your own TURN server credentials in production.
-const ICE_SERVERS: RTCIceServer[] = [
+const FALLBACK_ICE: RTCIceServer[] = [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
-  {
-    urls: [
-      'turn:openrelay.metered.ca:80',
-      'turn:openrelay.metered.ca:443',
-      'turn:openrelay.metered.ca:443?transport=tcp',
-    ],
-    username: 'openrelayproject',
-    credential: 'openrelayproject',
-  },
 ];
 
 export type RTCState = 'idle' | 'connecting' | 'connected' | 'disconnected' | 'failed';
@@ -57,6 +46,7 @@ export function useWebRTC({ myId, partnerId, muted, cameraOn }: Options) {
   const [partnerMuted,   setPartnerMuted]   = useState(false);
   const [partnerCamOn,   setPartnerCamOn]   = useState(false);
 
+  const iceServersRef  = useRef<RTCIceServer[]>(FALLBACK_ICE);
   const pcRef          = useRef<RTCPeerConnection | null>(null);
   const iceBuf         = useRef<RTCIceCandidateInit[]>([]);
   const remoteSetRef   = useRef(false);
@@ -87,7 +77,7 @@ export function useWebRTC({ myId, partnerId, muted, cameraOn }: Options) {
   }, []);
 
   const buildPC = useCallback(() => {
-    const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+    const pc = new RTCPeerConnection({ iceServers: iceServersRef.current });
 
     pc.onicecandidate = ({ candidate }) => {
       if (candidate) send('ice', { candidate: candidate.toJSON() });
@@ -180,13 +170,18 @@ export function useWebRTC({ myId, partnerId, muted, cameraOn }: Options) {
 
     let cancelled = false;
 
-    navigator.mediaDevices
-      .getUserMedia({ audio: true, video: true })
-      .catch(() => navigator.mediaDevices.getUserMedia({ audio: true, video: false }))
-      .catch(() => new MediaStream())
-      .then(stream => {
+    const getMedia = () =>
+      navigator.mediaDevices.getUserMedia({ audio: true, video: true })
+        .catch(() => navigator.mediaDevices.getUserMedia({ audio: true, video: false }))
+        .catch(() => new MediaStream());
+
+    const getIce = () =>
+      fetch('/api/ice-servers').then(r => r.json()).catch(() => FALLBACK_ICE);
+
+    Promise.all([getMedia(), getIce()]).then(([stream, iceServers]) => {
         if (cancelled) { stream.getTracks().forEach(t => t.stop()); return; }
 
+        iceServersRef.current = iceServers;
         localStreamRef.current = stream;
         stream.getAudioTracks().forEach(t => { t.enabled = !mutedRef.current; });
         stream.getVideoTracks().forEach(t => { t.enabled = cameraOnRef.current; });
