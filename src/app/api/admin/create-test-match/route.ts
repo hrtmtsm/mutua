@@ -54,10 +54,14 @@ export async function POST(request: Request) {
   const scheduledAt = new Date(Date.now() + minutesFromNow * 60 * 1000).toISOString();
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://trymutua.com';
 
-  // Upsert match between the two
+  // Delete any existing match between these two, then insert fresh
+  await admin.from('matches')
+    .delete()
+    .or(`and(session_id_a.eq.${profileA.session_id},session_id_b.eq.${profileB.session_id}),and(session_id_a.eq.${profileB.session_id},session_id_b.eq.${profileA.session_id})`);
+
   const { data: match, error } = await admin
     .from('matches')
-    .upsert({
+    .insert({
       session_id_a:       profileA.session_id,
       session_id_b:       profileB.session_id,
       name_a:             profileA.name ?? emailA.split('@')[0],
@@ -73,7 +77,7 @@ export async function POST(request: Request) {
       scheduled_at:       scheduledAt,
       score:              100,
       reasons:            ['Test match'],
-    }, { onConflict: 'session_id_a,session_id_b' })
+    })
     .select('id, scheduled_at')
     .single();
 
