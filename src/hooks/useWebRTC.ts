@@ -82,7 +82,16 @@ export function useWebRTC({ myId, partnerId, muted, cameraOn }: Options) {
     const pc = new RTCPeerConnection({ iceServers: iceServersRef.current });
 
     pc.onicecandidate = ({ candidate }) => {
-      if (candidate) send('ice', { candidate: candidate.toJSON() });
+      if (candidate) {
+        console.log('[ice] local candidate:', candidate.type, candidate.protocol, candidate.address);
+        send('ice', { candidate: candidate.toJSON() });
+      } else {
+        console.log('[ice] gathering complete');
+      }
+    };
+
+    pc.onicegatheringstatechange = () => {
+      console.log('[ice] gatheringState:', pc.iceGatheringState);
     };
 
     pc.ontrack = ({ streams }) => {
@@ -191,6 +200,7 @@ export function useWebRTC({ myId, partnerId, muted, cameraOn }: Options) {
     Promise.all([getMedia(), getIce()]).then(([stream, iceServers]) => {
         if (cancelled) { stream.getTracks().forEach(t => t.stop()); return; }
 
+        console.log('[ice] servers loaded:', JSON.stringify(iceServers).slice(0, 300));
         iceServersRef.current = iceServers;
         localStreamRef.current = stream;
         stream.getAudioTracks().forEach(t => { t.enabled = !mutedRef.current; });
