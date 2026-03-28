@@ -3,6 +3,16 @@ import { NextResponse } from 'next/server';
 const FALLBACK: RTCIceServer[] = [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
+  // Free TURN relay — less reliable than Metered but better than STUN-only
+  {
+    urls: [
+      'turn:openrelay.metered.ca:80',
+      'turn:openrelay.metered.ca:443',
+      'turn:openrelay.metered.ca:443?transport=tcp',
+    ],
+    username: 'openrelayproject',
+    credential: 'openrelayproject',
+  },
 ];
 
 export async function GET() {
