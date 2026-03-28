@@ -15,6 +15,7 @@ async function ensureProfile(admin: any, email: string, nativeLang: string, lear
     learning_language:   learningLang,
     goal:                'Casual conversation',
     comm_style:          'Video call',
+    availability:        'Flexible',
     practice_frequency:  'Once a week',
   }).select('*').single();
 
