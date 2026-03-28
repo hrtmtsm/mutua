@@ -287,19 +287,41 @@ function RhythmChart({ sessions, targetLang }: { sessions: SessionEntry[]; targe
       {/* Tooltip */}
       {tooltip && tooltipData && (
         <div
-          className="fixed z-50 bg-white border border-stone-200 rounded-xl px-3 py-2.5 pointer-events-none"
-          style={{ left: tooltip.x + 14, top: tooltip.y - 72, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
+          className="fixed z-50 bg-white border border-stone-200 rounded-xl px-3 py-3 pointer-events-none min-w-[120px]"
+          style={{ left: tooltip.x + 14, top: tooltip.y - 80, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
         >
-          {greeting && <p className="text-[11px] text-stone-400 mb-1">{greeting}</p>}
-          <p className="font-semibold text-neutral-800 text-xs">
+          {/* Date */}
+          <p className="font-semibold text-neutral-800 text-xs mb-2">
             {new Date(tooltip.key + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
           </p>
-          <p className="text-xs text-stone-500 mt-0.5">{tooltipData.partners.slice(0, 2).join(', ')}</p>
-          <p className="text-xs text-stone-400 mt-0.5">
+
+          {/* Partner avatars */}
+          <div className="flex items-center gap-1 mb-2">
+            {tooltipData.partners.slice(0, 4).map((name, i) => (
+              <div
+                key={i}
+                className="w-6 h-6 rounded-full bg-stone-800 flex items-center justify-center shrink-0"
+                style={{ marginLeft: i > 0 ? -6 : 0, zIndex: 4 - i, position: 'relative' }}
+              >
+                <span className="text-[9px] font-bold text-white leading-none">
+                  {name.trim().slice(0, 2).toUpperCase()}
+                </span>
+              </div>
+            ))}
+            {tooltipData.partners.length > 4 && (
+              <span className="text-[10px] text-stone-400 ml-1">+{tooltipData.partners.length - 4}</span>
+            )}
+          </div>
+
+          {/* Duration */}
+          <p className="text-[11px] text-stone-400">
             {tooltipData.totalDuration > 0
               ? `${tooltipData.totalDuration} min`
               : `${tooltipData.count} session${tooltipData.count !== 1 ? 's' : ''}`}
           </p>
+
+          {/* Language greeting */}
+          {greeting && <p className="text-[10px] text-stone-300 mt-1">{greeting}</p>}
         </div>
       )}
     </div>
