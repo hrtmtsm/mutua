@@ -124,6 +124,9 @@ export function useWebRTC({ myId, partnerId, muted, cameraOn }: Options) {
           await pc.setLocalDescription(offer);
           send('offer', { sdp: offer });
         }
+      } else {
+        // Callee echoes ready so caller gets it even if it joined after callee's initial send
+        send('ready');
       }
       return;
     }
