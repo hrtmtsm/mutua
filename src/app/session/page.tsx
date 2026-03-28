@@ -991,14 +991,14 @@ export default function SessionPage() {
       {showEndConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center px-6 z-50">
           <div className="bg-white rounded-2xl p-7 max-w-sm w-full text-center space-y-4 shadow-xl">
-            <p className="text-xl font-bold text-neutral-900">End session?</p>
+            <p className="text-xl font-bold text-neutral-900">End exchange?</p>
             <p className="text-sm text-neutral-500">You're doing great 🔥 — every minute counts.</p>
             <div className="flex flex-col gap-2 pt-1">
               <button
                 onClick={handleEnd}
                 className="w-full py-3 btn-primary text-white font-bold rounded-xl"
               >
-                End session
+                End exchange
               </button>
               <button
                 onClick={() => setShowEndConfirm(false)}

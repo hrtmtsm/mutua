@@ -146,7 +146,7 @@ export default function PreSessionPage() {
             <div className="flex flex-col items-center gap-2">
               <Avatar name={partner.name} lang={partner.native_language} size="lg" />
               <p className="text-sm text-stone-500">
-                <span className="font-semibold text-neutral-900">{partner.name}</span> is in this session
+                <span className="font-semibold text-neutral-900">{partner.name}</span> is in this exchange
               </p>
               <p className="text-xs text-stone-400">{flag} Native {partner.native_language}</p>
             </div>
