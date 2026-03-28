@@ -11,7 +11,6 @@ async function ensureProfile(admin: any, email: string, nativeLang: string, lear
   const { data: created, error } = await admin.from('profiles').insert({
     session_id:          sessionId,
     email,
-    name:                email.split('@')[0],
     native_language:     nativeLang,
     learning_language:   learningLang,
     goal:                'Casual conversation',
@@ -60,8 +59,8 @@ export async function POST(request: Request) {
     .upsert({
       session_id_a:       profileA.session_id,
       session_id_b:       profileB.session_id,
-      name_a:             profileA.name ?? emailA,
-      name_b:             profileB.name ?? emailB,
+      name_a:             profileA.name ?? emailA.split('@')[0],
+      name_b:             profileB.name ?? emailB.split('@')[0],
       email_a:            profileA.email,
       email_b:            profileB.email,
       native_language_a:  profileA.native_language,
