@@ -5,9 +5,21 @@ import { createClient } from '@supabase/supabase-js';
 // (or leave blank and it will use 'mutua-dev' as default for testing)
 const ADMIN_SECRET = process.env.ADMIN_SECRET ?? 'mutua-dev';
 
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const sessionId     = searchParams.get('sid') ?? '';
+  const secret        = searchParams.get('secret') ?? '';
+  const minutesFromNow = Number(searchParams.get('m') ?? '15');
+  return handle(sessionId, secret, minutesFromNow);
+}
+
 export async function POST(request: Request) {
   const { sessionId, secret, minutesFromNow = 5 } = await request.json();
 
+  return handle(sessionId, secret, minutesFromNow);
+}
+
+async function handle(sessionId: string, secret: string, minutesFromNow: number) {
   if (secret !== ADMIN_SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
