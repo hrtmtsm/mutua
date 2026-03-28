@@ -8,7 +8,7 @@ async function ensureProfile(admin: any, email: string, nativeLang: string, lear
   if (existing) return existing;
 
   const sessionId = crypto.randomUUID();
-  const { data: created } = await admin.from('profiles').insert({
+  const { data: created, error } = await admin.from('profiles').insert({
     session_id:          sessionId,
     email,
     name:                email.split('@')[0],
@@ -19,6 +19,7 @@ async function ensureProfile(admin: any, email: string, nativeLang: string, lear
     practice_frequency:  'Once a week',
   }).select('*').single();
 
+  if (error) throw new Error(`Profile insert failed for ${email}: ${error.message} (code: ${error.code})`);
   return created;
 }
 
