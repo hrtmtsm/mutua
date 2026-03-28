@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 const ADMIN_SECRET = process.env.ADMIN_SECRET ?? 'mutua-dev';
 
 // If a profile doesn't exist for emailB, create a mirror-image of profileA
-async function ensureProfile(admin: ReturnType<typeof createClient>, email: string, mirrorOf?: any) {
+async function ensureProfile(admin: any, email: string, mirrorOf?: any) {
   const { data: existing } = await admin.from('profiles').select('*').eq('email', email).maybeSingle();
   if (existing) return existing;
   if (!mirrorOf) return null;
