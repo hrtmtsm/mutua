@@ -3,22 +3,20 @@ import { createClient } from '@supabase/supabase-js';
 
 const ADMIN_SECRET = process.env.ADMIN_SECRET ?? 'mutua-dev';
 
-// If a profile doesn't exist for emailB, create a mirror-image of profileA
-async function ensureProfile(admin: any, email: string, mirrorOf?: any) {
+async function ensureProfile(admin: any, email: string, nativeLang: string, learningLang: string) {
   const { data: existing } = await admin.from('profiles').select('*').eq('email', email).maybeSingle();
   if (existing) return existing;
-  if (!mirrorOf) return null;
 
   const sessionId = crypto.randomUUID();
   const { data: created } = await admin.from('profiles').insert({
     session_id:          sessionId,
     email,
     name:                email.split('@')[0],
-    native_language:     mirrorOf.learning_language,   // flipped
-    learning_language:   mirrorOf.native_language,     // flipped
-    goal:                mirrorOf.goal,
-    comm_style:          mirrorOf.comm_style,
-    practice_frequency:  mirrorOf.practice_frequency,
+    native_language:     nativeLang,
+    learning_language:   learningLang,
+    goal:                'Casual conversation',
+    comm_style:          'Video call',
+    practice_frequency:  'Once a week',
   }).select('*').single();
 
   return created;
@@ -39,13 +37,14 @@ export async function POST(request: Request) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   );
 
-  // Look up profile A (must exist)
-  const { data: profileA } = await admin.from('profiles').select('*').eq('email', emailA).maybeSingle();
-  if (!profileA) return NextResponse.json({ error: `No profile found for ${emailA} — go through onboarding first` }, { status: 404 });
+  // Create both profiles if they don't exist (A=English native, B=Japanese native)
+  const [profileA, profileB] = await Promise.all([
+    ensureProfile(admin, emailA, 'English', 'Japanese'),
+    ensureProfile(admin, emailB, 'Japanese', 'English'),
+  ]);
 
-  // Profile B is created automatically if missing (mirror image of A)
-  const profileB = await ensureProfile(admin, emailB, profileA);
-  if (!profileB) return NextResponse.json({ error: `Could not create profile for ${emailB}` }, { status: 500 });
+  if (!profileA) return NextResponse.json({ error: `Failed to get/create profile for ${emailA}` }, { status: 500 });
+  if (!profileB) return NextResponse.json({ error: `Failed to get/create profile for ${emailB}` }, { status: 500 });
 
   const scheduledAt = new Date(Date.now() + minutesFromNow * 60 * 1000).toISOString();
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://trymutua.com';
@@ -62,9 +61,9 @@ export async function POST(request: Request) {
       email_b:            profileB.email,
       native_language_a:  profileA.native_language,
       native_language_b:  profileB.native_language,
-      goal:               profileA.goal,
-      comm_style:         profileA.comm_style,
-      practice_frequency: profileA.practice_frequency,
+      goal:               'Casual conversation',
+      comm_style:         'Video call',
+      practice_frequency: 'Once a week',
       scheduling_state:   'scheduled',
       scheduled_at:       scheduledAt,
       score:              100,
