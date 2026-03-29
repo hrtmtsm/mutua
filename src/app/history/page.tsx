@@ -329,6 +329,22 @@ function RhythmChart({ sessions, targetLang }: { sessions: SessionEntry[]; targe
   );
 }
 
+function PartnerAvatar({ name, avatarUrl }: { name: string; avatarUrl: string | null }) {
+  const [failed, setFailed] = useState(false);
+  if (avatarUrl && !failed) {
+    return (
+      <div className="w-12 h-12 rounded-2xl overflow-hidden shrink-0">
+        <img src={avatarUrl} alt={name} className="w-full h-full object-cover" onError={() => setFailed(true)} />
+      </div>
+    );
+  }
+  return (
+    <div className="w-12 h-12 rounded-2xl bg-stone-800 flex items-center justify-center shrink-0">
+      <span className="text-sm font-bold text-white">{name.trim().slice(0, 2).toUpperCase()}</span>
+    </div>
+  );
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function HistoryPage() {
@@ -360,6 +376,7 @@ export default function HistoryPage() {
     // Fetch live name + avatar for each partner from Supabase
     const ids = grouped.map(p => p.partnerId).filter(Boolean);
     if (ids.length === 0) return;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     supabase
       .from('profiles')
       .select('session_id, name, avatar_url')
@@ -368,7 +385,10 @@ export default function HistoryPage() {
         if (!data) return;
         const map: Record<string, { name: string; avatarUrl: string | null }> = {};
         for (const row of data) {
-          map[row.session_id] = { name: row.name ?? '', avatarUrl: row.avatar_url ?? null };
+          // Prefer the stored URL (has cache-buster), fall back to the canonical storage path
+          const avatarUrl = row.avatar_url
+            ?? `${supabaseUrl}/storage/v1/object/public/avatars/${row.session_id}.jpg`;
+          map[row.session_id] = { name: row.name ?? '', avatarUrl };
         }
         setLiveProfiles(map);
       });
@@ -455,17 +475,7 @@ export default function HistoryPage() {
               >
                 <div className="flex items-center gap-4">
                   {/* Avatar */}
-                  {avatarUrl ? (
-                    <div className="w-12 h-12 rounded-2xl overflow-hidden shrink-0">
-                      <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
-                    </div>
-                  ) : (
-                    <div className="w-12 h-12 rounded-2xl bg-stone-800 flex items-center justify-center shrink-0">
-                      <span className="text-sm font-bold text-white">
-                        {displayName.trim().slice(0, 2).toUpperCase()}
-                      </span>
-                    </div>
-                  )}
+                  <PartnerAvatar name={displayName} avatarUrl={avatarUrl} />
 
                   {/* Meta */}
                   <div className="flex-1 min-w-0">
