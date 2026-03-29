@@ -253,6 +253,7 @@ export default function SessionPage() {
   const router = useRouter();
 
   const [match,            setMatch]            = useState<MatchResult | null>(null);
+  const [viewH,            setViewH]            = useState<number | null>(null);
   const [seconds,          setSeconds]          = useState(0);
   const [checkpoint,       setCheckpoint]       = useState(false);
   const [muted,            setMuted]            = useState(() => {
@@ -351,6 +352,16 @@ export default function SessionPage() {
       setTurnSwitched(false);
     }
   }, [phase]);
+
+  // ── Lock height to visualViewport so iOS keyboard doesn't expand layout ──────
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => setViewH(vv.height);
+    vv.addEventListener('resize', update);
+    update();
+    return () => vv.removeEventListener('resize', update);
+  }, []);
 
   // ── Presence heartbeat (so partner's pre-session page can detect us) ────────
   useEffect(() => {
@@ -757,7 +768,7 @@ export default function SessionPage() {
   // ── Render ────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col bg-[#2B8FFF] overflow-hidden" style={{ height: '100dvh' }}>
+    <div className="flex flex-col bg-[#2B8FFF] overflow-hidden" style={{ height: viewH ? `${viewH}px` : '100dvh' }}>
 
       {/* ── Offline banner ── */}
       {!isOnline && (
