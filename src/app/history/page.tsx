@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AppShell from '@/components/AppShell';
 import { track } from '@/lib/analytics';
+import { supabase } from '@/lib/supabase';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -340,6 +341,8 @@ export default function HistoryPage() {
   const [showAll,       setShowAll]       = useState(false);
   const [scheduleModal, setScheduleModal] = useState<string | null>(null);
   const [reviewModal,   setReviewModal]   = useState<string | null>(null);
+  // Live partner profiles keyed by partnerId
+  const [liveProfiles,  setLiveProfiles]  = useState<Record<string, { name: string; avatarUrl: string | null }>>({});
 
   useEffect(() => {
     const raw     = localStorage.getItem('mutua_history');
@@ -349,9 +352,26 @@ export default function HistoryPage() {
     const freq = prof.practice_frequency ?? '';
 
     setSessions(parsed);
-    setPartners(groupByPartner(parsed));
+    const grouped = groupByPartner(parsed);
+    setPartners(grouped);
     setRhythm(computeRhythm(parsed, freq));
     setTargetLang(prof.target_language ?? '');
+
+    // Fetch live name + avatar for each partner from Supabase
+    const ids = grouped.map(p => p.partnerId).filter(Boolean);
+    if (ids.length === 0) return;
+    supabase
+      .from('profiles')
+      .select('session_id, name, avatar_url')
+      .in('session_id', ids)
+      .then(({ data }) => {
+        if (!data) return;
+        const map: Record<string, { name: string; avatarUrl: string | null }> = {};
+        for (const row of data) {
+          map[row.session_id] = { name: row.name ?? '', avatarUrl: row.avatar_url ?? null };
+        }
+        setLiveProfiles(map);
+      });
   }, []);
 
   if (!rhythm) return null;
@@ -424,22 +444,32 @@ export default function HistoryPage() {
             <p className="text-sm font-medium text-stone-500">Your exchanges</p>
             <div className="space-y-3">
 
-            {visiblePartners.map(p => (
+            {visiblePartners.map(p => {
+              const live        = liveProfiles[p.partnerId];
+              const displayName = live?.name || p.partnerName;
+              const avatarUrl   = live?.avatarUrl ?? null;
+              return (
               <div
                 key={p.partnerId || p.partnerName}
                 className="bg-white border border-stone-200 rounded-2xl px-6 py-5"
               >
                 <div className="flex items-center gap-4">
                   {/* Avatar */}
-                  <div className="w-12 h-12 rounded-2xl bg-stone-800 flex items-center justify-center shrink-0">
-                    <span className="text-sm font-bold text-white">
-                      {p.partnerName.trim().slice(0, 2).toUpperCase()}
-                    </span>
-                  </div>
+                  {avatarUrl ? (
+                    <div className="w-12 h-12 rounded-2xl overflow-hidden shrink-0">
+                      <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
+                    </div>
+                  ) : (
+                    <div className="w-12 h-12 rounded-2xl bg-stone-800 flex items-center justify-center shrink-0">
+                      <span className="text-sm font-bold text-white">
+                        {displayName.trim().slice(0, 2).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
 
                   {/* Meta */}
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-[#171717] text-base leading-tight">{p.partnerName}</p>
+                    <p className="font-semibold text-[#171717] text-base leading-tight">{displayName}</p>
                     <p className="text-sm text-stone-400 mt-0.5">
                       Last: {formatDate(p.lastDate)} · {p.sessionCount} session{p.sessionCount === 1 ? '' : 's'}
                     </p>
@@ -465,7 +495,8 @@ export default function HistoryPage() {
                   </button>
                 </div>
               </div>
-            ))}
+              );
+            })}
 
             {partners.length > 3 && !showAll && (
               <button
