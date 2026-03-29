@@ -750,11 +750,6 @@ export default function SessionPage() {
           <WifiOff className="w-3.5 h-3.5" /> Partner disconnected — waiting to reconnect…
         </div>
       )}
-      {rtcState === 'failed' && (
-        <div className="shrink-0 bg-red-500 text-white text-xs font-medium text-center py-1.5 px-4 z-50 flex items-center justify-center gap-2">
-          <WifiOff className="w-3.5 h-3.5" /> Connection failed — try ending and rejoining
-        </div>
-      )}
 
       {/* ── Content: participant area + right sidebar ── */}
       <div className="flex-1 flex flex-col md:flex-row min-h-0">
