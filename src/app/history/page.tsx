@@ -110,6 +110,13 @@ interface TooltipPos { key: string; x: number; y: number; }
 const SHIFT      = 4;   // ~1 month per arrow click
 const MAX_OFFSET = 260; // up to 5 years back
 
+function localKey(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 function RhythmChart({ sessions, targetLang }: { sessions: SessionEntry[]; targetLang: string }) {
   const [tooltip,    setTooltip]    = useState<TooltipPos | null>(null);
   const [weekOffset, setWeekOffset] = useState(0); // 0 = present, positive = further back
@@ -117,7 +124,7 @@ function RhythmChart({ sessions, targetLang }: { sessions: SessionEntry[]; targe
   // Aggregate per-day
   const dayMap = new Map<string, DayData>();
   for (const s of sessions) {
-    const key = s.date.slice(0, 10);
+    const key = localKey(new Date(s.date));
     const d = dayMap.get(key);
     if (d) {
       d.count++;
@@ -141,7 +148,7 @@ function RhythmChart({ sessions, targetLang }: { sessions: SessionEntry[]; targe
     Array.from({ length: 7 }, (_, d) => {
       const date = new Date(gridStart);
       date.setDate(gridStart.getDate() + w * 7 + d);
-      return { date, key: date.toISOString().slice(0, 10) };
+      return { date, key: localKey(date) };
     })
   );
 
