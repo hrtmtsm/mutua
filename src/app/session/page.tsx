@@ -809,13 +809,8 @@ export default function SessionPage() {
                 </div>
               </>
             ) : (
-              /* Not connected: neutral waiting state, no partner info */
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-neutral-900 gap-3">
-                <div className="w-12 h-12 rounded-full border-2 border-white/20 border-t-white/60 animate-spin" />
-                <p className="text-white/50 text-sm font-medium">
-                  {rtcState === 'failed' ? 'Connection failed' : 'Waiting for partner…'}
-                </p>
-              </div>
+              /* Not connected: blank */
+              <div className="absolute inset-0 bg-neutral-900" />
             )}
           </div>
 
