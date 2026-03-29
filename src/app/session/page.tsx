@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import type { MatchResult } from '@/lib/types';
 import { LANG_FLAGS, LANG_AVATAR_COLOR } from '@/lib/constants';
-import { Check, ChevronDown, ChevronUp, Mic, MicOff, MessageSquare, Video, VideoOff, PhoneOff, Wifi, WifiOff } from 'lucide-react';
+import { Check, ChevronDown, ChevronUp, Mic, MicOff, MessageSquare, Video, VideoOff, PhoneOff, WifiOff } from 'lucide-react';
 import { useWebRTC } from '@/hooks/useWebRTC';
 import {
   type Prompt,
@@ -725,11 +725,6 @@ export default function SessionPage() {
       )}
 
       {/* ── RTC status banners ── */}
-      {rtcState === 'connecting' && (
-        <div className="shrink-0 bg-neutral-700 text-white text-xs font-medium text-center py-1.5 px-4 z-50 flex items-center justify-center gap-2">
-          <Wifi className="w-3.5 h-3.5 animate-pulse" /> Connecting to partner…
-        </div>
-      )}
       {rtcState === 'disconnected' && (
         <div className="shrink-0 bg-amber-500 text-white text-xs font-medium text-center py-1.5 px-4 z-50 flex items-center justify-center gap-2">
           <WifiOff className="w-3.5 h-3.5" /> Partner disconnected — waiting to reconnect…
