@@ -277,6 +277,20 @@ export default function TopNav() {
       if (!match) return;
       prevState = match.scheduling_state;
 
+      // Check for unread messages on load (fallback for when realtime misses events)
+      const lastSeen = localStorage.getItem('mutua_last_seen_msg_ts') ?? '';
+      const { data: unread } = await supabase
+        .from('messages')
+        .select('id')
+        .eq('match_id', match.id)
+        .neq('sender_id', sessionId)
+        .gt('created_at', lastSeen || '1970-01-01')
+        .limit(1);
+      if (unread && unread.length > 0) {
+        localStorage.setItem('mutua_unread_message', '1');
+        setHasUnread(true);
+      }
+
       const scheduleChannel = supabase
         .channel(`nav-schedule:${match.id}`)
         .on('postgres_changes', {
@@ -296,14 +310,13 @@ export default function TopNav() {
         .on('postgres_changes', {
           event: 'INSERT', schema: 'public', table: 'messages',
         }, payload => {
-          console.log('[nav-messages] received', payload.new);
           const msg = payload.new as Message;
           if (msg.match_id === match.id && msg.sender_id !== sessionId) {
             localStorage.setItem('mutua_unread_message', '1');
             setHasUnread(true);
           }
         })
-        .subscribe(status => console.log('[nav-messages] status', status));
+        .subscribe();
 
       return () => {
         supabase.removeChannel(scheduleChannel);
@@ -518,6 +531,7 @@ export default function TopNav() {
                   onOpen={() => {
                     setMsgView('chat');
                     localStorage.removeItem('mutua_unread_message');
+                    localStorage.setItem('mutua_last_seen_msg_ts', new Date().toISOString());
                     setHasUnread(!!localStorage.getItem('mutua_unread_notification'));
                   }}
                 />
