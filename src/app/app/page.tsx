@@ -133,6 +133,7 @@ function SchedulingCard({
     const sessionDate = new Date(partner.scheduledAt);
     const dateLine = sessionDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
     const timeLine = sessionDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    const sessionPassed = now - sessionDate.getTime() > 60 * 60 * 1000;
 
     return (
       <div className="overflow-hidden bg-white rounded-2xl border border-stone-200">
@@ -175,24 +176,45 @@ function SchedulingCard({
 
         {/* Context block — session date */}
         <div className="px-7 mt-6">
-          <p className="text-xs font-medium text-stone-400 mb-1.5">Next session</p>
+          <p className="text-xs font-medium text-stone-400 mb-1.5">
+            {sessionPassed ? 'Session passed' : 'Next session'}
+          </p>
           <p className="font-serif font-bold text-[#171717] text-2xl leading-snug">{dateLine}, {timeLine}</p>
         </div>
 
         {/* Action block */}
         <div className="px-7 mt-6 pb-7 flex gap-2">
-          <button
-            onClick={() => window.dispatchEvent(new Event('mutua:open-chat'))}
-            className="px-4 py-3 border border-stone-200 bg-white text-sm text-neutral-500 font-medium rounded-xl hover:bg-stone-50 transition-colors"
-          >
-            Say hi 👋
-          </button>
-          <button
-            onClick={() => isJoinable(partner.scheduledAt!, now) ? onJoin() : setShowNotYet(true)}
-            className="px-5 py-3 btn-primary text-white text-sm rounded-xl"
-          >
-            Start exchange →
-          </button>
+          {sessionPassed ? (
+            <>
+              <button
+                onClick={() => window.dispatchEvent(new Event('mutua:open-chat'))}
+                className="px-4 py-3 border border-stone-200 bg-white text-sm text-neutral-500 font-medium rounded-xl hover:bg-stone-50 transition-colors"
+              >
+                Say hi 👋
+              </button>
+              <button
+                onClick={onReschedule}
+                className="px-5 py-3 btn-primary text-white text-sm rounded-xl"
+              >
+                Reschedule →
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => window.dispatchEvent(new Event('mutua:open-chat'))}
+                className="px-4 py-3 border border-stone-200 bg-white text-sm text-neutral-500 font-medium rounded-xl hover:bg-stone-50 transition-colors"
+              >
+                Say hi 👋
+              </button>
+              <button
+                onClick={() => isJoinable(partner.scheduledAt!, now) ? onJoin() : setShowNotYet(true)}
+                className="px-5 py-3 btn-primary text-white text-sm rounded-xl"
+              >
+                Start exchange →
+              </button>
+            </>
+          )}
         </div>
 
         {showNotYet && (() => {
