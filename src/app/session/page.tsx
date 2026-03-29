@@ -876,7 +876,7 @@ export default function SessionPage() {
               <div key={i} className={`flex ${m.from === 'me' ? 'justify-end' : 'justify-start'}`}>
                 <span className={`text-sm px-3 py-1.5 rounded-xl max-w-[85%] ${
                   m.from === 'me'
-                    ? 'bg-[#2B8FFF] text-white'
+                    ? 'bg-neutral-900 text-white'
                     : 'bg-stone-100 text-neutral-800'
                 }`}>
                   {m.text}
