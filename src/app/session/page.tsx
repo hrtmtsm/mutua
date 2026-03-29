@@ -777,7 +777,7 @@ export default function SessionPage() {
         <div className={`relative flex flex-col md:flex-row ${chatOpen ? 'h-[38%] flex-none md:h-auto md:flex-1' : 'flex-1'}`}>
 
           {/* Partner pane */}
-          <div className="relative flex-1 overflow-hidden">
+          <div className="relative flex-1 overflow-hidden" onClick={() => partnerVideoRef.current?.play()}>
             <PartnerTile
               initials={partnerName.trim().slice(0, 2).toUpperCase()}
               isSpeaking={partnerSpeaking}
@@ -845,15 +845,16 @@ export default function SessionPage() {
             <div className="absolute bottom-3 left-0 right-0 flex justify-center pointer-events-none z-10">
               <span className="text-[11px] font-semibold text-white/80 bg-black/25 backdrop-blur-sm px-2 py-0.5 rounded-full">You</span>
             </div>
-            {/* Mobile prompt card */}
-            {!chatOpen && (
-              <div className="md:hidden absolute bottom-10 left-2 right-2 z-10">
-                {promptCard}
-              </div>
-            )}
           </div>
 
         </div>
+
+        {/* ── Mobile prompt card — below video area, not overlapping ── */}
+        {!chatOpen && (
+          <div className="md:hidden shrink-0 px-3 py-2 bg-[#2B8FFF]">
+            {promptCard}
+          </div>
+        )}
 
         {/* ── Right panel — shown only when chat is open ── */}
         <div className={`${chatOpen ? 'flex' : 'hidden'} flex-1 flex-col min-h-0 w-full md:flex-none md:flex-initial md:w-[320px] bg-white border-l border-neutral-200`}>
