@@ -507,8 +507,6 @@ export default function SessionPage() {
     if (!trimmed) return;
     setMessages(prev => [...prev, trimmed]);
     setMessage('');
-    // Keep keyboard open on mobile by re-focusing the input
-    requestAnimationFrame(() => chatInputRef.current?.focus());
   };
 
   if (!match) return null;
@@ -888,12 +886,6 @@ export default function SessionPage() {
                 className="px-3 py-2 bg-[#2B8FFF] hover:bg-blue-600 disabled:opacity-30 text-sm font-semibold text-white rounded-xl transition-colors shrink-0"
               >
                 Send
-              </button>
-              <button
-                onClick={() => chatInputRef.current?.blur()}
-                className="px-3 py-2 bg-neutral-100 hover:bg-neutral-200 text-sm font-semibold text-neutral-600 rounded-xl transition-colors shrink-0"
-              >
-                Close
               </button>
             </div>
           </div>
