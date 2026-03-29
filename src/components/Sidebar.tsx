@@ -277,16 +277,14 @@ export default function TopNav() {
       if (!match) return;
       prevState = match.scheduling_state;
 
-      // Check for unread messages on load (fallback for when realtime misses events)
-      const lastSeen = localStorage.getItem('mutua_last_seen_msg_ts') ?? '';
-      const { data: unread } = await supabase
+      // Check for unread on load: dot shows if the last message is from the partner
+      const { data: lastMsgs } = await supabase
         .from('messages')
-        .select('id')
+        .select('sender_id')
         .eq('match_id', match.id)
-        .neq('sender_id', sessionId)
-        .gt('created_at', lastSeen || '1970-01-01')
+        .order('created_at', { ascending: false })
         .limit(1);
-      if (unread && unread.length > 0) {
+      if (lastMsgs && lastMsgs.length > 0 && lastMsgs[0].sender_id !== sessionId) {
         localStorage.setItem('mutua_unread_message', '1');
         setHasUnread(true);
       }
