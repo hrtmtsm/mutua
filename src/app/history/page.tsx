@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import AppShell from '@/components/AppShell';
 import { track } from '@/lib/analytics';
 import { supabase } from '@/lib/supabase';
+import { LANG_FLAGS } from '@/lib/constants';
+import { ArrowLeftRight } from 'lucide-react';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -345,6 +347,94 @@ function PartnerAvatar({ name, avatarUrl }: { name: string; avatarUrl: string | 
   );
 }
 
+function ExchangeCard({
+  displayName, avatarUrl, nativeLang, myLang, lastDate, sessionCount,
+  matchId, onReview, onSchedule,
+}: {
+  displayName:  string;
+  avatarUrl:    string | null;
+  nativeLang:   string;
+  myLang:       string;
+  lastDate:     string;
+  sessionCount: number;
+  matchId:      string | null;
+  onReview:     () => void;
+  onSchedule:   () => void;
+}) {
+  const router = useRouter();
+  const [showOverflow, setShowOverflow] = useState(false);
+
+  return (
+    <div className="bg-white border border-stone-200 rounded-2xl px-6 py-5">
+      <div className="flex items-center gap-4">
+        <PartnerAvatar name={displayName} avatarUrl={avatarUrl} />
+
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-[#171717] text-base leading-tight truncate">{displayName}</p>
+          {nativeLang && myLang ? (
+            <div className="flex items-center gap-1 mt-0.5 text-sm text-stone-400">
+              <span>{LANG_FLAGS[nativeLang] ?? ''} {nativeLang}</span>
+              <ArrowLeftRight size={11} className="shrink-0" />
+              <span>{LANG_FLAGS[myLang] ?? ''} {myLang}</span>
+            </div>
+          ) : (
+            <p className="text-sm text-stone-400 mt-0.5">
+              Last: {formatDate(lastDate)} · {sessionCount} session{sessionCount === 1 ? '' : 's'}
+            </p>
+          )}
+          {nativeLang && myLang && (
+            <p className="text-xs text-stone-400 mt-0.5">
+              Last: {formatDate(lastDate)} · {sessionCount} session{sessionCount === 1 ? '' : 's'}
+            </p>
+          )}
+        </div>
+
+        {/* Three-dot menu */}
+        <div className="relative shrink-0">
+          <button
+            onClick={() => setShowOverflow(v => !v)}
+            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100 transition-colors text-stone-300"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <circle cx="8" cy="3" r="1.4"/><circle cx="8" cy="8" r="1.4"/><circle cx="8" cy="13" r="1.4"/>
+            </svg>
+          </button>
+          {showOverflow && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setShowOverflow(false)} />
+              <div className="absolute right-0 top-9 z-50 bg-white rounded-xl shadow-lg border border-stone-100 py-1 w-36 text-sm">
+                {matchId && (
+                  <button
+                    onClick={() => { setShowOverflow(false); router.push(`/partner/${matchId}`); }}
+                    className="w-full px-4 py-2.5 text-left text-neutral-700 hover:bg-stone-50"
+                  >
+                    View profile
+                  </button>
+                )}
+                <button
+                  onClick={() => { setShowOverflow(false); window.dispatchEvent(new Event('mutua:open-chat')); }}
+                  className="w-full px-4 py-2.5 text-left text-neutral-700 hover:bg-stone-50"
+                >
+                  Say hi 👋
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      <div className="flex gap-2 mt-4">
+        <button onClick={onReview} className="px-4 py-2.5 btn-primary text-white text-sm font-semibold rounded-xl">
+          Review exchange →
+        </button>
+        <button onClick={onSchedule} className="px-4 py-2.5 border border-stone-200 text-sm font-medium text-stone-500 rounded-xl hover:bg-stone-50 transition-colors">
+          Schedule again
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function HistoryPage() {
@@ -358,7 +448,12 @@ export default function HistoryPage() {
   const [scheduleModal, setScheduleModal] = useState<string | null>(null);
   const [reviewModal,   setReviewModal]   = useState<string | null>(null);
   // Live partner profiles keyed by partnerId
-  const [liveProfiles,  setLiveProfiles]  = useState<Record<string, { name: string; avatarUrl: string | null }>>({});
+  const [liveProfiles,  setLiveProfiles]  = useState<Record<string, {
+    name:       string;
+    avatarUrl:  string | null;
+    nativeLang: string;
+    matchId:    string | null;
+  }>>({});
 
   useEffect(() => {
     const raw     = localStorage.getItem('mutua_history');
@@ -377,21 +472,34 @@ export default function HistoryPage() {
     const ids = grouped.map(p => p.partnerId).filter(Boolean);
     if (ids.length === 0) return;
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    supabase
-      .from('profiles')
-      .select('session_id, name, avatar_url')
-      .in('session_id', ids)
-      .then(({ data }) => {
-        if (!data) return;
-        const map: Record<string, { name: string; avatarUrl: string | null }> = {};
-        for (const row of data) {
-          // Prefer the stored URL (has cache-buster), fall back to the canonical storage path
-          const avatarUrl = row.avatar_url
-            ?? `${supabaseUrl}/storage/v1/object/public/avatars/${row.session_id}.jpg`;
-          map[row.session_id] = { name: row.name ?? '', avatarUrl };
-        }
-        setLiveProfiles(map);
-      });
+    const mySid = localStorage.getItem('mutua_session_id') ?? '';
+
+    // Fetch partner profiles + their match IDs in parallel
+    Promise.all([
+      supabase.from('profiles').select('session_id, name, avatar_url, native_language').in('session_id', ids),
+      supabase.from('matches').select('id, session_id_a, session_id_b')
+        .or(ids.map(id => `session_id_a.eq.${id},session_id_b.eq.${id}`).join(',')),
+    ]).then(([{ data: profiles }, { data: matches }]) => {
+      if (!profiles) return;
+      // Build partnerId → matchId lookup
+      const matchMap: Record<string, string> = {};
+      for (const m of (matches ?? [])) {
+        const partnerId = m.session_id_a === mySid ? m.session_id_b : m.session_id_a;
+        if (!matchMap[partnerId]) matchMap[partnerId] = m.id;
+      }
+      const map: Record<string, { name: string; avatarUrl: string | null; nativeLang: string; matchId: string | null }> = {};
+      for (const row of profiles) {
+        const avatarUrl = row.avatar_url
+          ?? `${supabaseUrl}/storage/v1/object/public/avatars/${row.session_id}.jpg`;
+        map[row.session_id] = {
+          name:       row.name ?? '',
+          avatarUrl,
+          nativeLang: row.native_language ?? '',
+          matchId:    matchMap[row.session_id] ?? null,
+        };
+      }
+      setLiveProfiles(map);
+    });
   }, []);
 
   if (!rhythm) return null;
@@ -468,43 +576,22 @@ export default function HistoryPage() {
               const live        = liveProfiles[p.partnerId];
               const displayName = live?.name || p.partnerName;
               const avatarUrl   = live?.avatarUrl ?? null;
+              const nativeLang  = live?.nativeLang ?? '';
+              const myLang      = (() => { try { return JSON.parse(localStorage.getItem('mutua_profile') ?? '{}').native_language ?? ''; } catch { return ''; } })();
+              const matchId     = live?.matchId ?? null;
               return (
-              <div
+              <ExchangeCard
                 key={p.partnerId || p.partnerName}
-                className="bg-white border border-stone-200 rounded-2xl px-6 py-5"
-              >
-                <div className="flex items-center gap-4">
-                  {/* Avatar */}
-                  <PartnerAvatar name={displayName} avatarUrl={avatarUrl} />
-
-                  {/* Meta */}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-[#171717] text-base leading-tight">{displayName}</p>
-                    <p className="text-sm text-stone-400 mt-0.5">
-                      Last: {formatDate(p.lastDate)} · {p.sessionCount} session{p.sessionCount === 1 ? '' : 's'}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex gap-2 mt-4">
-                  <button
-                    onClick={() => {
-                      track('review_exchange_clicked', { partner_name: p.partnerName, session_count: p.sessionCount });
-                      setReviewModal(p.partnerName);
-                    }}
-                    className="px-4 py-2.5 btn-primary text-white text-sm font-semibold rounded-xl"
-                  >
-                    Review exchange →
-                  </button>
-                  <button
-                    onClick={() => setScheduleModal(p.partnerName)}
-                    className="px-4 py-2.5 border border-stone-200 text-sm font-medium text-stone-500 rounded-xl hover:bg-stone-50 transition-colors"
-                  >
-                    Schedule again
-                  </button>
-                </div>
-              </div>
+                displayName={displayName}
+                avatarUrl={avatarUrl}
+                nativeLang={nativeLang}
+                myLang={myLang}
+                lastDate={p.lastDate}
+                sessionCount={p.sessionCount}
+                matchId={matchId}
+                onReview={() => { track('review_exchange_clicked', { partner_name: p.partnerName, session_count: p.sessionCount }); setReviewModal(p.partnerName); }}
+                onSchedule={() => setScheduleModal(p.partnerName)}
+              />
               );
             })}
 
