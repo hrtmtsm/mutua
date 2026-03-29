@@ -124,6 +124,14 @@ function RhythmChart({ sessions, targetLang, liveProfiles }: {
 }) {
   const [tooltip,    setTooltip]    = useState<TooltipPos | null>(null);
   const [weekOffset, setWeekOffset] = useState(0); // 0 = present, positive = further back
+  const [weeks,      setWeeks]      = useState(20);
+
+  useEffect(() => {
+    const update = () => setWeeks(window.innerWidth < 640 ? 8 : 20);
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
 
   // Aggregate per-day
   const dayMap = new Map<string, DayData>();
@@ -147,9 +155,9 @@ function RhythmChart({ sessions, targetLang, liveProfiles }: {
   const windowEnd = getWeekStart(today);
   windowEnd.setDate(windowEnd.getDate() - weekOffset * 7);
   const gridStart = new Date(windowEnd);
-  gridStart.setDate(gridStart.getDate() - (WEEKS - 1) * 7);
+  gridStart.setDate(gridStart.getDate() - (weeks - 1) * 7);
 
-  const grid: { date: Date; key: string }[][] = Array.from({ length: WEEKS }, (_, w) =>
+  const grid: { date: Date; key: string }[][] = Array.from({ length: weeks }, (_, w) =>
     Array.from({ length: 7 }, (_, d) => {
       const date = new Date(gridStart);
       date.setDate(gridStart.getDate() + w * 7 + d);
@@ -202,7 +210,7 @@ function RhythmChart({ sessions, targetLang, liveProfiles }: {
       <div className="flex items-center gap-1">
         {/* Left arrow */}
         <button
-          onClick={() => { setWeekOffset(o => Math.min(o + SHIFT, MAX_OFFSET)); setTooltip(null); }}
+          onClick={() => { setWeekOffset(o => Math.min(o + (weeks <= 8 ? 4 : SHIFT), MAX_OFFSET)); setTooltip(null); }}
           disabled={!canGoBack}
           className={`${arrowCls} ${!canGoBack ? 'opacity-20 pointer-events-none' : ''}`}
           aria-label="Go back"
@@ -226,7 +234,7 @@ function RhythmChart({ sessions, targetLang, liveProfiles }: {
           {/* Grid columns */}
           <div className="flex flex-col gap-1.5 flex-1 min-w-0">
             {/* Month labels */}
-            <div className="h-9" style={{ display: 'grid', gridTemplateColumns: `repeat(${WEEKS}, 1fr)`, gap: '6px' }}>
+            <div className="h-9" style={{ display: 'grid', gridTemplateColumns: `repeat(${weeks}, 1fr)`, gap: '6px' }}>
               {grid.map((_, wi) => {
                 const ml = monthLabels.find(m => m.col === wi);
                 return (
@@ -239,7 +247,7 @@ function RhythmChart({ sessions, targetLang, liveProfiles }: {
 
             {/* Day cells */}
             {Array.from({ length: 7 }, (_, di) => (
-              <div key={di} style={{ display: 'grid', gridTemplateColumns: `repeat(${WEEKS}, 1fr)`, gap: '6px' }}>
+              <div key={di} style={{ display: 'grid', gridTemplateColumns: `repeat(${weeks}, 1fr)`, gap: '6px' }}>
                 {grid.map((week, wi) => {
                   const { date, key } = week[di];
                   const isFuture = date > today;
@@ -268,7 +276,7 @@ function RhythmChart({ sessions, targetLang, liveProfiles }: {
             ))}
 
             {/* Per-month totals row — always rendered to hold height */}
-            <div className="mt-1" style={{ display: 'grid', gridTemplateColumns: `repeat(${WEEKS}, 1fr)`, gap: '6px' }}>
+            <div className="mt-1" style={{ display: 'grid', gridTemplateColumns: `repeat(${weeks}, 1fr)`, gap: '6px' }}>
               {grid.map((_, wi) => {
                 const mt = monthTotals.find(m => m.col === wi);
                 const label = mt && mt.min > 0 ? `${mt.min}m` : mt && mt.count > 0 ? `${mt.count}×` : '';
@@ -286,7 +294,7 @@ function RhythmChart({ sessions, targetLang, liveProfiles }: {
 
         {/* Right arrow */}
         <button
-          onClick={() => { setWeekOffset(o => Math.max(0, o - SHIFT)); setTooltip(null); }}
+          onClick={() => { setWeekOffset(o => Math.max(0, o - (weeks <= 8 ? 4 : SHIFT))); setTooltip(null); }}
           disabled={!canGoForward}
           className={`${arrowCls} ${!canGoForward ? 'opacity-20 pointer-events-none' : ''}`}
           aria-label="Go forward"
