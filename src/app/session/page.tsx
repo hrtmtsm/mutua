@@ -357,7 +357,7 @@ export default function SessionPage() {
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
-    const update = () => setViewH(vv.height);
+    const update = () => setViewH(Math.round(vv.height));
     vv.addEventListener('resize', update);
     update();
     return () => vv.removeEventListener('resize', update);
@@ -922,7 +922,7 @@ export default function SessionPage() {
                 onChange={e => setMessage(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleSend()}
                 placeholder="Type a message…"
-                className="flex-1 bg-neutral-50 border border-neutral-200 rounded-xl px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:border-[#2B8FFF] transition-colors"
+                className="flex-1 bg-neutral-50 border border-neutral-200 rounded-xl px-3 py-2 text-base text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:border-[#2B8FFF] transition-colors"
               />
               <button
                 onClick={handleSend}
