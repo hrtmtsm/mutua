@@ -218,7 +218,7 @@ function MessageChat({
           onChange={e => setDraft(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && send()}
           placeholder="Message..."
-          className="flex-1 text-xs px-3 py-2 border border-stone-200 rounded-xl focus:outline-none focus:border-neutral-400 bg-stone-50"
+          className="flex-1 text-base px-3 py-2 border border-stone-200 rounded-xl focus:outline-none focus:border-neutral-400 bg-stone-50"
         />
         <button
           onClick={send}
