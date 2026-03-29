@@ -16,6 +16,7 @@ interface SessionEntry {
   partnerId:    string;
   duration:     number;
   date:         string;
+  missed?:      boolean;
 }
 
 interface PartnerSummary {
@@ -349,14 +350,15 @@ function PartnerAvatar({ name, avatarUrl }: { name: string; avatarUrl: string | 
 
 function SessionCard({
   displayName, avatarUrl, nativeLang, myLang,
-  sessionDate, duration, matchId, onReview, onSchedule,
+  sessionDate, duration, missed, matchId, onReview, onSchedule,
 }: {
   displayName:  string;
   avatarUrl:    string | null;
   nativeLang:   string;
   myLang:       string;
-  sessionDate:  string;   // ISO date string
-  duration:     number;   // minutes
+  sessionDate:  string;
+  duration:     number;
+  missed?:      boolean;
   matchId:      string | null;
   onReview:     () => void;
   onSchedule:   () => void;
@@ -368,7 +370,14 @@ function SessionCard({
   const durationLabel = duration > 0 ? `${duration} min` : null;
 
   return (
-    <div className="bg-white border border-stone-200 rounded-2xl px-6 py-5">
+    <div className={`bg-white border rounded-2xl px-6 py-5 ${missed ? 'border-stone-200 opacity-70' : 'border-stone-200'}`}>
+      {missed && (
+        <div className="mb-3">
+          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-stone-100 text-stone-400">
+            Missed :(
+          </span>
+        </div>
+      )}
       <div className="flex items-center gap-4">
         <PartnerAvatar name={displayName} avatarUrl={avatarUrl} />
 
@@ -588,6 +597,7 @@ export default function HistoryPage() {
                   myLang={myLang}
                   sessionDate={s.date}
                   duration={s.duration}
+                  missed={s.missed}
                   matchId={matchId}
                   onReview={() => { track('review_session_clicked', { partner_name: s.partnerName }); setReviewModal(s.partnerName); }}
                   onSchedule={() => setScheduleModal(s.partnerName)}
