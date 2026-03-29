@@ -332,12 +332,12 @@ function RhythmChart({ sessions, targetLang, liveProfiles }: {
                   className="w-7 h-7 rounded-full bg-stone-800 overflow-hidden shrink-0 border-2 border-white flex items-center justify-center"
                   style={{ marginLeft: i > 0 ? -8 : 0, zIndex: 4 - i, position: 'relative' }}
                 >
-                  <span className="text-[9px] font-bold text-white leading-none absolute">{initials}</span>
+                  <span className="text-[9px] font-bold text-white leading-none">{initials}</span>
                   {avatarUrl && (
                     <img
                       src={avatarUrl}
                       alt={name}
-                      className="w-full h-full object-cover absolute inset-0"
+                      className="w-full h-full object-cover absolute inset-0 rounded-full"
                       onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
                     />
                   )}
