@@ -931,7 +931,7 @@ export default function SessionPage() {
         </button>
 
         <button
-          onClick={() => setCameraOn(c => !c)}
+          onClick={() => setCameraOn((c: boolean) => !c)}
           className={`flex flex-col items-center gap-1.5 w-14 py-2.5 rounded-xl transition-all ${
             cameraOn ? 'bg-[#2B8FFF] text-white' : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-700'
           }`}
