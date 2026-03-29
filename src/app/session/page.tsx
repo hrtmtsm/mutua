@@ -322,9 +322,11 @@ export default function SessionPage() {
     cameraOn,
     audioDeviceId,
     onChecklist: (pills, step) => {
-      setPillsChecked(pills);
+      // Swap pill indices: sender's pill 0 (their language) = receiver's pill 1 (partner's language)
+      const swapped: [boolean, boolean] = [pills[1], pills[0]];
+      setPillsChecked(swapped);
       setChecklistStep(step);
-      if (pills[0] && pills[1]) {
+      if (swapped[0] && swapped[1]) {
         setChecklistCelebrating(true);
         setTimeout(() => {
           setChecklistCelebrating(false);
