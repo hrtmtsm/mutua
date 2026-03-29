@@ -164,8 +164,7 @@ function MessageChat({
       await sendMessage(matchId, myId, text);
       track('message_sent');
     } catch (e: any) {
-      const msg = e?.message ?? e?.error_description ?? JSON.stringify(e);
-      setError(`Error: ${msg}`);
+      setError('Failed to send. Try again.');
       setLocalMessages(prev => prev.filter(m => m.id !== optimistic.id));
       console.error('sendMessage error:', e);
     }
