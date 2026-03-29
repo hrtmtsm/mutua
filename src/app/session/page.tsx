@@ -112,15 +112,13 @@ function PartnerTile({
   return (
     <div className="absolute inset-0 flex items-center justify-center overflow-hidden bg-[#2B8FFF]">
 
-      {/* ── Partner live video ── */}
-      {cameraOn && (
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-      )}
+      {/* ── Partner live video (always mounted so srcObject and audio work even when camera off) ── */}
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        className={`absolute inset-0 w-full h-full object-cover ${cameraOn ? '' : 'hidden'}`}
+      />
 
       {/* ── Background + avatar (shown when camera off) ── */}
       {!cameraOn && (
@@ -364,7 +362,7 @@ export default function SessionPage() {
     if (partnerVideoRef.current && partnerStream) {
       partnerVideoRef.current.srcObject = partnerStream;
     }
-  }, [partnerStream]);
+  }, [partnerStream, partnerCameraOn]);
 
   // ── Self speaking detection (from local stream audio track) ───────────────
   useEffect(() => {
@@ -758,16 +756,6 @@ export default function SessionPage() {
           <WifiOff className="w-3.5 h-3.5" /> Connection failed — try ending and rejoining
         </div>
       )}
-
-      {/* ── DEBUG overlay (remove after testing) ── */}
-      {process.env.NODE_ENV !== 'production' || true ? (
-        <div className="fixed bottom-20 left-2 z-[9999] bg-black/80 text-white text-[10px] font-mono rounded p-2 leading-tight pointer-events-none">
-          <div>caller: {myId < (match?.partner.session_id ?? '') ? 'YES' : 'NO'}</div>
-          <div>rtc: {rtcState}</div>
-          <div>me: {myId.slice(0, 8)}</div>
-          <div>partner: {(match?.partner.session_id ?? '').slice(0, 8)}</div>
-        </div>
-      ) : null}
 
       {/* ── Content: participant area + right sidebar ── */}
       <div className="flex-1 flex flex-col md:flex-row min-h-0">
