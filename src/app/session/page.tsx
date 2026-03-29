@@ -590,7 +590,7 @@ export default function SessionPage() {
             <button
               onClick={() => handlePillCheck(0)}
               disabled={pillsChecked[0]}
-              className={`mx-3 w-[calc(100%-1.5rem)] text-left rounded-xl bg-stone-50 px-3 py-2.5 flex items-center gap-3 transition-opacity ${pillsChecked[0] ? 'opacity-50' : 'hover:bg-stone-100 active:bg-stone-100'}`}
+              className={`mx-3 w-[calc(100%-1.5rem)] text-left rounded-xl border border-stone-200 px-3 py-2.5 flex items-center gap-3 transition-opacity ${pillsChecked[0] ? 'opacity-50' : 'hover:bg-stone-50 active:bg-stone-50'}`}
             >
               <div className="w-6 h-6 rounded-full overflow-hidden shrink-0 self-start mt-0.5 flex items-center justify-center"
                 style={{ backgroundColor: LANG_AVATAR_COLOR[myNativeLang] ?? '#374151' }}>
@@ -617,7 +617,7 @@ export default function SessionPage() {
             <button
               onClick={() => handlePillCheck(1)}
               disabled={pillsChecked[1]}
-              className={`mx-3 mt-2 mb-3 w-[calc(100%-1.5rem)] text-left rounded-xl bg-stone-50 px-3 py-2.5 flex items-center gap-3 transition-opacity ${pillsChecked[1] ? 'opacity-50' : 'hover:bg-stone-100 active:bg-stone-100'}`}
+              className={`mx-3 mt-2 mb-3 w-[calc(100%-1.5rem)] text-left rounded-xl border border-stone-200 px-3 py-2.5 flex items-center gap-3 transition-opacity ${pillsChecked[1] ? 'opacity-50' : 'hover:bg-stone-50 active:bg-stone-50'}`}
             >
               <div className="w-6 h-6 rounded-full bg-[#2B8FFF] flex items-center justify-center shrink-0 self-start mt-0.5">
                 <span className="text-[9px] font-black text-white leading-none">
