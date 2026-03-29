@@ -470,14 +470,17 @@ export default function SessionPage() {
 
       // Load my own name + avatar
       const storedProfile = localStorage.getItem('mutua_profile');
+      let myAvatarFromStorage: string | null = null;
       if (storedProfile) {
         try {
           const p = JSON.parse(storedProfile);
           if (p.name) setMyName(p.name);
+          // avatar_url in localStorage includes the cache-busting ?t= timestamp set after upload
+          if (p.avatar_url) myAvatarFromStorage = p.avatar_url;
         } catch { /* ignore */ }
       }
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-      setMyAvatarUrl(`${supabaseUrl}/storage/v1/object/public/avatars/${sid}.jpg`);
+      setMyAvatarUrl(myAvatarFromStorage ?? `${supabaseUrl}/storage/v1/object/public/avatars/${sid}.jpg`);
 
       // Sync name + interests from localStorage → DB so partner can see them
       if (storedProfile) {
