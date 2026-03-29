@@ -110,6 +110,28 @@ interface TooltipPos { key: string; x: number; y: number; }
 const SHIFT      = 4;   // ~1 month per arrow click
 const MAX_OFFSET = 260; // up to 5 years back
 
+function TooltipAvatar({ name, avatarUrl, nativeLang, index }: { name: string; avatarUrl: string | null; nativeLang: string; index: number }) {
+  const [failed, setFailed] = useState(false);
+  const bg = LANG_AVATAR_COLOR[nativeLang] ?? '#3b82f6';
+  const initials = name.trim().split(/\s+/).map((w: string) => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
+  return (
+    <div
+      className="w-7 h-7 rounded-full overflow-hidden shrink-0 border-2 border-white flex items-center justify-center relative"
+      style={{ marginLeft: index > 0 ? -8 : 0, zIndex: 4 - index, backgroundColor: bg }}
+    >
+      <span className="text-[9px] font-bold text-white leading-none">{initials}</span>
+      {avatarUrl && !failed && (
+        <img
+          src={avatarUrl}
+          alt={name}
+          className="w-full h-full object-cover absolute inset-0"
+          onError={() => setFailed(true)}
+        />
+      )}
+    </div>
+  );
+}
+
 function localKey(d: Date): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -326,25 +348,8 @@ function RhythmChart({ sessions, targetLang, liveProfiles }: {
               const name = live?.name ?? tooltipData.partners[i] ?? '?';
               const avatarUrl = live?.avatarUrl ?? null;
               const nativeLang = live?.nativeLang ?? '';
-              const bg = LANG_AVATAR_COLOR[nativeLang] ?? '#3b82f6';
-              const initials = name.trim().split(/\s+/).map((w: string) => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
               return (
-                <div
-                  key={i}
-                  className="w-7 h-7 rounded-full overflow-hidden shrink-0 border-2 border-white flex items-center justify-center"
-                  style={{ marginLeft: i > 0 ? -8 : 0, zIndex: 4 - i, position: 'relative', backgroundColor: bg }}
-                >
-                  <span className="text-[9px] font-bold text-white leading-none">{initials}</span>
-                  {avatarUrl && (
-                    <img
-                      src={avatarUrl}
-                      alt={name}
-                      className="w-full h-full object-cover"
-                      style={{ position: 'absolute', inset: 0 }}
-                      onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-                    />
-                  )}
-                </div>
+                <TooltipAvatar key={i} name={name} avatarUrl={avatarUrl} nativeLang={nativeLang} index={i} />
               );
             })}
             {tooltipData.partners.length > 4 && (
