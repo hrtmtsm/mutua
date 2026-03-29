@@ -7,6 +7,7 @@ import { LANG_FLAGS, LANG_AVATAR_COLOR } from '@/lib/constants';
 import { getSessionStarters } from '@/lib/prompts';
 import TopNav from '@/components/Sidebar';
 import { Mic, MicOff, Video, VideoOff } from 'lucide-react';
+import { supabase, isConfigured } from '@/lib/supabase';
 
 function Avatar({ name, lang, size = 'lg' }: { name: string; lang: string; size?: 'sm' | 'lg' }) {
   const bg = LANG_AVATAR_COLOR[lang] ?? '#3b82f6';
@@ -26,8 +27,9 @@ export default function PreSessionPage() {
   const [partner,        setPartner]        = useState<SavedPartner | null>(null);
   const [cameraOn,       setCameraOn]       = useState(false);
   const [micOn,          setMicOn]          = useState(false);
-  const [audioDevices,   setAudioDevices]   = useState<MediaDeviceInfo[]>([]);
-  const [audioDeviceId,  setAudioDeviceId]  = useState('');
+  const [audioDevices,    setAudioDevices]    = useState<MediaDeviceInfo[]>([]);
+  const [audioDeviceId,   setAudioDeviceId]   = useState('');
+  const [partnerOnline,   setPartnerOnline]   = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem('mutua_current_partner');
@@ -38,13 +40,39 @@ export default function PreSessionPage() {
   // Enumerate audio input devices (requires a permission grant first)
   useEffect(() => {
     navigator.mediaDevices.enumerateDevices().then(devices => {
-      const inputs = devices.filter(d => d.kind === 'audioinput');
+      const inputs = devices.filter(d =>
+        d.kind === 'audioinput' && !d.label.toLowerCase().includes('virtual')
+      );
       setAudioDevices(inputs);
-      // Pre-select system default if nothing chosen
       if (!audioDeviceId && inputs.length > 0) setAudioDeviceId(inputs[0].deviceId);
     }).catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [micOn]); // Re-enumerate after mic toggle so labels are populated
+
+  // Poll for partner presence (sent as heartbeat from their session page)
+  useEffect(() => {
+    if (!isConfigured || !partner) return;
+    const myId      = localStorage.getItem('mutua_session_id') ?? '';
+    const partnerId = partner.partner_id;
+    if (!myId || !partnerId) return;
+
+    const check = async () => {
+      const since = new Date(Date.now() - 30_000).toISOString();
+      const { data } = await supabase
+        .from('signaling')
+        .select('id')
+        .eq('event', 'presence')
+        .eq('from_id', partnerId)
+        .eq('to_id', myId)
+        .gt('created_at', since)
+        .limit(1);
+      setPartnerOnline((data ?? []).length > 0);
+    };
+
+    check();
+    const t = setInterval(check, 5000);
+    return () => clearInterval(t);
+  }, [partner]);
 
   useEffect(() => {
     if (cameraOn) {
@@ -178,6 +206,12 @@ export default function PreSessionPage() {
               <Avatar name={partner.name} lang={partner.native_language} size="lg" />
               <p className="text-sm text-stone-500">
                 <span className="font-semibold text-neutral-900">{partner.name}</span>
+                {partnerOnline && (
+                  <span className="ml-1.5 inline-flex items-center gap-1 text-emerald-600 font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                    is in this exchange
+                  </span>
+                )}
               </p>
               <p className="text-xs text-stone-400">{flag} Native {partner.native_language}</p>
             </div>

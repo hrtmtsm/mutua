@@ -15,7 +15,7 @@ import {
   fetchSessionPool,
   recordShownPrompt,
 } from '@/lib/promptsDb';
-import { isConfigured } from '@/lib/supabase';
+import { isConfigured, supabase } from '@/lib/supabase';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -351,6 +351,19 @@ export default function SessionPage() {
       setTurnSwitched(false);
     }
   }, [phase]);
+
+  // ── Presence heartbeat (so partner's pre-session page can detect us) ────────
+  useEffect(() => {
+    if (!isConfigured || !myId || !match?.partner.session_id) return;
+    const partnerId = match.partner.session_id;
+    const channelName = `rtc:${[myId, partnerId].sort().join(':')}`;
+    const ping = () => supabase.from('signaling').insert({
+      channel: channelName, from_id: myId, to_id: partnerId, event: 'presence', payload: {},
+    }).then(() => {});
+    ping();
+    const t = setInterval(ping, 15_000);
+    return () => clearInterval(t);
+  }, [myId, match?.partner.session_id]);
 
   // ── WebRTC ─────────────────────────────────────────────────────────────────
   const { rtcState, localStream, partnerStream, partnerMuted, partnerCameraOn } = useWebRTC({
