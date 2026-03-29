@@ -16,47 +16,51 @@ import { Pencil, Camera, ChevronDown } from 'lucide-react';
 const CROP_SIZE = 260;
 
 function CropModal({ src, onConfirm, onCancel }: { src: string; onConfirm: (blob: Blob) => void; onCancel: () => void }) {
-  const imgRef     = useRef<HTMLImageElement>(null);
-  const offsetRef  = useRef({ x: 0, y: 0 });
-  const [offset, setOffset]   = useState({ x: 0, y: 0 });
+  const imgRef       = useRef<HTMLImageElement>(null);
+  const offsetRef    = useRef({ x: 0, y: 0 });
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  // Only width is stored — height is always auto so browser keeps ratio
+  const [imgWidth, setImgWidth] = useState(0);
+  const imgWidthRef  = useRef(0);
   const naturalRef   = useRef({ w: 0, h: 0 });
-  const scaleRef     = useRef(1);
-  const [scale, setScale] = useState(1);
-  // Derived: imgSize always uses same scale for both axes
-  const imgW = naturalRef.current.w * scale || 0;
-  const imgH = naturalRef.current.h * scale || 0;
   const dragging     = useRef(false);
   const lastPos      = useRef({ x: 0, y: 0 });
   const pinchDistRef = useRef<number | null>(null);
 
-  const clamp = (ox: number, oy: number, w: number, h: number) => ({
+  // Derive height from width + natural ratio (never set it on the element)
+  const renderedH = () => {
+    const { w, h } = naturalRef.current;
+    return w > 0 ? imgWidthRef.current * (h / w) : 0;
+  };
+
+  const clampOff = (ox: number, oy: number, w: number, h: number) => ({
     x: Math.min(0, Math.max(CROP_SIZE - w, ox)),
     y: Math.min(0, Math.max(CROP_SIZE - h, oy)),
   });
 
-  const applyScale = (newScale: number) => {
+  const applyWidth = (newW: number) => {
     const { w: nw, h: nh } = naturalRef.current;
     if (!nw || !nh) return;
-    const base = Math.max(CROP_SIZE / nw, CROP_SIZE / nh);
-    const clamped = Math.max(base, Math.min(newScale, base * 4));
-    scaleRef.current = clamped;
-    const w = nw * clamped;
-    const h = nh * clamped;
-    setScale(clamped);
-    const next = clamp(offsetRef.current.x, offsetRef.current.y, w, h);
+    const minW = CROP_SIZE * Math.max(CROP_SIZE / nw, CROP_SIZE / nh);
+    const clamped = Math.max(minW, Math.min(newW, minW * 4));
+    imgWidthRef.current = clamped;
+    setImgWidth(clamped);
+    const h = clamped * (nh / nw);
+    const next = clampOff(offsetRef.current.x, offsetRef.current.y, clamped, h);
     offsetRef.current = next;
     setOffset(next);
   };
 
   const onLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
     const img = e.currentTarget;
-    naturalRef.current = { w: img.naturalWidth, h: img.naturalHeight };
-    const base = Math.max(CROP_SIZE / img.naturalWidth, CROP_SIZE / img.naturalHeight);
-    scaleRef.current = base;
-    const w = img.naturalWidth * base;
-    const h = img.naturalHeight * base;
-    setScale(base);
-    const start = clamp((CROP_SIZE - w) / 2, (CROP_SIZE - h) / 2, w, h);
+    const { naturalWidth: nw, naturalHeight: nh } = img;
+    naturalRef.current = { w: nw, h: nh };
+    const base = Math.max(CROP_SIZE / nw, CROP_SIZE / nh);
+    const w = nw * base;
+    const h = nh * base;
+    imgWidthRef.current = w;
+    setImgWidth(w);
+    const start = clampOff((CROP_SIZE - w) / 2, (CROP_SIZE - h) / 2, w, h);
     offsetRef.current = start;
     setOffset(start);
   };
@@ -64,13 +68,12 @@ function CropModal({ src, onConfirm, onCancel }: { src: string; onConfirm: (blob
   useEffect(() => {
     const onMove = (e: MouseEvent | TouchEvent) => {
       if ('touches' in e && e.touches.length === 2) {
-        // Pinch zoom
         const d = Math.hypot(
           e.touches[0].clientX - e.touches[1].clientX,
           e.touches[0].clientY - e.touches[1].clientY,
         );
         if (pinchDistRef.current !== null && d > 0) {
-          applyScale(scaleRef.current * (d / pinchDistRef.current));
+          applyWidth(imgWidthRef.current * (d / pinchDistRef.current));
         }
         pinchDistRef.current = d;
         return;
@@ -81,14 +84,8 @@ function CropModal({ src, onConfirm, onCancel }: { src: string; onConfirm: (blob
       const dx = clientX - lastPos.current.x;
       const dy = clientY - lastPos.current.y;
       lastPos.current = { x: clientX, y: clientY };
-      const { w: nw, h: nh } = naturalRef.current;
-      const w = nw * scaleRef.current;
-      const h = nh * scaleRef.current;
-      const next = clamp(
-        offsetRef.current.x + dx,
-        offsetRef.current.y + dy,
-        w, h,
-      );
+      const h = renderedH();
+      const next = clampOff(offsetRef.current.x + dx, offsetRef.current.y + dy, imgWidthRef.current, h);
       offsetRef.current = next;
       setOffset({ ...next });
     };
@@ -98,7 +95,7 @@ function CropModal({ src, onConfirm, onCancel }: { src: string; onConfirm: (blob
     };
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
-      applyScale(scaleRef.current * (e.deltaY < 0 ? 1.1 : 0.9));
+      applyWidth(imgWidthRef.current * (e.deltaY < 0 ? 1.1 : 0.9));
     };
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
@@ -124,10 +121,9 @@ function CropModal({ src, onConfirm, onCancel }: { src: string; onConfirm: (blob
     canvas.width  = CROP_SIZE;
     canvas.height = CROP_SIZE;
     const ctx = canvas.getContext('2d')!;
+    // Use the actual rendered image element dimensions for the canvas draw
     const img = imgRef.current!;
-    const { w: nw, h: nh } = naturalRef.current;
-    const s = scaleRef.current;
-    ctx.drawImage(img, offsetRef.current.x, offsetRef.current.y, nw * s, nh * s);
+    ctx.drawImage(img, offsetRef.current.x, offsetRef.current.y, img.width, img.height);
     canvas.toBlob(blob => { if (blob) onConfirm(blob); }, 'image/jpeg', 0.92);
   };
 
@@ -154,7 +150,7 @@ function CropModal({ src, onConfirm, onCancel }: { src: string; onConfirm: (blob
               alt=""
               onLoad={onLoad}
               draggable={false}
-              style={{ position: 'absolute', left: offset.x, top: offset.y, width: imgW, height: imgH, pointerEvents: 'none', userSelect: 'none' }}
+              style={{ position: 'absolute', left: offset.x, top: offset.y, width: imgWidth, height: 'auto', pointerEvents: 'none', userSelect: 'none' }}
             />
           </div>
         </div>
@@ -168,14 +164,14 @@ function CropModal({ src, onConfirm, onCancel }: { src: string; onConfirm: (blob
             value={(() => {
               const { w: nw, h: nh } = naturalRef.current;
               if (!nw) return 0;
-              const base = Math.max(CROP_SIZE / nw, CROP_SIZE / nh);
-              const max  = base * 4;
-              return Math.round(((scale - base) / (max - base)) * 100);
+              const minW = CROP_SIZE * Math.max(CROP_SIZE / nw, CROP_SIZE / nh);
+              return Math.round(((imgWidth - minW) / (minW * 3)) * 100);
             })()}
             onChange={e => {
               const { w: nw, h: nh } = naturalRef.current;
-              const base = Math.max(CROP_SIZE / nw, CROP_SIZE / nh);
-              applyScale(base + (base * 3) * (Number(e.target.value) / 100));
+              if (!nw) return;
+              const minW = CROP_SIZE * Math.max(CROP_SIZE / nw, CROP_SIZE / nh);
+              applyWidth(minW + minW * 3 * (Number(e.target.value) / 100));
             }}
             className="w-full accent-neutral-900"
           />
