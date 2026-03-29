@@ -347,22 +347,25 @@ function PartnerAvatar({ name, avatarUrl }: { name: string; avatarUrl: string | 
   );
 }
 
-function ExchangeCard({
-  displayName, avatarUrl, nativeLang, myLang, lastDate, sessionCount,
-  matchId, onReview, onSchedule,
+function SessionCard({
+  displayName, avatarUrl, nativeLang, myLang,
+  sessionDate, duration, matchId, onReview, onSchedule,
 }: {
   displayName:  string;
   avatarUrl:    string | null;
   nativeLang:   string;
   myLang:       string;
-  lastDate:     string;
-  sessionCount: number;
+  sessionDate:  string;   // ISO date string
+  duration:     number;   // minutes
   matchId:      string | null;
   onReview:     () => void;
   onSchedule:   () => void;
 }) {
   const router = useRouter();
   const [showOverflow, setShowOverflow] = useState(false);
+
+  const dateLabel = new Date(sessionDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const durationLabel = duration > 0 ? `${duration} min` : null;
 
   return (
     <div className="bg-white border border-stone-200 rounded-2xl px-6 py-5">
@@ -371,22 +374,16 @@ function ExchangeCard({
 
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-[#171717] text-base leading-tight truncate">{displayName}</p>
-          {nativeLang && myLang ? (
+          {nativeLang && myLang && (
             <div className="flex items-center gap-1 mt-0.5 text-sm text-stone-400">
               <span>{LANG_FLAGS[nativeLang] ?? ''} {nativeLang}</span>
               <ArrowLeftRight size={11} className="shrink-0" />
               <span>{LANG_FLAGS[myLang] ?? ''} {myLang}</span>
             </div>
-          ) : (
-            <p className="text-sm text-stone-400 mt-0.5">
-              Last: {formatDate(lastDate)} · {sessionCount} session{sessionCount === 1 ? '' : 's'}
-            </p>
           )}
-          {nativeLang && myLang && (
-            <p className="text-xs text-stone-400 mt-0.5">
-              Last: {formatDate(lastDate)} · {sessionCount} session{sessionCount === 1 ? '' : 's'}
-            </p>
-          )}
+          <p className="text-xs text-stone-400 mt-0.5">
+            {dateLabel}{durationLabel ? ` · ${durationLabel}` : ''}
+          </p>
         </div>
 
         {/* Three-dot menu */}
@@ -425,7 +422,7 @@ function ExchangeCard({
 
       <div className="flex gap-2 mt-4">
         <button onClick={onReview} className="px-4 py-2.5 btn-primary text-white text-sm font-semibold rounded-xl">
-          Review exchange →
+          Review session →
         </button>
         <button onClick={onSchedule} className="px-4 py-2.5 border border-stone-200 text-sm font-medium text-stone-500 rounded-xl hover:bg-stone-50 transition-colors">
           Schedule again
@@ -447,6 +444,7 @@ export default function HistoryPage() {
   const [showAll,       setShowAll]       = useState(false);
   const [scheduleModal, setScheduleModal] = useState<string | null>(null);
   const [reviewModal,   setReviewModal]   = useState<string | null>(null);
+  const [myLang,        setMyLang]        = useState('');
   // Live partner profiles keyed by partnerId
   const [liveProfiles,  setLiveProfiles]  = useState<Record<string, {
     name:       string;
@@ -467,6 +465,7 @@ export default function HistoryPage() {
     setPartners(grouped);
     setRhythm(computeRhythm(parsed, freq));
     setTargetLang(prof.target_language ?? '');
+    setMyLang(prof.native_language ?? '');
 
     // Fetch live name + avatar for each partner from Supabase
     const ids = grouped.map(p => p.partnerId).filter(Boolean);
@@ -506,7 +505,9 @@ export default function HistoryPage() {
 
   const { thisWeekSessions, thisWeekDone, weekGoal, weeksRunning } = rhythm;
   const hasAnySessions = sessions.length > 0;
-  const visiblePartners = showAll ? partners : partners.slice(0, 3);
+  // Sessions sorted newest-first for the card list
+  const sortedSessions = [...sessions].sort((a, b) => b.date.localeCompare(a.date));
+  const visibleSessions = showAll ? sortedSessions : sortedSessions.slice(0, 5);
 
 
   // Weekly rhythm supporting line
@@ -566,41 +567,40 @@ export default function HistoryPage() {
           </div>
         )}
 
-        {/* ── 3. Review your exchanges ─────────────────────────── */}
-        {partners.length > 0 && (
+        {/* ── 3. Your exchanges ────────────────────────────────── */}
+        {sortedSessions.length > 0 && (
           <div className="space-y-2">
             <p className="text-sm font-medium text-stone-500">Your exchanges</p>
             <div className="space-y-3">
 
-            {visiblePartners.map(p => {
-              const live        = liveProfiles[p.partnerId];
-              const displayName = live?.name || p.partnerName;
+            {visibleSessions.map((s, i) => {
+              const live        = liveProfiles[s.partnerId];
+              const displayName = live?.name || s.partnerName;
               const avatarUrl   = live?.avatarUrl ?? null;
               const nativeLang  = live?.nativeLang ?? '';
-              const myLang      = (() => { try { return JSON.parse(localStorage.getItem('mutua_profile') ?? '{}').native_language ?? ''; } catch { return ''; } })();
               const matchId     = live?.matchId ?? null;
               return (
-              <ExchangeCard
-                key={p.partnerId || p.partnerName}
-                displayName={displayName}
-                avatarUrl={avatarUrl}
-                nativeLang={nativeLang}
-                myLang={myLang}
-                lastDate={p.lastDate}
-                sessionCount={p.sessionCount}
-                matchId={matchId}
-                onReview={() => { track('review_exchange_clicked', { partner_name: p.partnerName, session_count: p.sessionCount }); setReviewModal(p.partnerName); }}
-                onSchedule={() => setScheduleModal(p.partnerName)}
-              />
+                <SessionCard
+                  key={`${s.partnerId}-${s.date}-${i}`}
+                  displayName={displayName}
+                  avatarUrl={avatarUrl}
+                  nativeLang={nativeLang}
+                  myLang={myLang}
+                  sessionDate={s.date}
+                  duration={s.duration}
+                  matchId={matchId}
+                  onReview={() => { track('review_session_clicked', { partner_name: s.partnerName }); setReviewModal(s.partnerName); }}
+                  onSchedule={() => setScheduleModal(s.partnerName)}
+                />
               );
             })}
 
-            {partners.length > 3 && !showAll && (
+            {sortedSessions.length > 5 && !showAll && (
               <button
                 onClick={() => setShowAll(true)}
                 className="text-xs font-semibold text-stone-400 hover:text-neutral-700 transition-colors"
               >
-                View all →
+                View all {sortedSessions.length} sessions →
               </button>
             )}
             </div>
