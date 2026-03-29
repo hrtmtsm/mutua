@@ -256,14 +256,6 @@ function SchedulingCard({
             </>
           )}
           </div>
-          {sessionPassed && (
-            <button
-              onClick={markMissed}
-              className="mt-3 text-xs text-stone-400 hover:text-stone-600 transition-colors underline-offset-2 hover:underline"
-            >
-              Didn't happen? Mark as missed &amp; reschedule
-            </button>
-          )}
         </div>
 
         {showNotYet && (() => {
