@@ -16,26 +16,48 @@ import { Pencil, Camera, ChevronDown } from 'lucide-react';
 const CROP_SIZE = 260;
 
 function CropModal({ src, onConfirm, onCancel }: { src: string; onConfirm: (blob: Blob) => void; onCancel: () => void }) {
-  const imgRef    = useRef<HTMLImageElement>(null);
-  const offsetRef = useRef({ x: 0, y: 0 });
+  const imgRef     = useRef<HTMLImageElement>(null);
+  const offsetRef  = useRef({ x: 0, y: 0 });
   const [offset, setOffset]   = useState({ x: 0, y: 0 });
   const [imgSize, setImgSize] = useState({ w: 0, h: 0 });
-  const imgSizeRef = useRef({ w: 0, h: 0 });
-  const dragging  = useRef(false);
-  const lastPos   = useRef({ x: 0, y: 0 });
+  const imgSizeRef   = useRef({ w: 0, h: 0 });
+  const naturalRef   = useRef({ w: 0, h: 0 });
+  const scaleRef     = useRef(1);
+  const [scale, setScale] = useState(1);
+  const dragging     = useRef(false);
+  const lastPos      = useRef({ x: 0, y: 0 });
+  const pinchDistRef = useRef<number | null>(null);
 
   const clamp = (ox: number, oy: number, w: number, h: number) => ({
     x: Math.min(0, Math.max(CROP_SIZE - w, ox)),
     y: Math.min(0, Math.max(CROP_SIZE - h, oy)),
   });
 
-  const onLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    const img = e.currentTarget;
-    const s   = Math.max(CROP_SIZE / img.naturalWidth, CROP_SIZE / img.naturalHeight);
-    const w   = img.naturalWidth * s;
-    const h   = img.naturalHeight * s;
+  const applyScale = (newScale: number) => {
+    const { w: nw, h: nh } = naturalRef.current;
+    const base = Math.max(CROP_SIZE / nw, CROP_SIZE / nh);
+    const clamped = Math.max(base, Math.min(newScale, base * 4));
+    scaleRef.current = clamped;
+    const w = nw * clamped;
+    const h = nh * clamped;
     imgSizeRef.current = { w, h };
     setImgSize({ w, h });
+    setScale(clamped);
+    const next = clamp(offsetRef.current.x, offsetRef.current.y, w, h);
+    offsetRef.current = next;
+    setOffset(next);
+  };
+
+  const onLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    naturalRef.current = { w: img.naturalWidth, h: img.naturalHeight };
+    const base = Math.max(CROP_SIZE / img.naturalWidth, CROP_SIZE / img.naturalHeight);
+    scaleRef.current = base;
+    const w = img.naturalWidth * base;
+    const h = img.naturalHeight * base;
+    imgSizeRef.current = { w, h };
+    setImgSize({ w, h });
+    setScale(base);
     const start = clamp((CROP_SIZE - w) / 2, (CROP_SIZE - h) / 2, w, h);
     offsetRef.current = start;
     setOffset(start);
@@ -43,6 +65,18 @@ function CropModal({ src, onConfirm, onCancel }: { src: string; onConfirm: (blob
 
   useEffect(() => {
     const onMove = (e: MouseEvent | TouchEvent) => {
+      if ('touches' in e && e.touches.length === 2) {
+        // Pinch zoom
+        const d = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY,
+        );
+        if (pinchDistRef.current !== null) {
+          applyScale(scaleRef.current * (d / pinchDistRef.current));
+        }
+        pinchDistRef.current = d;
+        return;
+      }
       if (!dragging.current) return;
       const clientX = 'touches' in e ? e.touches[0].clientX : (e as MouseEvent).clientX;
       const clientY = 'touches' in e ? e.touches[0].clientY : (e as MouseEvent).clientY;
@@ -58,16 +92,25 @@ function CropModal({ src, onConfirm, onCancel }: { src: string; onConfirm: (blob
       offsetRef.current = next;
       setOffset({ ...next });
     };
-    const onUp = () => { dragging.current = false; };
+    const onUp = (e: MouseEvent | TouchEvent) => {
+      if ('touches' in e && e.touches.length < 2) pinchDistRef.current = null;
+      dragging.current = false;
+    };
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      applyScale(scaleRef.current * (e.deltaY < 0 ? 1.1 : 0.9));
+    };
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
     window.addEventListener('touchmove', onMove, { passive: true });
     window.addEventListener('touchend', onUp);
+    window.addEventListener('wheel', onWheel, { passive: false });
     return () => {
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
       window.removeEventListener('touchmove', onMove);
       window.removeEventListener('touchend', onUp);
+      window.removeEventListener('wheel', onWheel);
     };
   }, []);
 
@@ -91,7 +134,7 @@ function CropModal({ src, onConfirm, onCancel }: { src: string; onConfirm: (blob
       <div className="bg-white rounded-2xl overflow-hidden shadow-2xl w-full max-w-sm">
         <div className="px-5 py-4 border-b border-stone-100">
           <p className="text-sm font-semibold text-neutral-900">Crop photo</p>
-          <p className="text-xs text-stone-400 mt-0.5">Drag to reposition</p>
+          <p className="text-xs text-stone-400 mt-0.5">Drag to reposition · pinch or scroll to zoom</p>
         </div>
 
         <div className="flex justify-center py-6">
@@ -99,7 +142,9 @@ function CropModal({ src, onConfirm, onCancel }: { src: string; onConfirm: (blob
             className="relative overflow-hidden rounded-full select-none"
             style={{ width: CROP_SIZE, height: CROP_SIZE, cursor: 'grab', touchAction: 'none' }}
             onMouseDown={e => startDrag(e.clientX, e.clientY)}
-            onTouchStart={e => startDrag(e.touches[0].clientX, e.touches[0].clientY)}
+            onTouchStart={e => {
+              if (e.touches.length === 1) startDrag(e.touches[0].clientX, e.touches[0].clientY);
+            }}
           >
             <img
               ref={imgRef}
@@ -110,6 +155,28 @@ function CropModal({ src, onConfirm, onCancel }: { src: string; onConfirm: (blob
               style={{ position: 'absolute', left: offset.x, top: offset.y, width: imgSize.w, height: imgSize.h, pointerEvents: 'none', userSelect: 'none' }}
             />
           </div>
+        </div>
+
+        {/* Zoom slider */}
+        <div className="px-5 pb-2">
+          <input
+            type="range"
+            min={0}
+            max={100}
+            value={(() => {
+              const { w: nw, h: nh } = naturalRef.current;
+              if (!nw) return 0;
+              const base = Math.max(CROP_SIZE / nw, CROP_SIZE / nh);
+              const max  = base * 4;
+              return Math.round(((scale - base) / (max - base)) * 100);
+            })()}
+            onChange={e => {
+              const { w: nw, h: nh } = naturalRef.current;
+              const base = Math.max(CROP_SIZE / nw, CROP_SIZE / nh);
+              applyScale(base + (base * 3) * (Number(e.target.value) / 100));
+            }}
+            className="w-full accent-neutral-900"
+          />
         </div>
 
         <div className="flex gap-3 px-5 pb-5">
