@@ -748,7 +748,7 @@ export default function SessionPage() {
         <div className={`relative flex flex-col md:flex-row ${chatOpen ? 'hidden md:flex md:flex-1' : 'flex-1'}`}>
 
           {/* Partner pane — hidden until connected, but stays in DOM so audio/video ref works */}
-          <div className={`relative flex-1 overflow-hidden ${rtcState === 'connected' ? '' : 'hidden'}`} onClick={() => partnerVideoRef.current?.play()}>
+          <div className={`relative flex-1 overflow-hidden ${partnerStream ? '' : 'hidden'}`} onClick={() => partnerVideoRef.current?.play()}>
             <video
               ref={partnerVideoRef}
               autoPlay

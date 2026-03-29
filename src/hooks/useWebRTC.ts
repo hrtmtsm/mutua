@@ -108,7 +108,10 @@ export function useWebRTC({ myId, partnerId, muted, cameraOn, audioDeviceId }: O
     };
 
     pc.oniceconnectionstatechange = () => {
-      console.log('[rtc] iceConnectionState:', pc.iceConnectionState);
+      const s = pc.iceConnectionState;
+      console.log('[rtc] iceConnectionState:', s);
+      // Clear stream immediately on ice disconnect — faster than connectionState
+      if (s === 'disconnected' || s === 'failed') setPartnerStream(null);
     };
 
     pcRef.current = pc;
