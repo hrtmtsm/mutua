@@ -254,6 +254,7 @@ export default function SessionPage() {
 
   const [match,            setMatch]            = useState<MatchResult | null>(null);
   const [vpStyle,          setVpStyle]          = useState<React.CSSProperties>({ height: '100dvh' });
+  const [keyboardOpen,     setKeyboardOpen]     = useState(false);
   const [seconds,          setSeconds]          = useState(0);
   const [checkpoint,       setCheckpoint]       = useState(false);
   const [muted,            setMuted]            = useState(() => {
@@ -359,13 +360,10 @@ export default function SessionPage() {
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
-    const update = () => setVpStyle({
-      position: 'fixed',
-      top:    vv.offsetTop,
-      left:   vv.offsetLeft,
-      width:  vv.width,
-      height: vv.height,
-    });
+    const update = () => {
+      setVpStyle({ position: 'fixed', top: vv.offsetTop, left: vv.offsetLeft, width: vv.width, height: vv.height });
+      setKeyboardOpen(vv.height < window.screen.height * 0.75);
+    };
     vv.addEventListener('resize', update);
     vv.addEventListener('scroll', update);
     update();
@@ -956,8 +954,8 @@ export default function SessionPage() {
 
       </div>
 
-      {/* ── Control bar ── */}
-      <div className="shrink-0 px-6 py-4 flex items-center justify-center gap-3 bg-white border-t border-neutral-200 z-10">
+      {/* ── Control bar (hidden on mobile when keyboard is open) ── */}
+      <div className={`shrink-0 px-6 py-4 flex items-center justify-center gap-3 bg-white border-t border-neutral-200 z-10 ${keyboardOpen ? 'hidden' : ''}`}>
         <button
           onClick={() => setMuted(m => !m)}
           className={`flex flex-col items-center gap-1.5 w-14 py-2.5 rounded-xl transition-all ${
