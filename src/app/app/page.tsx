@@ -148,7 +148,7 @@ function SchedulingCard({
             </div>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-serif font-bold text-[#171717] text-2xl leading-tight">{partner.name}</p>
+            <p className="font-serif font-bold text-[#171717] text-2xl leading-tight truncate">{partner.name}</p>
             <div className="flex items-center gap-1.5 mt-1 text-sm text-stone-400">
               <span>{nativeFlag} {partner.nativeLang}</span>
               <ArrowLeftRight size={11} className="shrink-0" />
@@ -268,7 +268,7 @@ function SchedulingCard({
           <Avatar name={partner.name} lang={partner.nativeLang} avatarUrl={partner.avatarUrl} size="lg" />
         </button>
         <button onClick={onViewProfile} className="flex-1 min-w-0 text-left">
-          <p className="font-serif font-bold text-[#171717] text-2xl leading-tight">{partner.name}</p>
+          <p className="font-serif font-bold text-[#171717] text-2xl leading-tight truncate">{partner.name}</p>
           <div className="flex items-center gap-1.5 mt-1 text-sm text-stone-400">
             <span>{nativeFlag} {partner.nativeLang}</span>
             <ArrowLeftRight size={11} className="shrink-0" />
