@@ -32,7 +32,7 @@ function useNavState() {
   const [avatarUrl, setAvatarUrl] = useState('');
   const [hasUnread, setHasUnreadState] = useState(false);
 
-  useEffect(() => {
+  const refreshProfile = () => {
     const raw = localStorage.getItem('mutua_profile');
     if (raw) {
       const profile = JSON.parse(raw);
@@ -50,7 +50,14 @@ function useNavState() {
       !!localStorage.getItem('mutua_unread_notification') ||
       !!localStorage.getItem('mutua_unread_message')
     );
-  }, [pathname]);
+  };
+
+  useEffect(() => { refreshProfile(); }, [pathname]);
+
+  useEffect(() => {
+    window.addEventListener('mutua:profile-updated', refreshProfile);
+    return () => window.removeEventListener('mutua:profile-updated', refreshProfile);
+  }, []);
 
   const setHasUnread = (v: boolean) => setHasUnreadState(v);
   return { pathname, initials, avatarBg, avatarUrl, hasUnread, setHasUnread };

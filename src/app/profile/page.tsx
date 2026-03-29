@@ -218,11 +218,14 @@ export default function ProfilePage() {
     e.target.value = '';
   };
 
+  const [uploadError, setUploadError] = useState('');
+
   const handleCropConfirm = async (blob: Blob) => {
     if (!profile) return;
     setCropSrc(null);
+    setUploadError('');
 
-    // Show immediately via object URL (current page only — not saved to localStorage)
+    // Show immediately via object URL
     const localUrl = URL.createObjectURL(blob);
     setAvatarUrl(localUrl);
 
@@ -237,8 +240,12 @@ export default function ProfilePage() {
       setAvatarUrl(url);
       const stored = localStorage.getItem('mutua_profile');
       if (stored) localStorage.setItem('mutua_profile', JSON.stringify({ ...JSON.parse(stored), avatar_url: url }));
+      // Notify nav to refresh avatar
+      window.dispatchEvent(new Event('mutua:profile-updated'));
     } else {
-      console.error('Avatar upload failed:', await res.text());
+      const body = await res.json().catch(() => ({}));
+      setUploadError(body.error ?? 'Upload failed. Try again.');
+      setAvatarUrl(avatarUrl); // revert to previous
     }
     setUploading(false);
   };
@@ -349,6 +356,7 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="flex-1 min-w-0">
+                  {uploadError && <p className="text-xs text-rose-500 mb-1.5">{uploadError}</p>}
                   <p className="text-xs font-semibold text-stone-400 mb-1.5">Name</p>
                   {editingIdentity ? (
                     <input
