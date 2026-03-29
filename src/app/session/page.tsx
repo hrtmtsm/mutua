@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import type { MatchResult } from '@/lib/types';
 import { LANG_FLAGS, LANG_AVATAR_COLOR } from '@/lib/constants';
-import { Check, Mic, MicOff, MessageSquare, Video, VideoOff, PhoneOff, Wifi, WifiOff } from 'lucide-react';
+import { Check, ChevronDown, ChevronUp, Mic, MicOff, MessageSquare, Video, VideoOff, PhoneOff, Wifi, WifiOff } from 'lucide-react';
 import { useWebRTC } from '@/hooks/useWebRTC';
 import {
   type Prompt,
@@ -276,6 +276,7 @@ export default function SessionPage() {
   const [checklistCelebrating, setChecklistCelebrating] = useState(false);
   const [checklistDone,        setChecklistDone]        = useState(false);
   const [pillsChecked,         setPillsChecked]         = useState<[boolean, boolean]>([false, false]);
+  const [cardMinimized,        setCardMinimized]        = useState(false);
   const [activeTurn,           setActiveTurn]           = useState<'learning' | 'native'>('learning');
   const [turnSwitched,         setTurnSwitched]         = useState(false);
   const [difficulty,           setDifficulty]           = useState(1);
@@ -647,65 +648,69 @@ export default function SessionPage() {
         {/* Header */}
         <div className="px-4 pt-3 pb-2 flex items-center justify-between">
           <span className="text-sm font-bold text-neutral-900">Break the ice</span>
-          <span className="text-xs text-stone-400">{checklistStep + 1} of {CHECKLIST_ITEMS.length}</span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-stone-400">{checklistStep + 1} of {CHECKLIST_ITEMS.length}</span>
+            <button onClick={() => setCardMinimized(m => !m)} className="text-stone-400 hover:text-stone-600 transition-colors">
+              {cardMinimized ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+            </button>
+          </div>
         </div>
 
-        {/* Learning language pill */}
-        <button
-          onClick={() => handlePillCheck(0)}
-          disabled={pillsChecked[0]}
-          className={`mx-3 w-[calc(100%-1.5rem)] text-left rounded-xl bg-stone-50 px-3 py-2.5 flex items-center gap-3 transition-opacity ${pillsChecked[0] ? 'opacity-50' : 'hover:bg-stone-100 active:bg-stone-100'}`}
-        >
-          <div className="w-6 h-6 rounded-full overflow-hidden shrink-0 self-start mt-0.5 flex items-center justify-center"
-            style={{ backgroundColor: LANG_AVATAR_COLOR[myNativeLang] ?? '#374151' }}>
-            {myAvatarUrl ? (
-              <img src={myAvatarUrl} alt="" className="w-full h-full object-cover" />
-            ) : (
-              <span className="text-[9px] font-black text-white leading-none">{myInitials || 'You'}</span>
-            )}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5 mb-1">
-              <span className="text-sm leading-none">{LANG_FLAGS[partner.learning_language]}</span>
-              <span className="text-[11px] font-semibold text-stone-500">{partner.learning_language}</span>
-            </div>
-            <p className={`text-[15px] font-bold leading-snug ${pillsChecked[0] ? 'line-through text-stone-400' : 'text-neutral-900'}`}>
-              {getT(CHECKLIST_ITEMS[checklistStep], partner.learning_language)}
-            </p>
-          </div>
-          <div className={`w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center transition-all ${pillsChecked[0] ? 'bg-emerald-500 border-emerald-500' : 'border-stone-300'}`}>
-            {pillsChecked[0] && (
-              <Check className="w-3 h-3 text-white" />
-            )}
-          </div>
-        </button>
+        {/* Pills (hidden when minimized) */}
+        {!cardMinimized && (
+          <>
+            <button
+              onClick={() => handlePillCheck(0)}
+              disabled={pillsChecked[0]}
+              className={`mx-3 w-[calc(100%-1.5rem)] text-left rounded-xl bg-stone-50 px-3 py-2.5 flex items-center gap-3 transition-opacity ${pillsChecked[0] ? 'opacity-50' : 'hover:bg-stone-100 active:bg-stone-100'}`}
+            >
+              <div className="w-6 h-6 rounded-full overflow-hidden shrink-0 self-start mt-0.5 flex items-center justify-center"
+                style={{ backgroundColor: LANG_AVATAR_COLOR[myNativeLang] ?? '#374151' }}>
+                {myAvatarUrl ? (
+                  <img src={myAvatarUrl} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-[9px] font-black text-white leading-none">{myInitials || 'You'}</span>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="text-sm leading-none">{LANG_FLAGS[partner.learning_language]}</span>
+                  <span className="text-[11px] font-semibold text-stone-500">{partner.learning_language}</span>
+                </div>
+                <p className={`text-[15px] font-bold leading-snug ${pillsChecked[0] ? 'line-through text-stone-400' : 'text-neutral-900'}`}>
+                  {getT(CHECKLIST_ITEMS[checklistStep], partner.learning_language)}
+                </p>
+              </div>
+              <div className={`w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center transition-all ${pillsChecked[0] ? 'bg-emerald-500 border-emerald-500' : 'border-stone-300'}`}>
+                {pillsChecked[0] && <Check className="w-3 h-3 text-white" />}
+              </div>
+            </button>
 
-        {/* Native language pill */}
-        <button
-          onClick={() => handlePillCheck(1)}
-          disabled={pillsChecked[1]}
-          className={`mx-3 mt-2 mb-3 w-[calc(100%-1.5rem)] text-left rounded-xl bg-stone-50 px-3 py-2.5 flex items-center gap-3 transition-opacity ${pillsChecked[1] ? 'opacity-50' : 'hover:bg-stone-100 active:bg-stone-100'}`}
-        >
-          <div className="w-6 h-6 rounded-full bg-[#2B8FFF] flex items-center justify-center shrink-0 self-start mt-0.5">
-            <span className="text-[9px] font-black text-white leading-none">
-              {partnerName.trim().slice(0, 2).toUpperCase()}
-            </span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5 mb-1">
-              <span className="text-sm leading-none">{LANG_FLAGS[partner.native_language]}</span>
-              <span className="text-[11px] font-semibold text-stone-500">{partner.native_language}</span>
-            </div>
-            <p className={`text-[15px] font-bold leading-snug ${pillsChecked[1] ? 'line-through text-stone-400' : 'text-neutral-900'}`}>
-              {getT(CHECKLIST_ITEMS[checklistStep], partner.native_language)}
-            </p>
-          </div>
-          <div className={`w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center transition-all ${pillsChecked[1] ? 'bg-emerald-500 border-emerald-500' : 'border-stone-300'}`}>
-            {pillsChecked[1] && (
-              <Check className="w-3 h-3 text-white" />
-            )}
-          </div>
-        </button>
+            <button
+              onClick={() => handlePillCheck(1)}
+              disabled={pillsChecked[1]}
+              className={`mx-3 mt-2 mb-3 w-[calc(100%-1.5rem)] text-left rounded-xl bg-stone-50 px-3 py-2.5 flex items-center gap-3 transition-opacity ${pillsChecked[1] ? 'opacity-50' : 'hover:bg-stone-100 active:bg-stone-100'}`}
+            >
+              <div className="w-6 h-6 rounded-full bg-[#2B8FFF] flex items-center justify-center shrink-0 self-start mt-0.5">
+                <span className="text-[9px] font-black text-white leading-none">
+                  {partnerName.trim().slice(0, 2).toUpperCase()}
+                </span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="text-sm leading-none">{LANG_FLAGS[partner.native_language]}</span>
+                  <span className="text-[11px] font-semibold text-stone-500">{partner.native_language}</span>
+                </div>
+                <p className={`text-[15px] font-bold leading-snug ${pillsChecked[1] ? 'line-through text-stone-400' : 'text-neutral-900'}`}>
+                  {getT(CHECKLIST_ITEMS[checklistStep], partner.native_language)}
+                </p>
+              </div>
+              <div className={`w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center transition-all ${pillsChecked[1] ? 'bg-emerald-500 border-emerald-500' : 'border-stone-300'}`}>
+                {pillsChecked[1] && <Check className="w-3 h-3 text-white" />}
+              </div>
+            </button>
+          </>
+        )}
 
       </div>
     )
@@ -713,11 +718,16 @@ export default function SessionPage() {
     /* ── Turn-based prompt card ── */
     <div className="rounded-2xl bg-white/95 backdrop-blur-sm shadow-xl overflow-hidden">
 
-      {/* Content */}
-      <div className="px-4 pt-3 pb-3">
+      {/* Header with minimize toggle */}
+      <div className="px-4 pt-3 pb-1 flex items-center justify-between">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400">{phaseLabel}</p>
+        <button onClick={() => setCardMinimized(m => !m)} className="text-stone-400 hover:text-stone-600 transition-colors">
+          {cardMinimized ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+        </button>
+      </div>
 
-        {/* Stage label */}
-        <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 mb-2">{phaseLabel}</p>
+      {/* Content */}
+      {!cardMinimized && <div className="px-4 pt-1 pb-3">
 
         {/* Language + speaking role */}
         <div className="flex items-center gap-2 mb-2.5">
@@ -736,10 +746,10 @@ export default function SessionPage() {
           </p>
         )}
 
-      </div>
+      </div>}
 
       {/* CTA zone */}
-      <div className="px-4 pb-3 pt-2 border-t border-stone-100 flex items-center justify-between gap-3">
+      {!cardMinimized && <div className="px-4 pb-3 pt-2 border-t border-stone-100 flex items-center justify-between gap-3">
         <button
           onClick={handleChangeTopic}
           className="text-sm text-stone-400 hover:text-stone-600 transition-colors"
@@ -769,7 +779,7 @@ export default function SessionPage() {
             </button>
           </div>
         )}
-      </div>
+      </div>}
 
     </div>
   );
