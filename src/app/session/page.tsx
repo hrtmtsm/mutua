@@ -97,85 +97,6 @@ const CHECKLIST_CELEBRATIONS: Prompt[] = [
   },
 ];
 
-// ── PartnerTile (full-screen) ─────────────────────────────────────────────────
-
-function PartnerTile({
-  initials, isSpeaking, avatarUrl, isMuted, videoRef, cameraOn,
-}: {
-  initials:  string;
-  isSpeaking: boolean;
-  avatarUrl?: string;
-  isMuted?:  boolean;
-  videoRef?: React.RefObject<HTMLVideoElement>;
-  cameraOn?: boolean;
-}) {
-  return (
-    <div className="absolute inset-0 flex items-center justify-center overflow-hidden bg-[#2B8FFF]">
-
-      {/* ── Partner live video (always mounted so srcObject and audio work even when camera off) ── */}
-      <video
-        ref={videoRef}
-        autoPlay
-        playsInline
-        className={`absolute inset-0 w-full h-full object-cover ${cameraOn ? '' : 'hidden'}`}
-      />
-
-      {/* ── Background + avatar (shown when camera off) ── */}
-      {!cameraOn && (
-        <>
-          {avatarUrl ? (
-            <img
-              src={avatarUrl}
-              alt=""
-              aria-hidden
-              className="absolute inset-0 w-full h-full object-cover"
-              style={{ filter: 'blur(28px) saturate(1.5) brightness(0.8)', transform: 'scale(1.1)' }}
-            />
-          ) : (
-            <div
-              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#2B8FFF] flex items-center justify-center"
-              style={{
-                width: '100vmax',
-                height: '100vmax',
-                filter: 'blur(32px) saturate(1.5) brightness(0.82) opacity(0.9)',
-              }}
-            >
-              <span
-                className="font-black text-white select-none pointer-events-none"
-                style={{ fontSize: '28vmin', lineHeight: 1 }}
-              >
-                {initials}
-              </span>
-            </div>
-          )}
-
-          {/* Speaking halo */}
-          {isSpeaking && (
-            <div className="absolute w-44 h-44 rounded-full bg-white/20 animate-speak-pulse" />
-          )}
-          {/* Foreground avatar */}
-          <div className={`
-            relative w-28 h-28 rounded-full
-            bg-white/20 backdrop-blur-md ring-2 ring-white/40
-            flex items-center justify-center font-black text-white text-3xl select-none
-            transition-transform duration-200 ${isSpeaking ? 'scale-110' : ''}
-          `}>
-            {initials}
-          </div>
-        </>
-      )}
-
-      {/* Mute badge */}
-      {isMuted && (
-        <div className="absolute bottom-4 left-4 flex items-center gap-1.5 bg-black/50 backdrop-blur-sm rounded-full px-2.5 py-1">
-          <MicOff className="w-3.5 h-3.5 text-white" />
-          <span className="text-[11px] font-semibold text-white">Muted</span>
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ── SelfPIP ───────────────────────────────────────────────────────────────────
 
 function SelfPIP({
@@ -302,6 +223,7 @@ export default function SessionPage() {
   const prevPhaseRef            = useRef<Phase>('ice');
   const checkpointDismissedRef  = useRef(false);
   const messagesEndRef     = useRef<HTMLDivElement>(null);
+  const chatInputRef       = useRef<HTMLInputElement>(null);
   const promptChangedAtRef = useRef<number>(Date.now());
 
   const [pool, setPool] = useState<Pools>(() => buildFallbackPool(''));
@@ -408,7 +330,7 @@ export default function SessionPage() {
     }
   }, [localStream]);
 
-  // Wire partner stream → PartnerTile video element
+  // Wire partner stream → partner video element
   useEffect(() => {
     const el = partnerVideoRef.current;
     if (el && partnerStream) {
@@ -585,6 +507,8 @@ export default function SessionPage() {
     if (!trimmed) return;
     setMessages(prev => [...prev, trimmed]);
     setMessage('');
+    // Keep keyboard open on mobile by re-focusing the input
+    requestAnimationFrame(() => chatInputRef.current?.focus());
   };
 
   if (!match) return null;
@@ -827,33 +751,72 @@ export default function SessionPage() {
 
           {/* Partner pane */}
           <div className="relative flex-1 overflow-hidden" onClick={() => partnerVideoRef.current?.play()}>
-            <PartnerTile
-              initials={partnerName.trim().slice(0, 2).toUpperCase()}
-              isSpeaking={partnerSpeaking}
-              avatarUrl={partner.avatar_url}
-              isMuted={partnerMuted}
-              videoRef={partnerVideoRef}
-              cameraOn={partnerCameraOn}
+            {/* Video always mounted so srcObject/audio works even before connected */}
+            <video
+              ref={partnerVideoRef}
+              autoPlay
+              playsInline
+              className={`absolute inset-0 w-full h-full object-cover ${rtcState === 'connected' && partnerCameraOn ? '' : 'hidden'}`}
             />
-            {/* Partner name bar */}
-            <div className="absolute top-0 left-0 right-0 z-10 px-4 py-3 flex items-center justify-between"
-              style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.35) 0%, transparent 100%)' }}>
-              <div>
-                <div className="flex items-center gap-2">
-                  <p className="font-bold text-white text-sm leading-tight">{partnerName}</p>
-                  {partnerMuted && (
-                    <span className="flex items-center gap-1 bg-black/40 backdrop-blur-sm rounded-full px-2 py-0.5">
-                      <MicOff className="w-3 h-3 text-white/80" />
-                      <span className="text-[10px] font-semibold text-white/80">Muted</span>
-                    </span>
-                  )}
+
+            {rtcState === 'connected' ? (
+              /* Connected: show partner avatar/background when camera off */
+              <>
+                {!partnerCameraOn && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-[#2B8FFF]">
+                    {partner.avatar_url ? (
+                      <img
+                        src={partner.avatar_url}
+                        alt=""
+                        aria-hidden
+                        className="absolute inset-0 w-full h-full object-cover"
+                        style={{ filter: 'blur(28px) saturate(1.5) brightness(0.8)', transform: 'scale(1.1)' }}
+                      />
+                    ) : (
+                      <div
+                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#2B8FFF] flex items-center justify-center"
+                        style={{ width: '100vmax', height: '100vmax', filter: 'blur(32px) saturate(1.5) brightness(0.82) opacity(0.9)' }}
+                      >
+                        <span className="font-black text-white select-none pointer-events-none" style={{ fontSize: '28vmin', lineHeight: 1 }}>
+                          {partnerName.trim().slice(0, 2).toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+                    {partnerSpeaking && <div className="absolute w-44 h-44 rounded-full bg-white/20 animate-speak-pulse" />}
+                    <div className={`relative w-28 h-28 rounded-full bg-white/20 backdrop-blur-md ring-2 ring-white/40 flex items-center justify-center font-black text-white text-3xl select-none transition-transform duration-200 ${partnerSpeaking ? 'scale-110' : ''}`}>
+                      {partnerName.trim().slice(0, 2).toUpperCase()}
+                    </div>
+                  </div>
+                )}
+                {/* Partner name bar */}
+                <div className="absolute top-0 left-0 right-0 z-10 px-4 py-3 flex items-center justify-between"
+                  style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.35) 0%, transparent 100%)' }}>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="font-bold text-white text-sm leading-tight">{partnerName}</p>
+                      {partnerMuted && (
+                        <span className="flex items-center gap-1 bg-black/40 backdrop-blur-sm rounded-full px-2 py-0.5">
+                          <MicOff className="w-3 h-3 text-white/80" />
+                          <span className="text-[10px] font-semibold text-white/80">Muted</span>
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-white mt-0.5">
+                      {LANG_FLAGS[partner.native_language]} Native {partner.native_language}
+                    </p>
+                  </div>
+                  <span className="font-mono text-xs text-white/50 tabular-nums">{formatTime(seconds)}</span>
                 </div>
-                <p className="text-xs text-white mt-0.5">
-                  {LANG_FLAGS[partner.native_language]} Native {partner.native_language}
+              </>
+            ) : (
+              /* Not connected: neutral waiting state, no partner info */
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-neutral-900 gap-3">
+                <div className="w-12 h-12 rounded-full border-2 border-white/20 border-t-white/60 animate-spin" />
+                <p className="text-white/50 text-sm font-medium">
+                  {rtcState === 'failed' ? 'Connection failed' : 'Waiting for partner…'}
                 </p>
               </div>
-              <span className="font-mono text-xs text-white/50 tabular-nums">{formatTime(seconds)}</span>
-            </div>
+            )}
           </div>
 
           {/* Prompt card — top-right over entire participant area */}
@@ -933,6 +896,7 @@ export default function SessionPage() {
           <div className="shrink-0 px-3 py-3 border-t border-neutral-200">
             <div className="flex items-center gap-2">
               <input
+                ref={chatInputRef}
                 type="text"
                 value={message}
                 onChange={e => setMessage(e.target.value)}
@@ -943,9 +907,15 @@ export default function SessionPage() {
               <button
                 onClick={handleSend}
                 disabled={!message.trim()}
-                className="px-3 py-2 bg-neutral-100 hover:bg-neutral-200 disabled:opacity-30 text-sm font-semibold text-neutral-700 rounded-xl transition-colors shrink-0"
+                className="px-3 py-2 bg-[#2B8FFF] hover:bg-blue-600 disabled:opacity-30 text-sm font-semibold text-white rounded-xl transition-colors shrink-0"
               >
                 Send
+              </button>
+              <button
+                onClick={() => chatInputRef.current?.blur()}
+                className="px-3 py-2 bg-neutral-100 hover:bg-neutral-200 text-sm font-semibold text-neutral-600 rounded-xl transition-colors shrink-0"
+              >
+                Close
               </button>
             </div>
           </div>
