@@ -315,12 +315,28 @@ export default function SessionPage() {
   }, [myId, match?.partner.session_id]);
 
   // ── WebRTC ─────────────────────────────────────────────────────────────────
-  const { rtcState, localStream, partnerStream, partnerMuted, partnerCameraOn } = useWebRTC({
+  const { rtcState, localStream, partnerStream, partnerMuted, partnerCameraOn, send: rtcSend } = useWebRTC({
     myId,
     partnerId: match?.partner.session_id ?? '',
     muted,
     cameraOn,
     audioDeviceId,
+    onChecklist: (pills, step) => {
+      setPillsChecked(pills);
+      setChecklistStep(step);
+      if (pills[0] && pills[1]) {
+        setChecklistCelebrating(true);
+        setTimeout(() => {
+          setChecklistCelebrating(false);
+          setPillsChecked([false, false]);
+          if (step < CHECKLIST_ITEMS.length - 1) {
+            setChecklistStep(step + 1);
+          } else {
+            setChecklistDone(true);
+          }
+        }, 1800);
+      }
+    },
   });
 
   // Wire local stream → SelfPIP video element
@@ -519,13 +535,15 @@ export default function SessionPage() {
     const next: [boolean, boolean] = [pillsChecked[0], pillsChecked[1]];
     next[pillIndex] = true;
     setPillsChecked(next);
+    rtcSend('checklist', { pills: next, step: checklistStep });
     if (next[0] && next[1]) {
       setChecklistCelebrating(true);
       setTimeout(() => {
         setChecklistCelebrating(false);
         setPillsChecked([false, false]);
+        const nextStep = checklistStep < CHECKLIST_ITEMS.length - 1 ? checklistStep + 1 : checklistStep;
         if (checklistStep < CHECKLIST_ITEMS.length - 1) {
-          setChecklistStep(s => s + 1);
+          setChecklistStep(nextStep);
         } else {
           setChecklistDone(true);
         }
