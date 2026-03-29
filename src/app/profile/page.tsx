@@ -16,115 +16,135 @@ import { Pencil, Camera, ChevronDown } from 'lucide-react';
 const CROP_SIZE = 260;
 
 function CropModal({ src, onConfirm, onCancel }: { src: string; onConfirm: (blob: Blob) => void; onCancel: () => void }) {
-  const imgRef       = useRef<HTMLImageElement>(null);
-  const offsetRef    = useRef({ x: 0, y: 0 });
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
-  // Only width is stored — height is always auto so browser keeps ratio
-  const [imgWidth, setImgWidth] = useState(0);
-  const imgWidthRef  = useRef(0);
-  const naturalRef   = useRef({ w: 0, h: 0 });
-  const dragging     = useRef(false);
-  const lastPos      = useRef({ x: 0, y: 0 });
-  const pinchDistRef = useRef<number | null>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
 
-  // Derive height from width + natural ratio (never set it on the element)
-  const renderedH = () => {
-    const { w, h } = naturalRef.current;
-    return w > 0 ? imgWidthRef.current * (h / w) : 0;
-  };
-
-  const clampOff = (ox: number, oy: number, w: number, h: number) => ({
-    x: Math.min(0, Math.max(CROP_SIZE - w, ox)),
-    y: Math.min(0, Math.max(CROP_SIZE - h, oy)),
+  // Render state — only these drive the JSX
+  const [imgStyle, setImgStyle] = useState<React.CSSProperties>({
+    position: 'absolute', left: 0, top: 0,
+    width: CROP_SIZE, height: CROP_SIZE,
+    maxWidth: 'none', pointerEvents: 'none', userSelect: 'none',
   });
+  const [sliderVal, setSliderVal] = useState(0);
 
+  // All mutable values in refs so event handlers never have stale closures
+  const nat       = useRef({ w: 0, h: 0 });           // natural image size
+  const curW      = useRef(CROP_SIZE);                 // current rendered width
+  const curH      = useRef(CROP_SIZE);                 // current rendered height
+  const minW      = useRef(CROP_SIZE);                 // minimum zoom width
+  const ox        = useRef(0);                         // current x offset
+  const oy        = useRef(0);                         // current y offset
+  const dragging  = useRef(false);
+  const lastPos   = useRef({ x: 0, y: 0 });
+  const pinchDist = useRef<number | null>(null);
+
+  // ── Pure helpers (module-level style — no component state captured) ─────────
+  const clampX = (x: number, w: number) => Math.min(0, Math.max(CROP_SIZE - w, x));
+  const clampY = (y: number, h: number) => Math.min(0, Math.max(CROP_SIZE - h, y));
+
+  // Apply a new width (clamped), update offset, commit to DOM via state
   const applyWidth = (newW: number) => {
-    const { w: nw, h: nh } = naturalRef.current;
-    if (!nw || !nh) return;
-    // minW = width at which the image just fills the crop circle
-    const minW = nw * Math.max(CROP_SIZE / nw, CROP_SIZE / nh);
-    const clamped = Math.max(minW, Math.min(newW, minW * 4));
-    imgWidthRef.current = clamped;
-    setImgWidth(clamped);
+    const { w: nw, h: nh } = nat.current;
+    if (!nw) return;
+    const clamped = Math.max(minW.current, Math.min(minW.current * 4, newW));
     const h = clamped * (nh / nw);
-    const next = clampOff(offsetRef.current.x, offsetRef.current.y, clamped, h);
-    offsetRef.current = next;
-    setOffset(next);
+    const nx = clampX(ox.current, clamped);
+    const ny = clampY(oy.current, h);
+    curW.current = clamped;
+    curH.current = h;
+    ox.current   = nx;
+    oy.current   = ny;
+    const pct = Math.round(((clamped - minW.current) / (minW.current * 3)) * 100);
+    setSliderVal(Math.max(0, Math.min(100, pct)));
+    setImgStyle(s => ({ ...s, left: nx, top: ny, width: clamped, height: h }));
   };
 
-  const onLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    const img = e.currentTarget;
-    const { naturalWidth: nw, naturalHeight: nh } = img;
-    naturalRef.current = { w: nw, h: nh };
-    const base = Math.max(CROP_SIZE / nw, CROP_SIZE / nh);
-    const w = nw * base;
-    const h = nh * base;
-    imgWidthRef.current = w;
-    setImgWidth(w);
-    const start = clampOff((CROP_SIZE - w) / 2, (CROP_SIZE - h) / 2, w, h);
-    offsetRef.current = start;
-    setOffset(start);
-  };
+  // ── Load image dimensions imperatively (reliable, no React onLoad issues) ──
+  useEffect(() => {
+    const img = new Image();
+    img.onload = () => {
+      const nw = img.naturalWidth;
+      const nh = img.naturalHeight;
+      nat.current  = { w: nw, h: nh };
+      const mw     = nw * Math.max(CROP_SIZE / nw, CROP_SIZE / nh);
+      const mh     = mw * (nh / nw);
+      minW.current = mw;
+      curW.current = mw;
+      curH.current = mh;
+      // Center the image in the crop circle
+      const startX = clampX((CROP_SIZE - mw) / 2, mw);
+      const startY = clampY((CROP_SIZE - mh) / 2, mh);
+      ox.current   = startX;
+      oy.current   = startY;
+      setSliderVal(0);
+      setImgStyle(s => ({ ...s, left: startX, top: startY, width: mw, height: mh }));
+    };
+    img.src = src;
+  }, [src]);
 
+  // ── Global pointer / touch / wheel ─────────────────────────────────────────
   useEffect(() => {
     const onMove = (e: MouseEvent | TouchEvent) => {
       if ('touches' in e && e.touches.length === 2) {
+        e.preventDefault();
         const d = Math.hypot(
           e.touches[0].clientX - e.touches[1].clientX,
           e.touches[0].clientY - e.touches[1].clientY,
         );
-        if (pinchDistRef.current !== null && d > 0) {
-          applyWidth(imgWidthRef.current * (d / pinchDistRef.current));
+        if (pinchDist.current !== null && d > 0) {
+          applyWidth(curW.current * (d / pinchDist.current));
         }
-        pinchDistRef.current = d;
+        pinchDist.current = d;
         return;
       }
       if (!dragging.current) return;
-      const clientX = 'touches' in e ? e.touches[0].clientX : (e as MouseEvent).clientX;
-      const clientY = 'touches' in e ? e.touches[0].clientY : (e as MouseEvent).clientY;
-      const dx = clientX - lastPos.current.x;
-      const dy = clientY - lastPos.current.y;
-      lastPos.current = { x: clientX, y: clientY };
-      const h = renderedH();
-      const next = clampOff(offsetRef.current.x + dx, offsetRef.current.y + dy, imgWidthRef.current, h);
-      offsetRef.current = next;
-      setOffset({ ...next });
+      e.preventDefault();
+      const cx = 'touches' in e ? (e.touches[0]?.clientX ?? 0) : (e as MouseEvent).clientX;
+      const cy = 'touches' in e ? (e.touches[0]?.clientY ?? 0) : (e as MouseEvent).clientY;
+      const dx = cx - lastPos.current.x;
+      const dy = cy - lastPos.current.y;
+      lastPos.current = { x: cx, y: cy };
+      const nx = clampX(ox.current + dx, curW.current);
+      const ny = clampY(oy.current + dy, curH.current);
+      ox.current = nx;
+      oy.current = ny;
+      setImgStyle(s => ({ ...s, left: nx, top: ny }));
     };
-    const onUp = (e: MouseEvent | TouchEvent) => {
-      if ('touches' in e && e.touches.length < 2) pinchDistRef.current = null;
-      dragging.current = false;
+
+    const onUp = () => {
+      dragging.current  = false;
+      pinchDist.current = null;
     };
+
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
-      applyWidth(imgWidthRef.current * (e.deltaY < 0 ? 1.1 : 0.9));
+      applyWidth(curW.current * (e.deltaY < 0 ? 1.1 : 0.9));
     };
+
     window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
-    window.addEventListener('touchmove', onMove, { passive: true });
-    window.addEventListener('touchend', onUp);
-    window.addEventListener('wheel', onWheel, { passive: false });
+    window.addEventListener('mouseup',   onUp);
+    window.addEventListener('touchmove', onMove, { passive: false });
+    window.addEventListener('touchend',  onUp);
+    window.addEventListener('wheel',     onWheel, { passive: false });
     return () => {
       window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
+      window.removeEventListener('mouseup',   onUp);
       window.removeEventListener('touchmove', onMove);
-      window.removeEventListener('touchend', onUp);
-      window.removeEventListener('wheel', onWheel);
+      window.removeEventListener('touchend',  onUp);
+      window.removeEventListener('wheel',     onWheel);
     };
+  // applyWidth, clampX, clampY are defined in the same component scope
+  // and only read/write refs + call stable state setters — safe to omit from deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const startDrag = (clientX: number, clientY: number) => {
-    dragging.current = true;
-    lastPos.current  = { x: clientX, y: clientY };
-  };
-
+  // ── Crop & export ──────────────────────────────────────────────────────────
   const handleConfirm = () => {
     const canvas = document.createElement('canvas');
     canvas.width  = CROP_SIZE;
     canvas.height = CROP_SIZE;
     const ctx = canvas.getContext('2d')!;
-    // Use the actual rendered image element dimensions for the canvas draw
     const img = imgRef.current!;
-    ctx.drawImage(img, offsetRef.current.x, offsetRef.current.y, img.width, img.height);
+    ctx.drawImage(img, ox.current, oy.current, curW.current, curH.current);
     canvas.toBlob(blob => { if (blob) onConfirm(blob); }, 'image/jpeg', 0.92);
   };
 
@@ -140,19 +160,19 @@ function CropModal({ src, onConfirm, onCancel }: { src: string; onConfirm: (blob
           <div
             className="relative overflow-hidden rounded-full select-none"
             style={{ width: CROP_SIZE, height: CROP_SIZE, cursor: 'grab', touchAction: 'none' }}
-            onMouseDown={e => startDrag(e.clientX, e.clientY)}
+            onMouseDown={e => {
+              e.preventDefault();
+              dragging.current = true;
+              lastPos.current  = { x: e.clientX, y: e.clientY };
+            }}
             onTouchStart={e => {
-              if (e.touches.length === 1) startDrag(e.touches[0].clientX, e.touches[0].clientY);
+              if (e.touches.length === 1) {
+                dragging.current = true;
+                lastPos.current  = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+              }
             }}
           >
-            <img
-              ref={imgRef}
-              src={src}
-              alt=""
-              onLoad={onLoad}
-              draggable={false}
-              style={{ position: 'absolute', left: offset.x, top: offset.y, width: imgWidth, height: 'auto', pointerEvents: 'none', userSelect: 'none' }}
-            />
+            <img ref={imgRef} src={src} alt="" draggable={false} style={imgStyle} />
           </div>
         </div>
 
@@ -162,17 +182,10 @@ function CropModal({ src, onConfirm, onCancel }: { src: string; onConfirm: (blob
             type="range"
             min={0}
             max={100}
-            value={(() => {
-              const { w: nw, h: nh } = naturalRef.current;
-              if (!nw) return 0;
-              const minW = nw * Math.max(CROP_SIZE / nw, CROP_SIZE / nh);
-              return Math.round(Math.max(0, (imgWidth - minW) / (minW * 3)) * 100);
-            })()}
+            value={sliderVal}
             onChange={e => {
-              const { w: nw, h: nh } = naturalRef.current;
-              if (!nw) return;
-              const minW = nw * Math.max(CROP_SIZE / nw, CROP_SIZE / nh);
-              applyWidth(minW + minW * 3 * (Number(e.target.value) / 100));
+              const pct = Number(e.target.value) / 100;
+              applyWidth(minW.current + minW.current * 3 * pct);
             }}
             className="w-full accent-neutral-900"
           />
