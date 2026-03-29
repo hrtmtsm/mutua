@@ -298,7 +298,8 @@ export default function SessionPage() {
   const animFrameRef       = useRef<number>(0);
   const partnerAnimRef     = useRef<number>(0);
   const selfHaloRef        = useRef<HTMLDivElement>(null);
-  const prevPhaseRef       = useRef<Phase>('ice');
+  const prevPhaseRef            = useRef<Phase>('ice');
+  const checkpointDismissedRef  = useRef(false);
   const messagesEndRef     = useRef<HTMLDivElement>(null);
   const promptChangedAtRef = useRef<number>(Date.now());
 
@@ -339,7 +340,7 @@ export default function SessionPage() {
     const t = setInterval(() => {
       const elapsed = Math.floor((Date.now() - start) / 1000);
       setSeconds(elapsed);
-      if (elapsed >= CHECKPOINT) setCheckpoint(true);
+      if (elapsed >= CHECKPOINT && !checkpointDismissedRef.current) setCheckpoint(true);
     }, 1000);
     return () => clearInterval(t);
   }, []);
@@ -1080,7 +1081,7 @@ export default function SessionPage() {
               </p>
             </div>
             <button
-              onClick={() => setCheckpoint(false)}
+              onClick={() => { checkpointDismissedRef.current = true; setCheckpoint(false); }}
               className="w-full py-3 btn-primary text-white font-bold rounded-xl"
             >
               Got it 👍
