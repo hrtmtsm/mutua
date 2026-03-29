@@ -325,31 +325,22 @@ function RhythmChart({ sessions, targetLang, liveProfiles }: {
               const live = liveProfiles[pid];
               const name = live?.name ?? tooltipData.partners[i] ?? '?';
               const avatarUrl = live?.avatarUrl ?? null;
+              const initials = name.trim().split(/\s+/).map((w: string) => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
               return (
                 <div
                   key={i}
-                  className="w-7 h-7 rounded-full bg-stone-200 overflow-hidden shrink-0 border-2 border-white"
+                  className="w-7 h-7 rounded-full bg-stone-800 overflow-hidden shrink-0 border-2 border-white flex items-center justify-center"
                   style={{ marginLeft: i > 0 ? -8 : 0, zIndex: 4 - i, position: 'relative' }}
                 >
-                  {avatarUrl ? (
+                  <span className="text-[9px] font-bold text-white leading-none absolute">{initials}</span>
+                  {avatarUrl && (
                     <img
                       src={avatarUrl}
                       alt={name}
-                      className="w-full h-full object-cover"
-                      onError={e => {
-                        (e.currentTarget as HTMLImageElement).style.display = 'none';
-                        (e.currentTarget.nextSibling as HTMLElement)?.removeAttribute('hidden');
-                      }}
+                      className="w-full h-full object-cover absolute inset-0"
+                      onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
                     />
-                  ) : null}
-                  <div
-                    className="w-full h-full bg-stone-800 flex items-center justify-center"
-                    {...(avatarUrl ? { hidden: true } : {})}
-                  >
-                    <span className="text-[9px] font-bold text-white leading-none">
-                      {name.trim().slice(0, 2).toUpperCase()}
-                    </span>
-                  </div>
+                  )}
                 </div>
               );
             })}
@@ -384,7 +375,7 @@ function PartnerAvatar({ name, avatarUrl }: { name: string; avatarUrl: string | 
   }
   return (
     <div className="w-12 h-12 rounded-2xl bg-stone-800 flex items-center justify-center shrink-0">
-      <span className="text-sm font-bold text-white">{name.trim().slice(0, 2).toUpperCase()}</span>
+      <span className="text-sm font-bold text-white">{name.trim().split(/\s+/).map((w: string) => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase()}</span>
     </div>
   );
 }
