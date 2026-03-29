@@ -253,7 +253,7 @@ export default function SessionPage() {
   const router = useRouter();
 
   const [match,            setMatch]            = useState<MatchResult | null>(null);
-  const [viewH,            setViewH]            = useState<number | null>(null);
+  const [vpStyle,          setVpStyle]          = useState<React.CSSProperties>({ height: '100dvh' });
   const [seconds,          setSeconds]          = useState(0);
   const [checkpoint,       setCheckpoint]       = useState(false);
   const [muted,            setMuted]            = useState(() => {
@@ -355,14 +355,21 @@ export default function SessionPage() {
     }
   }, [phase]);
 
-  // ── Lock height to visualViewport so iOS keyboard doesn't expand layout ──────
+  // ── Lock layout to visualViewport so iOS keyboard doesn't break layout ───────
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
-    const update = () => setViewH(Math.round(vv.height));
+    const update = () => setVpStyle({
+      position: 'fixed',
+      top:    vv.offsetTop,
+      left:   vv.offsetLeft,
+      width:  vv.width,
+      height: vv.height,
+    });
     vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
     update();
-    return () => vv.removeEventListener('resize', update);
+    return () => { vv.removeEventListener('resize', update); vv.removeEventListener('scroll', update); };
   }, []);
 
   // ── Presence heartbeat (so partner's pre-session page can detect us) ────────
@@ -788,7 +795,7 @@ export default function SessionPage() {
   // ── Render ────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col bg-[#2B8FFF] overflow-hidden" style={{ height: viewH ? `${viewH}px` : '100dvh' }}>
+    <div className="flex flex-col bg-[#2B8FFF] overflow-hidden" style={vpStyle}>
 
       {/* ── Offline banner ── */}
       {!isOnline && (
