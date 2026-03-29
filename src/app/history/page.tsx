@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import AppShell from '@/components/AppShell';
 import { track } from '@/lib/analytics';
 import { supabase } from '@/lib/supabase';
-import { LANG_FLAGS } from '@/lib/constants';
+import { LANG_FLAGS, LANG_AVATAR_COLOR } from '@/lib/constants';
 import { ArrowLeftRight } from 'lucide-react';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -325,19 +325,22 @@ function RhythmChart({ sessions, targetLang, liveProfiles }: {
               const live = liveProfiles[pid];
               const name = live?.name ?? tooltipData.partners[i] ?? '?';
               const avatarUrl = live?.avatarUrl ?? null;
+              const nativeLang = live?.nativeLang ?? '';
+              const bg = LANG_AVATAR_COLOR[nativeLang] ?? '#3b82f6';
               const initials = name.trim().split(/\s+/).map((w: string) => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
               return (
                 <div
                   key={i}
-                  className="w-7 h-7 rounded-full bg-stone-800 overflow-hidden shrink-0 border-2 border-white flex items-center justify-center"
-                  style={{ marginLeft: i > 0 ? -8 : 0, zIndex: 4 - i, position: 'relative' }}
+                  className="w-7 h-7 rounded-full overflow-hidden shrink-0 border-2 border-white flex items-center justify-center"
+                  style={{ marginLeft: i > 0 ? -8 : 0, zIndex: 4 - i, position: 'relative', backgroundColor: bg }}
                 >
                   <span className="text-[9px] font-bold text-white leading-none">{initials}</span>
                   {avatarUrl && (
                     <img
                       src={avatarUrl}
                       alt={name}
-                      className="w-full h-full object-cover absolute inset-0 rounded-full"
+                      className="w-full h-full object-cover"
+                      style={{ position: 'absolute', inset: 0 }}
                       onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
                     />
                   )}
@@ -364,18 +367,25 @@ function RhythmChart({ sessions, targetLang, liveProfiles }: {
   );
 }
 
-function PartnerAvatar({ name, avatarUrl }: { name: string; avatarUrl: string | null }) {
+function PartnerAvatar({ name, avatarUrl, nativeLang }: { name: string; avatarUrl: string | null; nativeLang?: string }) {
   const [failed, setFailed] = useState(false);
-  if (avatarUrl && !failed) {
-    return (
-      <div className="w-12 h-12 rounded-2xl overflow-hidden shrink-0">
-        <img src={avatarUrl} alt={name} className="w-full h-full object-cover" onError={() => setFailed(true)} />
-      </div>
-    );
-  }
+  const bg = LANG_AVATAR_COLOR[nativeLang ?? ''] ?? '#3b82f6';
+  const initials = name.trim().split(/\s+/).map((w: string) => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
   return (
-    <div className="w-12 h-12 rounded-2xl bg-stone-800 flex items-center justify-center shrink-0">
-      <span className="text-sm font-bold text-white">{name.trim().split(/\s+/).map((w: string) => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase()}</span>
+    <div
+      className="w-12 h-12 rounded-2xl overflow-hidden shrink-0 flex items-center justify-center relative"
+      style={{ backgroundColor: bg }}
+    >
+      <span className="text-sm font-bold text-white">{initials}</span>
+      {avatarUrl && !failed && (
+        <img
+          src={avatarUrl}
+          alt={name}
+          className="w-full h-full object-cover"
+          style={{ position: 'absolute', inset: 0 }}
+          onError={() => setFailed(true)}
+        />
+      )}
     </div>
   );
 }
@@ -411,7 +421,7 @@ function SessionCard({
         </div>
       )}
       <div className="flex items-center gap-4">
-        <PartnerAvatar name={displayName} avatarUrl={avatarUrl} />
+        <PartnerAvatar name={displayName} avatarUrl={avatarUrl} nativeLang={nativeLang} />
 
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-[#171717] text-base leading-tight truncate">{displayName}</p>
