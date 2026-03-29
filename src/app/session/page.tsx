@@ -193,7 +193,7 @@ export default function SessionPage() {
   const [chatOpen,         setChatOpen]         = useState(false);
   const [promptIdx,        setPromptIdx]        = useState(0);
   const [message,          setMessage]          = useState('');
-  const [messages,         setMessages]         = useState<string[]>([]);
+  const [messages,         setMessages]         = useState<{ text: string; from: 'me' | 'partner' }[]>([]);
   const [checklistStep,        setChecklistStep]        = useState(0);
   const [checklistCelebrating, setChecklistCelebrating] = useState(false);
   const [checklistDone,        setChecklistDone]        = useState(false);
@@ -321,6 +321,9 @@ export default function SessionPage() {
     muted,
     cameraOn,
     audioDeviceId,
+    onChat: (text) => {
+      setMessages(prev => [...prev, { text, from: 'partner' }]);
+    },
     onChecklist: (pills, step) => {
       // Swap pill indices: sender's pill 0 (their language) = receiver's pill 1 (partner's language)
       const swapped: [boolean, boolean] = [pills[1], pills[0]];
@@ -523,8 +526,9 @@ export default function SessionPage() {
   const handleSend = () => {
     const trimmed = message.trim();
     if (!trimmed) return;
-    setMessages(prev => [...prev, trimmed]);
+    setMessages(prev => [...prev, { text: trimmed, from: 'me' }]);
     setMessage('');
+    rtcSend('chat', { text: trimmed });
   };
 
   if (!match) return null;
@@ -869,9 +873,13 @@ export default function SessionPage() {
                 Type while you talk — notes, words,<br />anything that helps.
               </p>
             ) : messages.map((m, i) => (
-              <div key={i} className="flex justify-end">
-                <span className="bg-[#2B8FFF]/10 border border-[#2B8FFF]/20 text-neutral-800 text-sm px-3 py-1.5 rounded-xl max-w-[85%]">
-                  {m}
+              <div key={i} className={`flex ${m.from === 'me' ? 'justify-end' : 'justify-start'}`}>
+                <span className={`text-sm px-3 py-1.5 rounded-xl max-w-[85%] ${
+                  m.from === 'me'
+                    ? 'bg-[#2B8FFF] text-white'
+                    : 'bg-stone-100 text-neutral-800'
+                }`}>
+                  {m.text}
                 </span>
               </div>
             ))}

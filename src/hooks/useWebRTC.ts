@@ -17,6 +17,7 @@ interface Options {
   cameraOn:       boolean;
   audioDeviceId?: string;
   onChecklist?:   (pills: [boolean, boolean], step: number) => void;
+  onChat?:        (text: string) => void;
 }
 
 // ── DB-based signaling (polling) ──────────────────────────────────────────────
@@ -42,7 +43,7 @@ async function dbDelete(ids: string[]) {
   await supabase.from('signaling').delete().in('id', ids);
 }
 
-export function useWebRTC({ myId, partnerId, muted, cameraOn, audioDeviceId, onChecklist }: Options) {
+export function useWebRTC({ myId, partnerId, muted, cameraOn, audioDeviceId, onChecklist, onChat }: Options) {
   const [rtcState,       setRtcState]       = useState<RTCState>('idle');
   const [localStream,    setLocalStream]    = useState<MediaStream | null>(null);
   const [partnerStream,  setPartnerStream]  = useState<MediaStream | null>(null);
@@ -186,7 +187,12 @@ export function useWebRTC({ myId, partnerId, muted, cameraOn, audioDeviceId, onC
       onChecklist?.(payload.pills as [boolean, boolean], payload.step as number);
       return;
     }
-  }, [isCaller, buildPC, addTracks, send, flushIce, onChecklist]);
+
+    if (event === 'chat') {
+      onChat?.(payload.text as string);
+      return;
+    }
+  }, [isCaller, buildPC, addTracks, send, flushIce, onChecklist, onChat]);
 
   // ── main effect: media + signaling ─────────────────────────────────────────
   // IMPORTANT: We start signaling only AFTER getUserMedia resolves so that
