@@ -110,6 +110,7 @@ function SchedulingCard({
 }) {
   const nativeFlag   = LANG_FLAGS[partner.nativeLang]   ?? '';
   const learningFlag = LANG_FLAGS[partner.learningLang] ?? '';
+  const router = useRouter();
 
   const [showNotYet,  setShowNotYet]  = useState(false);
   const [showOverflow, setShowOverflow] = useState(false);
@@ -163,7 +164,7 @@ function SchedulingCard({
         history.unshift(entry);
         localStorage.setItem('mutua_history', JSON.stringify(history));
       }
-      onReschedule();
+      router.push('/history');
     };
 
     return (

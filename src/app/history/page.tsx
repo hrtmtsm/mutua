@@ -430,10 +430,12 @@ function SessionCard({
       </div>
 
       <div className="flex gap-2 mt-4">
-        <button onClick={onReview} className="px-4 py-2.5 btn-primary text-white text-sm font-semibold rounded-xl">
-          Review session →
-        </button>
-        <button onClick={onSchedule} className="px-4 py-2.5 border border-stone-200 text-sm font-medium text-stone-500 rounded-xl hover:bg-stone-50 transition-colors">
+        {!missed && (
+          <button onClick={onReview} className="px-4 py-2.5 btn-primary text-white text-sm font-semibold rounded-xl">
+            Review session →
+          </button>
+        )}
+        <button onClick={onSchedule} className={`px-4 py-2.5 text-sm font-semibold rounded-xl ${missed ? 'btn-primary text-white' : 'border border-stone-200 text-stone-500 hover:bg-stone-50 transition-colors'}`}>
           Schedule again
         </button>
       </div>
