@@ -41,7 +41,8 @@ function CropModal({ src, onConfirm, onCancel }: { src: string; onConfirm: (blob
   const applyWidth = (newW: number) => {
     const { w: nw, h: nh } = naturalRef.current;
     if (!nw || !nh) return;
-    const minW = CROP_SIZE * Math.max(CROP_SIZE / nw, CROP_SIZE / nh);
+    // minW = width at which the image just fills the crop circle
+    const minW = nw * Math.max(CROP_SIZE / nw, CROP_SIZE / nh);
     const clamped = Math.max(minW, Math.min(newW, minW * 4));
     imgWidthRef.current = clamped;
     setImgWidth(clamped);
@@ -164,13 +165,13 @@ function CropModal({ src, onConfirm, onCancel }: { src: string; onConfirm: (blob
             value={(() => {
               const { w: nw, h: nh } = naturalRef.current;
               if (!nw) return 0;
-              const minW = CROP_SIZE * Math.max(CROP_SIZE / nw, CROP_SIZE / nh);
-              return Math.round(((imgWidth - minW) / (minW * 3)) * 100);
+              const minW = nw * Math.max(CROP_SIZE / nw, CROP_SIZE / nh);
+              return Math.round(Math.max(0, (imgWidth - minW) / (minW * 3)) * 100);
             })()}
             onChange={e => {
               const { w: nw, h: nh } = naturalRef.current;
               if (!nw) return;
-              const minW = CROP_SIZE * Math.max(CROP_SIZE / nw, CROP_SIZE / nh);
+              const minW = nw * Math.max(CROP_SIZE / nw, CROP_SIZE / nh);
               applyWidth(minW + minW * 3 * (Number(e.target.value) / 100));
             }}
             className="w-full accent-neutral-900"
