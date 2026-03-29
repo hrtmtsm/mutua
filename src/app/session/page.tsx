@@ -556,7 +556,7 @@ export default function SessionPage() {
   const promptCard = !checklistDone ? (
     checklistCelebrating ? (
       /* ── Celebration ── */
-      <div className="rounded-2xl bg-white/95 backdrop-blur-sm shadow-xl overflow-hidden">
+      <div className="rounded-2xl bg-white border border-stone-200 overflow-hidden">
         <div className="px-4 py-5 flex flex-col items-center text-center gap-1.5">
           <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center mb-1">
             <Check className="w-5 h-5 text-emerald-500" />
@@ -571,7 +571,7 @@ export default function SessionPage() {
       </div>
     ) : (
       /* ── Two-pill checklist card ── */
-      <div className="rounded-2xl bg-white/95 backdrop-blur-sm shadow-xl overflow-hidden">
+      <div className="rounded-2xl bg-white border border-stone-200 overflow-hidden">
 
         {/* Header */}
         <div className="px-4 pt-3 pb-2 flex items-center justify-between">
@@ -644,7 +644,7 @@ export default function SessionPage() {
     )
   ) : (
     /* ── Turn-based prompt card ── */
-    <div className="rounded-2xl bg-white/95 backdrop-blur-sm shadow-xl overflow-hidden">
+    <div className="rounded-2xl bg-white border border-stone-200 overflow-hidden">
 
       {/* Header with minimize toggle */}
       <div className="px-4 pt-3 pb-1 flex items-center justify-between">
