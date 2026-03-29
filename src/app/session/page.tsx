@@ -373,7 +373,16 @@ export default function SessionPage() {
     }).then(() => {});
     ping();
     const t = setInterval(ping, 15_000);
-    return () => clearInterval(t);
+    return () => {
+      clearInterval(t);
+      // Delete presence rows immediately so partner's pre-session shows offline
+      supabase.from('signaling')
+        .delete()
+        .eq('event', 'presence')
+        .eq('from_id', myId)
+        .eq('to_id', partnerId)
+        .then(() => {});
+    };
   }, [myId, match?.partner.session_id]);
 
   // ── WebRTC ─────────────────────────────────────────────────────────────────
