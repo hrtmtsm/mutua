@@ -255,8 +255,14 @@ export default function SessionPage() {
   const [match,            setMatch]            = useState<MatchResult | null>(null);
   const [seconds,          setSeconds]          = useState(0);
   const [checkpoint,       setCheckpoint]       = useState(false);
-  const [muted,            setMuted]            = useState(false);
-  const [cameraOn,         setCameraOn]         = useState(false);
+  const [muted,            setMuted]            = useState(() => {
+    if (typeof window === 'undefined') return true;
+    try { const m = JSON.parse(localStorage.getItem('mutua_match') ?? '{}'); return !m.startWithMic; } catch { return true; }
+  });
+  const [cameraOn,         setCameraOn]         = useState(() => {
+    if (typeof window === 'undefined') return false;
+    try { const m = JSON.parse(localStorage.getItem('mutua_match') ?? '{}'); return m.startWithCamera ?? false; } catch { return false; }
+  });
   const [chatOpen,         setChatOpen]         = useState(false);
   const [promptIdx,        setPromptIdx]        = useState(0);
   const [message,          setMessage]          = useState('');
@@ -359,8 +365,10 @@ export default function SessionPage() {
 
   // Wire partner stream → PartnerTile video element
   useEffect(() => {
-    if (partnerVideoRef.current && partnerStream) {
-      partnerVideoRef.current.srcObject = partnerStream;
+    const el = partnerVideoRef.current;
+    if (el && partnerStream) {
+      el.srcObject = partnerStream;
+      el.play().catch(() => {}); // Bypass autoplay restrictions
     }
   }, [partnerStream, partnerCameraOn]);
 
