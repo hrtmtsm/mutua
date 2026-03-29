@@ -191,6 +191,7 @@ export default function SessionPage() {
     try { const m = JSON.parse(localStorage.getItem('mutua_match') ?? '{}'); return m.audioDeviceId as string | undefined; } catch { return undefined; }
   });
   const [chatOpen,         setChatOpen]         = useState(false);
+  const [unreadCount,      setUnreadCount]      = useState(0);
   const [promptIdx,        setPromptIdx]        = useState(0);
   const [message,          setMessage]          = useState('');
   const [messages,         setMessages]         = useState<{ text: string; from: 'me' | 'partner' }[]>([]);
@@ -323,6 +324,10 @@ export default function SessionPage() {
     audioDeviceId,
     onChat: (text) => {
       setMessages(prev => [...prev, { text, from: 'partner' }]);
+      setChatOpen(open => {
+        if (!open) setUnreadCount(n => n + 1);
+        return open;
+      });
     },
     onChecklist: (pills, step) => {
       // Swap pill indices: sender's pill 0 (their language) = receiver's pill 1 (partner's language)
@@ -928,12 +933,15 @@ export default function SessionPage() {
         </button>
 
         <button
-          onClick={() => setChatOpen(c => !c)}
-          className={`flex flex-col items-center gap-1.5 w-14 py-2.5 rounded-xl transition-all ${
+          onClick={() => { setChatOpen(c => !c); setUnreadCount(0); }}
+          className={`relative flex flex-col items-center gap-1.5 w-14 py-2.5 rounded-xl transition-all ${
             chatOpen ? 'bg-[#2B8FFF] text-white' : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-700'
           }`}
         >
           <MessageSquare className="w-5 h-5" />
+          {unreadCount > 0 && !chatOpen && (
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500" />
+          )}
           <span className="text-[11px] font-medium">Chat</span>
         </button>
 
