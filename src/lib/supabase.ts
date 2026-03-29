@@ -186,7 +186,8 @@ export async function getMessages(matchId: string): Promise<Message[]> {
 export async function sendMessage(matchId: string, senderId: string, text: string): Promise<void> {
   if (!isConfigured) return;
   const { error } = await supabase.from('messages').insert({ match_id: matchId, sender_id: senderId, text });
-  if (error) throw error;
+  // PGRST116 = "no rows returned" — fires on successful INSERT when RLS blocks the implicit RETURNING read
+  if (error && error.code !== 'PGRST116') throw error;
 }
 
 export async function getMatchBySessionId(sessionId: string): Promise<Match | null> {
