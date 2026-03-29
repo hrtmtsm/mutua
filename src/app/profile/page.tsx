@@ -19,11 +19,12 @@ function CropModal({ src, onConfirm, onCancel }: { src: string; onConfirm: (blob
   const imgRef     = useRef<HTMLImageElement>(null);
   const offsetRef  = useRef({ x: 0, y: 0 });
   const [offset, setOffset]   = useState({ x: 0, y: 0 });
-  const [imgSize, setImgSize] = useState({ w: 0, h: 0 });
-  const imgSizeRef   = useRef({ w: 0, h: 0 });
   const naturalRef   = useRef({ w: 0, h: 0 });
   const scaleRef     = useRef(1);
   const [scale, setScale] = useState(1);
+  // Derived: imgSize always uses same scale for both axes
+  const imgW = naturalRef.current.w * scale || 0;
+  const imgH = naturalRef.current.h * scale || 0;
   const dragging     = useRef(false);
   const lastPos      = useRef({ x: 0, y: 0 });
   const pinchDistRef = useRef<number | null>(null);
@@ -35,13 +36,12 @@ function CropModal({ src, onConfirm, onCancel }: { src: string; onConfirm: (blob
 
   const applyScale = (newScale: number) => {
     const { w: nw, h: nh } = naturalRef.current;
+    if (!nw || !nh) return;
     const base = Math.max(CROP_SIZE / nw, CROP_SIZE / nh);
     const clamped = Math.max(base, Math.min(newScale, base * 4));
     scaleRef.current = clamped;
     const w = nw * clamped;
     const h = nh * clamped;
-    imgSizeRef.current = { w, h };
-    setImgSize({ w, h });
     setScale(clamped);
     const next = clamp(offsetRef.current.x, offsetRef.current.y, w, h);
     offsetRef.current = next;
@@ -55,8 +55,6 @@ function CropModal({ src, onConfirm, onCancel }: { src: string; onConfirm: (blob
     scaleRef.current = base;
     const w = img.naturalWidth * base;
     const h = img.naturalHeight * base;
-    imgSizeRef.current = { w, h };
-    setImgSize({ w, h });
     setScale(base);
     const start = clamp((CROP_SIZE - w) / 2, (CROP_SIZE - h) / 2, w, h);
     offsetRef.current = start;
@@ -71,7 +69,7 @@ function CropModal({ src, onConfirm, onCancel }: { src: string; onConfirm: (blob
           e.touches[0].clientX - e.touches[1].clientX,
           e.touches[0].clientY - e.touches[1].clientY,
         );
-        if (pinchDistRef.current !== null) {
+        if (pinchDistRef.current !== null && d > 0) {
           applyScale(scaleRef.current * (d / pinchDistRef.current));
         }
         pinchDistRef.current = d;
@@ -83,11 +81,13 @@ function CropModal({ src, onConfirm, onCancel }: { src: string; onConfirm: (blob
       const dx = clientX - lastPos.current.x;
       const dy = clientY - lastPos.current.y;
       lastPos.current = { x: clientX, y: clientY };
+      const { w: nw, h: nh } = naturalRef.current;
+      const w = nw * scaleRef.current;
+      const h = nh * scaleRef.current;
       const next = clamp(
         offsetRef.current.x + dx,
         offsetRef.current.y + dy,
-        imgSizeRef.current.w,
-        imgSizeRef.current.h,
+        w, h,
       );
       offsetRef.current = next;
       setOffset({ ...next });
@@ -125,7 +125,9 @@ function CropModal({ src, onConfirm, onCancel }: { src: string; onConfirm: (blob
     canvas.height = CROP_SIZE;
     const ctx = canvas.getContext('2d')!;
     const img = imgRef.current!;
-    ctx.drawImage(img, offsetRef.current.x, offsetRef.current.y, imgSizeRef.current.w, imgSizeRef.current.h);
+    const { w: nw, h: nh } = naturalRef.current;
+    const s = scaleRef.current;
+    ctx.drawImage(img, offsetRef.current.x, offsetRef.current.y, nw * s, nh * s);
     canvas.toBlob(blob => { if (blob) onConfirm(blob); }, 'image/jpeg', 0.92);
   };
 
@@ -152,7 +154,7 @@ function CropModal({ src, onConfirm, onCancel }: { src: string; onConfirm: (blob
               alt=""
               onLoad={onLoad}
               draggable={false}
-              style={{ position: 'absolute', left: offset.x, top: offset.y, width: imgSize.w, height: imgSize.h, pointerEvents: 'none', userSelect: 'none' }}
+              style={{ position: 'absolute', left: offset.x, top: offset.y, width: imgW, height: imgH, pointerEvents: 'none', userSelect: 'none' }}
             />
           </div>
         </div>
