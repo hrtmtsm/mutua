@@ -23,15 +23,28 @@ export default function PreSessionPage() {
   const videoRef   = useRef<HTMLVideoElement>(null);
   const streamRef  = useRef<MediaStream | null>(null);
 
-  const [partner,  setPartner]  = useState<SavedPartner | null>(null);
-  const [cameraOn, setCameraOn] = useState(false);
-  const [micOn,    setMicOn]    = useState(false);
+  const [partner,        setPartner]        = useState<SavedPartner | null>(null);
+  const [cameraOn,       setCameraOn]       = useState(false);
+  const [micOn,          setMicOn]          = useState(false);
+  const [audioDevices,   setAudioDevices]   = useState<MediaDeviceInfo[]>([]);
+  const [audioDeviceId,  setAudioDeviceId]  = useState('');
 
   useEffect(() => {
     const stored = localStorage.getItem('mutua_current_partner');
     if (!stored) { router.replace('/'); return; }
     setPartner(JSON.parse(stored));
   }, [router]);
+
+  // Enumerate audio input devices (requires a permission grant first)
+  useEffect(() => {
+    navigator.mediaDevices.enumerateDevices().then(devices => {
+      const inputs = devices.filter(d => d.kind === 'audioinput');
+      setAudioDevices(inputs);
+      // Pre-select system default if nothing chosen
+      if (!audioDeviceId && inputs.length > 0) setAudioDeviceId(inputs[0].deviceId);
+    }).catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [micOn]); // Re-enumerate after mic toggle so labels are populated
 
   useEffect(() => {
     if (cameraOn) {
@@ -69,8 +82,9 @@ export default function PreSessionPage() {
         practice_frequency: partner.practice_frequency,
       },
       score: 0, reasons: [], starters,
-      startWithCamera: cameraOn,
-      startWithMic:    micOn,
+      startWithCamera:   cameraOn,
+      startWithMic:      micOn,
+      audioDeviceId:     audioDeviceId || undefined,
     }));
     router.push('/session');
   };
@@ -137,6 +151,23 @@ export default function PreSessionPage() {
               </button>
 
             </div>
+
+            {/* Microphone selector */}
+            {audioDevices.length > 1 && (
+              <div className="absolute top-3 right-3 z-10">
+                <select
+                  value={audioDeviceId}
+                  onChange={e => setAudioDeviceId(e.target.value)}
+                  className="text-xs bg-black/60 text-white border border-white/20 rounded-lg px-2 py-1 backdrop-blur-sm max-w-[160px] truncate"
+                >
+                  {audioDevices.map(d => (
+                    <option key={d.deviceId} value={d.deviceId}>
+                      {d.label || `Microphone ${d.deviceId.slice(0, 6)}`}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
 
           {/* ── Right: join panel ── */}

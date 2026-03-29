@@ -263,6 +263,10 @@ export default function SessionPage() {
     if (typeof window === 'undefined') return false;
     try { const m = JSON.parse(localStorage.getItem('mutua_match') ?? '{}'); return m.startWithCamera ?? false; } catch { return false; }
   });
+  const [audioDeviceId] = useState(() => {
+    if (typeof window === 'undefined') return undefined;
+    try { const m = JSON.parse(localStorage.getItem('mutua_match') ?? '{}'); return m.audioDeviceId as string | undefined; } catch { return undefined; }
+  });
   const [chatOpen,         setChatOpen]         = useState(false);
   const [promptIdx,        setPromptIdx]        = useState(0);
   const [message,          setMessage]          = useState('');
@@ -354,6 +358,7 @@ export default function SessionPage() {
     partnerId: match?.partner.session_id ?? '',
     muted,
     cameraOn,
+    audioDeviceId,
   });
 
   // Wire local stream → SelfPIP video element

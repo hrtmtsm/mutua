@@ -11,10 +11,11 @@ const FALLBACK_ICE: RTCIceServer[] = [
 export type RTCState = 'idle' | 'connecting' | 'connected' | 'disconnected' | 'failed';
 
 interface Options {
-  myId:      string;
-  partnerId: string;
-  muted:     boolean;
-  cameraOn:  boolean;
+  myId:          string;
+  partnerId:     string;
+  muted:         boolean;
+  cameraOn:      boolean;
+  audioDeviceId?: string;
 }
 
 // ── DB-based signaling (polling) ──────────────────────────────────────────────
@@ -40,7 +41,7 @@ async function dbDelete(ids: string[]) {
   await supabase.from('signaling').delete().in('id', ids);
 }
 
-export function useWebRTC({ myId, partnerId, muted, cameraOn }: Options) {
+export function useWebRTC({ myId, partnerId, muted, cameraOn, audioDeviceId }: Options) {
   const [rtcState,       setRtcState]       = useState<RTCState>('idle');
   const [localStream,    setLocalStream]    = useState<MediaStream | null>(null);
   const [partnerStream,  setPartnerStream]  = useState<MediaStream | null>(null);
@@ -189,8 +190,13 @@ export function useWebRTC({ myId, partnerId, muted, cameraOn }: Options) {
 
     let cancelled = false;
 
+    const audioConstraint: MediaTrackConstraints = audioDeviceId
+      ? { deviceId: { exact: audioDeviceId } }
+      : true as unknown as MediaTrackConstraints;
+
     const getMedia = () =>
-      navigator.mediaDevices.getUserMedia({ audio: true, video: true })
+      navigator.mediaDevices.getUserMedia({ audio: audioConstraint, video: true })
+        .catch(() => navigator.mediaDevices.getUserMedia({ audio: audioConstraint, video: false }))
         .catch(() => navigator.mediaDevices.getUserMedia({ audio: true, video: false }))
         .catch(() => new MediaStream());
 
