@@ -601,7 +601,7 @@ export default function HistoryPage() {
                   duration={s.duration}
                   missed={s.missed}
                   matchId={matchId}
-                  onReview={() => { track('review_session_clicked', { partner_name: s.partnerName }); setReviewModal(s.partnerName); }}
+                  onReview={() => { track('review_session_clicked', { partner_name: displayName }); setReviewModal(displayName); }}
                   onSchedule={() => setScheduleModal(s.partnerName)}
                 />
               );
