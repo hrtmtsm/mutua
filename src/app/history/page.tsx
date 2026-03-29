@@ -104,7 +104,7 @@ const GREETINGS: Record<string, string> = {
   korean: '안녕하세요 👋', mandarin: '你好 👋', chinese: '你好 👋', arabic: 'مرحبا 👋',
 };
 
-interface DayData    { count: number; totalDuration: number; partners: string[]; }
+interface DayData    { count: number; totalDuration: number; partners: string[]; partnerIds: string[]; }
 interface TooltipPos { key: string; x: number; y: number; }
 
 const SHIFT      = 4;   // ~1 month per arrow click
@@ -117,7 +117,11 @@ function localKey(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-function RhythmChart({ sessions, targetLang }: { sessions: SessionEntry[]; targetLang: string }) {
+function RhythmChart({ sessions, targetLang, liveProfiles }: {
+  sessions: SessionEntry[];
+  targetLang: string;
+  liveProfiles: Record<string, { name: string; avatarUrl: string | null; nativeLang: string; matchId: string | null }>;
+}) {
   const [tooltip,    setTooltip]    = useState<TooltipPos | null>(null);
   const [weekOffset, setWeekOffset] = useState(0); // 0 = present, positive = further back
 
@@ -130,8 +134,9 @@ function RhythmChart({ sessions, targetLang }: { sessions: SessionEntry[]; targe
       d.count++;
       d.totalDuration += s.duration ?? 0;
       if (!d.partners.includes(s.partnerName)) d.partners.push(s.partnerName);
+      if (s.partnerId && !d.partnerIds.includes(s.partnerId)) d.partnerIds.push(s.partnerId);
     } else {
-      dayMap.set(key, { count: 1, totalDuration: s.duration ?? 0, partners: [s.partnerName] });
+      dayMap.set(key, { count: 1, totalDuration: s.duration ?? 0, partners: [s.partnerName], partnerIds: s.partnerId ? [s.partnerId] : [] });
     }
   }
 
@@ -307,20 +312,31 @@ function RhythmChart({ sessions, targetLang }: { sessions: SessionEntry[]; targe
           </p>
 
           {/* Partner avatars */}
-          <div className="flex items-center gap-1 mb-2">
-            {tooltipData.partners.slice(0, 4).map((name, i) => (
-              <div
-                key={i}
-                className="w-6 h-6 rounded-full bg-stone-800 flex items-center justify-center shrink-0"
-                style={{ marginLeft: i > 0 ? -6 : 0, zIndex: 4 - i, position: 'relative' }}
-              >
-                <span className="text-[9px] font-bold text-white leading-none">
-                  {name.trim().slice(0, 2).toUpperCase()}
-                </span>
-              </div>
-            ))}
+          <div className="flex items-center mb-2">
+            {tooltipData.partnerIds.slice(0, 4).map((pid, i) => {
+              const live = liveProfiles[pid];
+              const name = live?.name ?? tooltipData.partners[i] ?? '?';
+              const avatarUrl = live?.avatarUrl ?? null;
+              return (
+                <div
+                  key={i}
+                  className="w-7 h-7 rounded-full bg-stone-200 overflow-hidden shrink-0 border-2 border-white"
+                  style={{ marginLeft: i > 0 ? -8 : 0, zIndex: 4 - i, position: 'relative' }}
+                >
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-stone-800 flex items-center justify-center">
+                      <span className="text-[9px] font-bold text-white leading-none">
+                        {name.trim().slice(0, 2).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
             {tooltipData.partners.length > 4 && (
-              <span className="text-[10px] text-stone-400 ml-1">+{tooltipData.partners.length - 4}</span>
+              <span className="text-[10px] text-stone-400 ml-2">+{tooltipData.partners.length - 4}</span>
             )}
           </div>
 
@@ -581,7 +597,7 @@ export default function HistoryPage() {
         {hasAnySessions && (
           <div className="space-y-2">
             <p className="text-sm font-medium text-stone-500">Recent practice</p>
-            <RhythmChart sessions={sessions} targetLang={targetLang} />
+            <RhythmChart sessions={sessions} targetLang={targetLang} liveProfiles={liveProfiles} />
           </div>
         )}
 
