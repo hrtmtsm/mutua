@@ -130,15 +130,53 @@ function SchedulingCard({
 
   // ── Scheduled state: focused card ─────────────────────────────────────────
   if (s === 'scheduled' && partner.scheduledAt) {
-    const sessionDate = new Date(partner.scheduledAt);
-    const dateLine = sessionDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-    const timeLine = sessionDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    const sessionDate  = new Date(partner.scheduledAt);
+    const dateLine     = sessionDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    const timeLine     = sessionDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    const msUntil      = sessionDate.getTime() - now;
     const sessionPassed = now - sessionDate.getTime() > 60 * 60 * 1000;
+    const isLive        = isJoinable(partner.scheduledAt, now);
+    const isSoon        = !isLive && msUntil > 0 && msUntil <= 60 * 60 * 1000;
+
+    // Status pill config
+    const statusPill = sessionPassed
+      ? { label: 'Missed :(', cls: 'bg-stone-100 text-stone-400' }
+      : isLive
+      ? { label: '● Live now', cls: 'bg-emerald-50 text-emerald-600' }
+      : isSoon
+      ? { label: '● Starting soon', cls: 'bg-amber-50 text-amber-600' }
+      : { label: 'Upcoming', cls: 'bg-stone-100 text-stone-500' };
+
+    const markMissed = () => {
+      const entry = {
+        partnerName: partner.name,
+        partnerId:   partner.id,
+        duration:    0,
+        date:        partner.scheduledAt,
+        missed:      true,
+      };
+      const raw = localStorage.getItem('mutua_history');
+      const history = raw ? JSON.parse(raw) : [];
+      // Avoid duplicate missed entries for the same scheduled time
+      const alreadyLogged = history.some((e: any) => e.partnerId === partner.id && e.date === partner.scheduledAt);
+      if (!alreadyLogged) {
+        history.unshift(entry);
+        localStorage.setItem('mutua_history', JSON.stringify(history));
+      }
+      onReschedule();
+    };
 
     return (
       <div className="overflow-hidden bg-white rounded-2xl border border-stone-200">
+        {/* Status pill strip */}
+        <div className="px-7 pt-5 pb-0">
+          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${statusPill.cls}`}>
+            {statusPill.label}
+          </span>
+        </div>
+
         {/* Identity block */}
-        <div className="px-7 pt-6 pb-0 flex items-center gap-4">
+        <div className="px-7 pt-4 pb-0 flex items-center gap-4">
           <div className="relative shrink-0 flex items-center" style={{ width: 104, height: 64 }}>
             <div className="absolute left-0" style={{ transform: 'rotate(-6deg)', zIndex: 1 }}>
               <Avatar name={myName ?? 'Me'} lang={partner.learningLang} avatarUrl={myAvatarUrl} size="lg" />
@@ -183,7 +221,8 @@ function SchedulingCard({
         </div>
 
         {/* Action block */}
-        <div className="px-7 mt-6 pb-7 flex gap-2">
+        <div className="px-7 mt-6 pb-7">
+          <div className="flex gap-2">
           {sessionPassed ? (
             <>
               <button
@@ -214,6 +253,15 @@ function SchedulingCard({
                 Start exchange →
               </button>
             </>
+          )}
+          </div>
+          {sessionPassed && (
+            <button
+              onClick={markMissed}
+              className="mt-3 text-xs text-stone-400 hover:text-stone-600 transition-colors underline-offset-2 hover:underline"
+            >
+              Didn't happen? Mark as missed &amp; reschedule
+            </button>
           )}
         </div>
 
