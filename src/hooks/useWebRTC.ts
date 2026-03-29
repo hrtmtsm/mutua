@@ -11,11 +11,12 @@ const FALLBACK_ICE: RTCIceServer[] = [
 export type RTCState = 'idle' | 'connecting' | 'connected' | 'disconnected' | 'failed';
 
 interface Options {
-  myId:          string;
-  partnerId:     string;
-  muted:         boolean;
-  cameraOn:      boolean;
+  myId:           string;
+  partnerId:      string;
+  muted:          boolean;
+  cameraOn:       boolean;
   audioDeviceId?: string;
+  onChecklist?:   (pills: [boolean, boolean], step: number) => void;
 }
 
 // ── DB-based signaling (polling) ──────────────────────────────────────────────
@@ -41,7 +42,7 @@ async function dbDelete(ids: string[]) {
   await supabase.from('signaling').delete().in('id', ids);
 }
 
-export function useWebRTC({ myId, partnerId, muted, cameraOn, audioDeviceId }: Options) {
+export function useWebRTC({ myId, partnerId, muted, cameraOn, audioDeviceId, onChecklist }: Options) {
   const [rtcState,       setRtcState]       = useState<RTCState>('idle');
   const [localStream,    setLocalStream]    = useState<MediaStream | null>(null);
   const [partnerStream,  setPartnerStream]  = useState<MediaStream | null>(null);
@@ -180,7 +181,12 @@ export function useWebRTC({ myId, partnerId, muted, cameraOn, audioDeviceId }: O
       setPartnerCamOn(payload.cameraOn as boolean);
       return;
     }
-  }, [isCaller, buildPC, addTracks, send, flushIce]);
+
+    if (event === 'checklist') {
+      onChecklist?.(payload.pills as [boolean, boolean], payload.step as number);
+      return;
+    }
+  }, [isCaller, buildPC, addTracks, send, flushIce, onChecklist]);
 
   // ── main effect: media + signaling ─────────────────────────────────────────
   // IMPORTANT: We start signaling only AFTER getUserMedia resolves so that
@@ -276,5 +282,5 @@ export function useWebRTC({ myId, partnerId, muted, cameraOn, audioDeviceId }: O
     if (myId && partnerId) send('media', { muted, cameraOn });
   }, [muted, cameraOn, myId, partnerId, send]);
 
-  return { rtcState, localStream, partnerStream, partnerMuted, partnerCameraOn: partnerCamOn };
+  return { rtcState, localStream, partnerStream, partnerMuted, partnerCameraOn: partnerCamOn, send };
 }
