@@ -301,11 +301,11 @@ function SchedulingCard({
   const pills = [partner.goal, partner.commStyle, partner.frequency, ...partner.sharedInterests].filter(Boolean).slice(0, 4);
 
   return (
-    <div className="overflow-hidden bg-white rounded-2xl border border-stone-200 relative">
+    <div className="overflow-hidden bg-white rounded-2xl border border-stone-200">
 
-      {/* Status pill — top-left corner of card */}
+      {/* Status pill — flows above identity block */}
       {(waitingOnPartner || s === 'computing' || s === 'no_overlap') && (
-        <div className="absolute top-4 left-4 z-10">
+        <div className="px-5 pt-4 pb-0">
           {waitingOnPartner && (
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-sky-50 text-sky-600 border border-sky-100">
               <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" />
@@ -328,7 +328,7 @@ function SchedulingCard({
       )}
 
       {/* Identity block */}
-      <div className="px-7 pt-6 pb-0 flex items-start gap-4">
+      <div className="px-7 pt-4 pb-0 flex items-start gap-4">
         <button onClick={onViewProfile} className="shrink-0">
           <Avatar name={partner.name} lang={partner.nativeLang} avatarUrl={partner.avatarUrl} size="lg" />
         </button>
