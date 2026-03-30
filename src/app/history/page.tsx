@@ -747,12 +747,10 @@ export default function HistoryPage() {
         </div>
 
         {/* ── 2. Practice rhythm ───────────────────────────────── */}
-        {hasAnySessions && (
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-stone-500">Recent practice</p>
-            <RhythmChart sessions={sessions} targetLang={targetLang} liveProfiles={liveProfiles} />
-          </div>
-        )}
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-stone-500">Recent practice</p>
+          <RhythmChart sessions={sessions} targetLang={targetLang} liveProfiles={liveProfiles} />
+        </div>
 
         {/* ── 3. Your exchanges ────────────────────────────────── */}
         {sortedSessions.length > 0 && (
