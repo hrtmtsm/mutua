@@ -310,11 +310,16 @@ export default function ProfilePage() {
     setAvatarUrl(localUrl);
 
     setUploading(true);
+    const { data: { session: authSession } } = await supabase.auth.getSession();
     const formData = new FormData();
     formData.append('file', new File([blob], 'avatar.jpg', { type: 'image/jpeg' }));
     formData.append('sessionId', profile.session_id);
 
-    const res = await fetch('/api/upload-avatar', { method: 'POST', body: formData });
+    const res = await fetch('/api/upload-avatar', {
+      method: 'POST',
+      headers: authSession?.access_token ? { Authorization: `Bearer ${authSession.access_token}` } : {},
+      body: formData,
+    });
     if (res.ok) {
       const { url } = await res.json();
       setAvatarUrl(url);
@@ -335,9 +340,13 @@ export default function ProfilePage() {
     setSaving(true);
     const trimmed = draftName.trim();
     const bioTrimmed = bio.trim();
+    const { data: { session: authSession } } = await supabase.auth.getSession();
     await fetch('/api/update-profile', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(authSession?.access_token ? { Authorization: `Bearer ${authSession.access_token}` } : {}),
+      },
       body: JSON.stringify({ sessionId: profile.session_id, name: trimmed, bio: bioTrimmed }),
     });
     const stored = localStorage.getItem('mutua_profile');

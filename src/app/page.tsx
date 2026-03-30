@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
+import AuthRedirectHandler from '@/components/AuthRedirectHandler';
 
 const GlobeHero = dynamic(() => import('@/components/GlobeHero'), { ssr: false });
 
@@ -24,6 +25,7 @@ const HOW_IT_WORKS = [
 export default function LandingPage() {
   return (
     <main className="min-h-screen flex flex-col overflow-x-hidden">
+      <AuthRedirectHandler />
 
       {/* ── HERO + GLOBE (single seamless background) ─────────────────────────── */}
       <div style={{ position: 'relative', userSelect: 'none' }}>

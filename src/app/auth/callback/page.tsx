@@ -11,11 +11,21 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     const run = async () => {
       // PKCE flow: code in query string
-      const params = new URLSearchParams(window.location.search);
-      const code   = params.get('code');
+      const params     = new URLSearchParams(window.location.search);
+      const hashParams = new URLSearchParams(window.location.hash.replace('#', ''));
+      const code = params.get('code');
+      // type can be in query string (PKCE) or hash (implicit flow)
+      const type = params.get('type') || hashParams.get('type');
+
       if (code) {
         const { error } = await supabase.auth.exchangeCodeForSession(code);
         if (error) { setStatus('error'); return; }
+      }
+
+      // Password recovery flow — redirect to the reset page
+      if (type === 'recovery') {
+        router.replace('/reset-password');
+        return;
       }
 
       // Implicit flow: #access_token= in hash — Supabase JS processes it automatically.

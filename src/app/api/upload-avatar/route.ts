@@ -2,8 +2,14 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 export async function POST(request: Request) {
+  // Verify the caller is authenticated
+  const token = request.headers.get('authorization')?.replace('Bearer ', '');
+  if (!token) {
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  }
+
   const formData = await request.formData();
-  const file = formData.get('file') as File | null;
+  const file      = formData.get('file')      as File | null;
   const sessionId = formData.get('sessionId') as string | null;
 
   if (!file || !sessionId) {
@@ -15,9 +21,26 @@ export async function POST(request: Request) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   );
 
-  const path = `${sessionId}.jpg`;
+  // Confirm the token belongs to the owner of this sessionId
+  const { data: { user }, error: authErr } = await adminClient.auth.getUser(token);
+  if (authErr || !user) {
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  }
+
+  const { data: profile } = await adminClient
+    .from('profiles')
+    .select('session_id')
+    .eq('session_id', sessionId)
+    .eq('email', user.email!)
+    .maybeSingle();
+
+  if (!profile) {
+    return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+  }
+
+  const path        = `${sessionId}.jpg`;
   const arrayBuffer = await file.arrayBuffer();
-  const buffer = Buffer.from(arrayBuffer);
+  const buffer      = Buffer.from(arrayBuffer);
 
   const { error } = await adminClient.storage
     .from('avatars')
