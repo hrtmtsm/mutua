@@ -636,14 +636,13 @@ export default function ProfilePage() {
         )}
 
         {/* ── Feedback ── */}
-        <div className="pt-2 pb-6 flex justify-center">
-          <button
-            onClick={() => { setShowFeedback(true); setFeedbackSent(false); setFeedbackText(''); }}
-            className="text-sm text-stone-400 hover:text-neutral-700 transition-colors"
-          >
-            Send feedback
-          </button>
-        </div>
+        <button
+          onClick={() => { setShowFeedback(true); setFeedbackSent(false); setFeedbackText(''); }}
+          className="w-full bg-white rounded-2xl shadow-sm px-6 py-4 flex items-center justify-between text-left hover:bg-stone-50 transition-colors"
+        >
+          <span className="text-sm font-medium text-neutral-700">Send feedback</span>
+          <span className="text-stone-300 text-sm">→</span>
+        </button>
 
       </main>
     </AppShell>
