@@ -67,6 +67,7 @@ export interface SavedPartner {
   availability?:       Availability;      // deprecated — kept for legacy rows
   practice_frequency?: Frequency;
   saved_at:            string;
+  match_id?:           string;
 }
 
 export interface MatchResult {

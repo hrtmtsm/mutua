@@ -113,6 +113,7 @@ export default function PreSessionPage() {
       startWithCamera:   cameraOn,
       startWithMic:      micOn,
       audioDeviceId:     audioDeviceId || undefined,
+      match_id:          partner.match_id,
     }));
     router.push('/session');
   };

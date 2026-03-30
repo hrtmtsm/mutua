@@ -484,6 +484,14 @@ export default function SessionPage() {
     const history = JSON.parse(localStorage.getItem('mutua_history') ?? '[]');
     history.unshift(sessionEntry);
     localStorage.setItem('mutua_history', JSON.stringify(history.slice(0, 50)));
+
+    // Archive the match in Supabase so the home card disappears
+    const stored = localStorage.getItem('mutua_match');
+    const matchId = stored ? (JSON.parse(stored) as { match_id?: string }).match_id : null;
+    if (matchId && isConfigured) {
+      supabase.from('matches').update({ scheduling_state: 'archived' }).eq('id', matchId).then(() => {});
+    }
+
     localStorage.removeItem('mutua_match');
     router.push('/session-review');
   }, [router, seconds, match]);

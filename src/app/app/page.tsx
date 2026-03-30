@@ -615,6 +615,7 @@ export default function SessionPage() {
         comm_style:          partner.commStyle as SavedPartner['comm_style'],
         practice_frequency:  partner.frequency as SavedPartner['practice_frequency'],
         saved_at:            new Date().toISOString(),
+        match_id:            partner.matchId,
       };
       localStorage.setItem('mutua_current_partner', JSON.stringify(savedPartner));
     }
