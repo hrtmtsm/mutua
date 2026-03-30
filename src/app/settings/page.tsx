@@ -126,8 +126,15 @@ export default function SettingsPage() {
                         ) : (
                           <button type="button"
                             onClick={async () => {
-                              if (!email) return;
-                              await supabase.auth.resetPasswordForEmail(email);
+                              let addr = email;
+                              if (!addr) {
+                                const { data } = await supabase.auth.getSession();
+                                addr = data.session?.user?.email ?? '';
+                              }
+                              if (!addr) return;
+                              await supabase.auth.resetPasswordForEmail(addr, {
+                                redirectTo: `${window.location.origin}/auth/callback`,
+                              });
                               setResetSent(true);
                             }}
                             className="text-xs text-[#2B8FFF] hover:underline"
