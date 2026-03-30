@@ -119,6 +119,10 @@ export default function SignInPage() {
 
         </form>
 
+        <p className="text-center text-xs text-stone-400">
+          Forgot your password?{' '}
+          <a href="/reset-password/request" className="text-[#2B8FFF] font-semibold">Reset it</a>
+        </p>
 
       </div>
     </div>
