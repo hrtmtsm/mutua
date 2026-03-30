@@ -86,9 +86,12 @@ export async function POST(request: Request) {
     .neq('scheduling_state', 'archived');
 
   const alreadyPaired = new Set<string>();
+  const existingMatchCount = new Map<string, number>();
   for (const m of existingMatches ?? []) {
     const key = [m.email_a, m.email_b].sort().join('|');
     alreadyPaired.add(key);
+    existingMatchCount.set(m.email_a, (existingMatchCount.get(m.email_a) ?? 0) + 1);
+    existingMatchCount.set(m.email_b, (existingMatchCount.get(m.email_b) ?? 0) + 1);
   }
 
   // ── 3. Build all valid candidate pairs ────────────────────────────────────
@@ -117,7 +120,8 @@ export async function POST(request: Request) {
   pairs.sort((x, y) => y.score - x.score);
 
   // ── 4. Greedy assignment — max MAX_MATCHES per person ─────────────────────
-  const matchCount = new Map<string, number>();
+  // Seed with existing counts so we don't exceed the cap across runs
+  const matchCount = new Map<string, number>(existingMatchCount);
   const selectedPairs: Pair[] = [];
 
   for (const pair of pairs) {
