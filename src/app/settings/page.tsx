@@ -12,8 +12,9 @@ export default function SettingsPage() {
   const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user?.email) setEmail(data.user.email);
+    supabase.auth.getSession().then(({ data }) => {
+      const e = data.session?.user?.email;
+      if (e) setEmail(e);
     });
   }, []);
 
@@ -50,7 +51,7 @@ export default function SettingsPage() {
             {/* Email — display only */}
             <div className="px-6 py-4">
               <p className="text-xs font-semibold text-stone-400 mb-0.5">Email</p>
-              <p className="text-sm text-neutral-800">{email || <span className="text-stone-300">Loading…</span>}</p>
+              <p className="text-sm text-neutral-800">{email || '—'}</p>
             </div>
 
             <button
