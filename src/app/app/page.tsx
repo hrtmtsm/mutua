@@ -47,7 +47,7 @@ function Avatar({ name, lang, avatarUrl, size = 'md' }: { name: string; lang: st
       style={{ backgroundColor: bg }}
       className={`${cls} rounded-2xl flex items-center justify-center font-black text-white shrink-0`}
     >
-      {name.trim().slice(0, 2).toUpperCase()}
+      {(() => { const p = name.trim().split(/\s+/); return (p.length >= 2 ? p[0][0] + p[p.length - 1][0] : name.trim().slice(0, 2)).toUpperCase(); })()}
     </div>
   );
 }

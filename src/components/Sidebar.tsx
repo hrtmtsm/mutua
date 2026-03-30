@@ -91,7 +91,8 @@ function MessagesList({
   }
 
   const last = messages[messages.length - 1];
-  const initials = partnerName.trim().slice(0, 2).toUpperCase();
+  const parts = partnerName.trim().split(/\s+/);
+  const initials = (parts.length >= 2 ? parts[0][0] + parts[parts.length - 1][0] : partnerName.trim().slice(0, 2)).toUpperCase();
 
   return (
     <div>
@@ -183,7 +184,8 @@ function MessageChat({
 
   const messages = localMessages;
 
-  const initials = partnerName.trim().slice(0, 2).toUpperCase();
+  const parts = partnerName.trim().split(/\s+/);
+  const initials = (parts.length >= 2 ? parts[0][0] + parts[parts.length - 1][0] : partnerName.trim().slice(0, 2)).toUpperCase();
 
   return (
     <div className="flex flex-col" style={{ height: '360px' }}>
