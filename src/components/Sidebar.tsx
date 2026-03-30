@@ -290,6 +290,7 @@ export default function TopNav() {
   const [myId, setMyId]                     = useState('');
   const [messages, setMessages]             = useState<Message[]>([]);
   const [scheduleState, setScheduleState]   = useState<string | null>(null);
+  const currentSchedStateRef                = useRef<string | null>(null);
 
   // Always-on: watch for scheduling updates + new messages → set unread dot
   useEffect(() => {
@@ -308,6 +309,15 @@ export default function TopNav() {
         .maybeSingle();
       if (!match) return;
       prevState = match.scheduling_state;
+      currentSchedStateRef.current = match.scheduling_state;
+
+      // Check for unread on load: dot shows if scheduling state changed since last visit
+      const notifyStates = ['scheduled', 'no_overlap', 'pending_a', 'pending_b'];
+      const lastSeen = localStorage.getItem('mutua_last_seen_sched_state');
+      if (lastSeen && lastSeen !== match.scheduling_state && notifyStates.includes(match.scheduling_state)) {
+        localStorage.setItem('mutua_unread_notification', '1');
+        setHasUnread(true);
+      }
 
       // Check for unread on load: dot shows if the last message is from the partner
       const { data: lastMsgs } = await supabase
@@ -329,6 +339,7 @@ export default function TopNav() {
           const next = (payload.new as any).scheduling_state;
           if (next && next !== prevState) {
             prevState = next;
+            currentSchedStateRef.current = next;
             localStorage.setItem('mutua_unread_notification', '1');
             setHasUnread(true);
           }
@@ -463,6 +474,8 @@ export default function TopNav() {
               if (!!localStorage.getItem('mutua_unread_notification')) {
                 localStorage.removeItem('mutua_unread_notification');
               }
+              // Mark current scheduling state as seen
+              if (currentSchedStateRef.current) localStorage.setItem('mutua_last_seen_sched_state', currentSchedStateRef.current);
               if (!localStorage.getItem('mutua_unread_message')) {
                 setHasUnread(false);
               }
