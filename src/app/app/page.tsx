@@ -333,6 +333,30 @@ function SchedulingCard({
         </div>
       </div>
 
+      {/* Status pill — shown for non-scheduled states */}
+      {(waitingOnPartner || s === 'computing' || s === 'no_overlap') && (
+        <div className="px-7 mt-3">
+          {waitingOnPartner && (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-sky-50 text-sky-600 border border-sky-100">
+              <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" />
+              Waiting on {partner.name}
+            </span>
+          )}
+          {s === 'computing' && (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-violet-50 text-violet-600 border border-violet-100">
+              <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
+              Finding a time…
+            </span>
+          )}
+          {s === 'no_overlap' && (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-600 border border-amber-100">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+              No overlap found — update your times
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Context block — bio */}
       {partner.bio && (
         <div className="px-7 mt-4">
