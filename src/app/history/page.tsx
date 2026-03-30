@@ -852,12 +852,12 @@ export default function HistoryPage() {
               </button>
 
               {/* Partner avatar */}
-              <div className="mb-4">
+              <div className="flex justify-center mb-4">
                 <PartnerAvatar name={name} avatarUrl={avatarUrl} nativeLang={nativeLang} />
               </div>
 
-              <p className="font-bold text-neutral-900 mb-1">Keep the momentum going</p>
-              <p className="text-sm text-stone-500 leading-relaxed">
+              <p className="font-bold text-neutral-900 mb-1 text-center">Keep the momentum going</p>
+              <p className="text-sm text-stone-500 leading-relaxed text-center">
                 We'll match you with {name} again using your current schedule.
               </p>
               <div className="flex gap-2 mt-4">
