@@ -110,11 +110,9 @@ function computePartnerStats(sessions: SessionEntry[]): PartnerStats[] {
     });
   }
 
-  // Sort: active streak first → recent → total depth
+  // Sort: highest streak → most recent → deepest history
   return stats.sort((a, b) => {
-    const aActive = a.daysSinceLast <= 14 && a.streak >= 2;
-    const bActive = b.daysSinceLast <= 14 && b.streak >= 2;
-    if (aActive !== bActive) return aActive ? -1 : 1;
+    if (b.streak !== a.streak) return b.streak - a.streak;
     if (a.daysSinceLast !== b.daysSinceLast) return a.daysSinceLast - b.daysSinceLast;
     return b.sessionCount - a.sessionCount;
   });
@@ -445,32 +443,41 @@ function PartnerRelationshipCard({ stats, live }: {
   const avatarUrl  = live?.avatarUrl ?? null;
   const nativeLang = live?.nativeLang ?? '';
 
-  const primaryLine = [
-    `${stats.sessionCount} session${stats.sessionCount !== 1 ? 's' : ''}`,
-    stats.totalMin > 0 ? `${stats.totalMin} min together` : null,
-  ].filter(Boolean).join(' · ');
+  // Status label — one per card max, priority: consistent > new > fading > none
+  let status: { emoji: string; label: string; cls: string } | null = null;
+  if (stats.streak >= 2) {
+    status = { emoji: '🔥', label: 'Most consistent', cls: 'text-orange-500' };
+  } else if (stats.sessionCount <= 2 && stats.daysSinceLast <= 14) {
+    status = { emoji: '🆕', label: 'Recently started', cls: 'text-blue-500' };
+  } else if (stats.daysSinceLast >= 14) {
+    status = { emoji: '🌱', label: 'Fading', cls: 'text-stone-400' };
+  }
 
-  const streakLine = stats.streak >= 2 ? `${stats.streak} weeks in a row` : null;
+  // Strongest relationship fact line
+  const factLine = stats.streak >= 2
+    ? `${stats.streak} weeks in a row · ${stats.sessionCount} sessions together`
+    : `${stats.sessionCount} session${stats.sessionCount !== 1 ? 's' : ''} together`;
 
+  // Recency line
   let recencyLine: string;
-  if (stats.daysSinceLast === 0)       recencyLine = 'Last talked today';
-  else if (stats.daysSinceLast === 1)  recencyLine = 'Last talked yesterday';
-  else                                  recencyLine = `Last talked ${stats.daysSinceLast} days ago`;
+  if (stats.daysSinceLast === 0)      recencyLine = 'Last talked today';
+  else if (stats.daysSinceLast === 1) recencyLine = 'Last talked yesterday';
+  else                                recencyLine = `Last talked ${stats.daysSinceLast} days ago`;
 
-  const fading = stats.daysSinceLast > 21;
+  const fading = stats.daysSinceLast >= 14;
 
   return (
-    <div className={`bg-white border border-stone-200 rounded-2xl px-4 py-4 flex items-center gap-3 ${fading ? 'opacity-60' : ''}`}>
+    <div className={`bg-white border border-stone-200 rounded-2xl px-4 py-4 flex items-center gap-3 transition-opacity ${fading && !status?.label.includes('consistent') ? 'opacity-60' : ''}`}>
       <PartnerAvatar name={name} avatarUrl={avatarUrl} nativeLang={nativeLang} />
       <div className="flex-1 min-w-0">
-        <p className="font-semibold text-[#171717] text-sm truncate">{name}</p>
-        <p className="text-xs text-stone-500 mt-0.5">{primaryLine}</p>
-        {streakLine && (
-          <p className="text-xs text-blue-500 font-medium mt-0.5">{streakLine}</p>
+        {status && (
+          <p className={`text-[11px] font-semibold mb-0.5 ${status.cls}`}>
+            {status.emoji} {status.label}
+          </p>
         )}
-        <p className={`text-xs mt-0.5 ${fading ? 'text-stone-400' : 'text-stone-400'}`}>
-          {fading ? 'Haven\'t talked recently' : recencyLine}
-        </p>
+        <p className="font-semibold text-[#171717] text-sm truncate">{name}</p>
+        <p className="text-xs text-stone-500 mt-0.5">{factLine}</p>
+        <p className="text-xs text-stone-400 mt-0.5">{recencyLine}</p>
       </div>
     </div>
   );
