@@ -20,8 +20,9 @@ export async function GET() {
 
   if (apiKey) {
     try {
+      const appName = process.env.METERED_APP_NAME ?? 'mutua';
       const res = await fetch(
-        `https://api.metered.ca/api/v1/turn/credentials?apiKey=${apiKey}`,
+        `https://${appName}.metered.live/api/v1/turn/credentials?apiKey=${apiKey}`,
         { next: { revalidate: 3600 } },
       );
       if (res.ok) {
