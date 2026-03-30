@@ -66,9 +66,9 @@ interface PartnerStats {
 }
 
 function computePartnerStats(sessions: SessionEntry[]): PartnerStats[] {
+  // Group ALL sessions (including missed) so every partner appears
   const map = new Map<string, SessionEntry[]>();
   for (const s of sessions) {
-    if (s.missed) continue; // only count completed sessions
     const key = s.partnerId || s.partnerName;
     if (!map.has(key)) map.set(key, []);
     map.get(key)!.push(s);
@@ -78,13 +78,15 @@ function computePartnerStats(sessions: SessionEntry[]): PartnerStats[] {
   const stats: PartnerStats[] = [];
 
   for (const [key, pSessions] of map.entries()) {
-    const sorted = [...pSessions].sort((a, b) => b.date.localeCompare(a.date));
-    const totalMin = sorted.reduce((s, x) => s + (x.duration ?? 0), 0);
-    const lastDate = sorted[0].date;
-    const daysSinceLast = Math.floor((now.getTime() - new Date(lastDate).getTime()) / 86400000);
+    const allSorted       = [...pSessions].sort((a, b) => b.date.localeCompare(a.date));
+    const completed       = allSorted.filter(s => !s.missed);
+    const totalMin        = completed.reduce((s, x) => s + (x.duration ?? 0), 0);
+    // recency from any session (including missed — it still means contact was attempted)
+    const lastDate        = allSorted[0].date;
+    const daysSinceLast   = Math.floor((now.getTime() - new Date(lastDate).getTime()) / 86400000);
 
-    // Consecutive weeks: walk back from current week
-    const weekKeys = new Set(sorted.map(s => localKey(getWeekStart(new Date(s.date)))));
+    // Streak based only on completed sessions
+    const weekKeys = new Set(completed.map(s => localKey(getWeekStart(new Date(s.date)))));
     let streak = 0;
     const cursor = getWeekStart(new Date());
     for (let i = 0; i < 52; i++) {
@@ -93,7 +95,6 @@ function computePartnerStats(sessions: SessionEntry[]): PartnerStats[] {
         streak++;
         cursor.setDate(cursor.getDate() - 7);
       } else {
-        // allow one gap if we're still in the current week and haven't had a session yet
         if (i === 0) { cursor.setDate(cursor.getDate() - 7); continue; }
         break;
       }
@@ -101,8 +102,8 @@ function computePartnerStats(sessions: SessionEntry[]): PartnerStats[] {
 
     stats.push({
       partnerId:    key,
-      partnerName:  sorted[0].partnerName,
-      sessionCount: sorted.length,
+      partnerName:  allSorted[0].partnerName,
+      sessionCount: completed.length,
       totalMin,
       streak,
       lastDate,
