@@ -32,15 +32,15 @@ export default function SettingsPage() {
   const [passwordError,  setPasswordError]  = useState('');
   const [passwordSaved,  setPasswordSaved]  = useState(false);
   const [savingPassword,  setSavingPassword]  = useState(false);
-  const [resetSent,       setResetSent]       = useState(false);
+  const [passwordView,    setPasswordView]    = useState<'change' | 'forgot'>('change');
   const [resetEmail,      setResetEmail]      = useState('');
-  const [showResetInput,  setShowResetInput]  = useState(false);
+  const [resetSent,       setResetSent]       = useState(false);
   const [showCurrentPass, setShowCurrentPass] = useState(false);
   const [showNewPass,     setShowNewPass]     = useState(false);
   const [showConfirmPass, setShowConfirmPass] = useState(false);
 
   const openPassword = () => {
-    setCurrentPass(''); setNewPassword(''); setConfirmPass(''); setPasswordError(''); setPasswordSaved(false); setResetSent(false); setShowResetInput(false); setResetEmail('');
+    setCurrentPass(''); setNewPassword(''); setConfirmPass(''); setPasswordError(''); setPasswordSaved(false); setPasswordView('change'); setResetEmail(''); setResetSent(false);
     setShowPassword(true);
   };
 
@@ -98,6 +98,37 @@ export default function SettingsPage() {
               <p className="text-sm text-stone-400">You're all set.</p>
               <button onClick={() => setShowPassword(false)} className="mt-3 px-5 py-2.5 btn-primary text-white text-sm font-semibold rounded-xl">Done</button>
             </div>
+
+          ) : passwordView === 'forgot' ? (
+            <>
+              <button onClick={() => setPasswordView('change')} className="text-xs text-stone-400 hover:text-neutral-700 mb-3 flex items-center gap-1">← Back</button>
+              <p className="font-semibold text-neutral-900 mb-1">Reset your password</p>
+              <p className="text-sm text-stone-400 mb-3">Enter your email and we'll send you a reset link.</p>
+              {resetSent ? (
+                <p className="text-sm text-emerald-600 py-2">Reset link sent — check your inbox.</p>
+              ) : (
+                <>
+                  <input type="email" value={resetEmail} onChange={e => setResetEmail(e.target.value)}
+                    placeholder="Your email address"
+                    className="w-full border border-stone-200 rounded-xl px-3 py-2.5 text-sm text-neutral-800 placeholder:text-stone-300 focus:outline-none focus:border-neutral-400" />
+                  {passwordError && <p className="text-xs text-red-500 mt-2">{passwordError}</p>}
+                  <button
+                    disabled={!resetEmail.trim()}
+                    onClick={async () => {
+                      const { error: resetErr } = await supabase.auth.resetPasswordForEmail(resetEmail.trim(), {
+                        redirectTo: `${window.location.origin}/auth/callback`,
+                      });
+                      if (resetErr) { setPasswordError(resetErr.message); return; }
+                      setResetSent(true);
+                    }}
+                    className="mt-3 w-full py-3 btn-primary text-white font-semibold text-sm rounded-xl disabled:opacity-40"
+                  >
+                    Send reset link
+                  </button>
+                </>
+              )}
+            </>
+
           ) : (
             <>
               <p className="font-semibold text-neutral-900 mb-3">Change password</p>
@@ -106,72 +137,19 @@ export default function SettingsPage() {
                   { value: currentPass, set: setCurrentPass, show: showCurrentPass, toggle: () => setShowCurrentPass(v => !v), placeholder: 'Current password' },
                   { value: newPassword, set: setNewPassword, show: showNewPass,     toggle: () => setShowNewPass(v => !v),     placeholder: 'New password' },
                   { value: confirmPass, set: setConfirmPass, show: showConfirmPass, toggle: () => setShowConfirmPass(v => !v), placeholder: 'Confirm new password' },
-                ] as const).map(({ value, set, show, toggle, placeholder }, i) => (
-                  <div key={placeholder}>
-                    <div className="relative">
-                      <input
-                        type={show ? 'text' : 'password'}
-                        value={value}
-                        onChange={e => { set(e.target.value); setPasswordError(''); }}
-                        placeholder={placeholder}
-                        className="w-full border border-stone-200 rounded-xl px-3 pr-10 py-2.5 text-sm text-neutral-800 placeholder:text-stone-300 focus:outline-none focus:border-neutral-400"
-                      />
-                      <button type="button" onClick={toggle}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-neutral-600 transition-colors">
-                        {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                    {i === 0 && (
-                      <div className="mt-1">
-                        {resetSent ? (
-                          <p className="text-xs text-emerald-600 text-right">Reset link sent — check your email</p>
-                        ) : showResetInput ? (
-                          <div className="flex gap-2 mt-1">
-                            <input
-                              type="email"
-                              value={resetEmail}
-                              onChange={e => setResetEmail(e.target.value)}
-                              placeholder="Your email"
-                              className="flex-1 border border-stone-200 rounded-xl px-3 py-2 text-sm text-neutral-800 placeholder:text-stone-300 focus:outline-none focus:border-neutral-400"
-                            />
-                            <button type="button"
-                              disabled={!resetEmail.trim()}
-                              onClick={async () => {
-                                const { error: resetErr } = await supabase.auth.resetPasswordForEmail(resetEmail.trim(), {
-                                  redirectTo: `${window.location.origin}/auth/callback`,
-                                });
-                                if (resetErr) { setPasswordError(resetErr.message); return; }
-                                setResetSent(true);
-                              }}
-                              className="px-3 py-2 btn-primary text-white text-xs font-semibold rounded-xl disabled:opacity-40"
-                            >
-                              Send
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="flex justify-end">
-                            <button type="button"
-                              onClick={async () => {
-                                let addr = email;
-                                if (!addr) {
-                                  const { data } = await supabase.auth.getSession();
-                                  addr = data.session?.user?.email ?? '';
-                                }
-                                if (!addr) { setShowResetInput(true); return; }
-                                const { error: resetErr } = await supabase.auth.resetPasswordForEmail(addr, {
-                                  redirectTo: `${window.location.origin}/auth/callback`,
-                                });
-                                if (resetErr) { setPasswordError(resetErr.message); return; }
-                                setResetSent(true);
-                              }}
-                              className="text-xs text-[#2B8FFF] hover:underline"
-                            >
-                              Forgot password?
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                ] as const).map(({ value, set, show, toggle, placeholder }) => (
+                  <div key={placeholder} className="relative">
+                    <input
+                      type={show ? 'text' : 'password'}
+                      value={value}
+                      onChange={e => { set(e.target.value); setPasswordError(''); }}
+                      placeholder={placeholder}
+                      className="w-full border border-stone-200 rounded-xl px-3 pr-10 py-2.5 text-sm text-neutral-800 placeholder:text-stone-300 focus:outline-none focus:border-neutral-400"
+                    />
+                    <button type="button" onClick={toggle}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-neutral-600 transition-colors">
+                      {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
                   </div>
                 ))}
               </div>
@@ -182,7 +160,6 @@ export default function SettingsPage() {
                   if (newPassword.length < 6) { setPasswordError('Password must be at least 6 characters.'); return; }
                   if (newPassword !== confirmPass) { setPasswordError("Passwords don't match."); return; }
                   setSavingPassword(true);
-                  // Verify current password by re-signing in
                   const { error: signInError } = await supabase.auth.signInWithPassword({ email, password: currentPass });
                   if (signInError) { setSavingPassword(false); setPasswordError('Current password is incorrect.'); return; }
                   const { error } = await supabase.auth.updateUser({ password: newPassword });
@@ -194,6 +171,12 @@ export default function SettingsPage() {
               >
                 {savingPassword ? 'Updating…' : 'Update password'}
               </button>
+              <div className="flex justify-center mt-3">
+                <button type="button" onClick={() => { setPasswordView('forgot'); setResetEmail(email); setPasswordError(''); }}
+                  className="text-xs text-stone-400 hover:text-neutral-700 hover:underline">
+                  Forgot password?
+                </button>
+              </div>
             </>
           )}
         </div>
