@@ -352,30 +352,35 @@ function SchedulingCard({
         </div>
       )}
 
-      {/* Action block — single unified area, style reflects state */}
-      <div className="px-7 mt-6 pb-7">
-        {iNeedToSet && (
-          <button onClick={onBookExchange} className="px-5 py-3 btn-primary text-white text-sm font-semibold rounded-xl">
-            Pick a time to meet →
-          </button>
-        )}
+      {/* Action block */}
+      <div className="px-7 mt-6 pb-7 space-y-2">
+        {/* Button — always blue, disabled when no action needed */}
+        <button
+          onClick={iNeedToSet || s === 'no_overlap' ? onBookExchange : undefined}
+          disabled={waitingOnPartner || s === 'computing'}
+          className="px-5 py-3 btn-primary text-white text-sm font-semibold rounded-xl disabled:opacity-50 disabled:cursor-default"
+        >
+          {s === 'no_overlap'    ? 'Update your times →'  :
+           waitingOnPartner      ? 'Scheduling…'          :
+           s === 'computing'     ? 'Scheduling…'          :
+                                   'Pick a time to meet →'}
+        </button>
+
+        {/* Inline notification — small status text below button */}
         {waitingOnPartner && (
-          <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-stone-100 text-stone-500 text-sm font-semibold">
-            <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse shrink-0" />
-            Waiting on {partner.name}…
-          </div>
+          <p className="text-xs text-stone-400">
+            Waiting on {partner.name} to pick their times.
+          </p>
         )}
         {s === 'computing' && (
-          <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-stone-100 text-stone-500 text-sm font-semibold">
-            <span className="w-2 h-2 rounded-full bg-violet-400 animate-pulse shrink-0" />
-            Finding a time…
-          </div>
+          <p className="text-xs text-stone-400">
+            Finding a time that works for both of you…
+          </p>
         )}
         {s === 'no_overlap' && (
-          <button onClick={onBookExchange} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-sm font-semibold hover:bg-amber-100 transition-colors">
-            <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
-            No overlap — update your times →
-          </button>
+          <p className="text-xs text-stone-400">
+            No overlap found. Update your times and we'll try again.
+          </p>
         )}
       </div>
 
