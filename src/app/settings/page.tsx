@@ -26,6 +26,7 @@ export default function SettingsPage() {
   };
 
   const [showPassword,   setShowPassword]   = useState(false);
+  const [currentPass,    setCurrentPass]    = useState('');
   const [newPassword,    setNewPassword]    = useState('');
   const [confirmPass,    setConfirmPass]    = useState('');
   const [passwordError,  setPasswordError]  = useState('');
@@ -33,7 +34,7 @@ export default function SettingsPage() {
   const [savingPassword, setSavingPassword] = useState(false);
 
   const openPassword = () => {
-    setNewPassword(''); setConfirmPass(''); setPasswordError(''); setPasswordSaved(false);
+    setCurrentPass(''); setNewPassword(''); setConfirmPass(''); setPasswordError(''); setPasswordSaved(false);
     setShowPassword(true);
   };
 
@@ -57,10 +58,7 @@ export default function SettingsPage() {
               className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-stone-50 transition-colors"
             >
               <span className="text-sm font-medium text-neutral-700">Password</span>
-              <span className="flex items-center gap-2 text-stone-400 text-sm">
-                <span className="tracking-widest">••••••••</span>
-                <span>→</span>
-              </span>
+              <span className="text-stone-300 text-sm tracking-widest">••••••••</span>
             </button>
           </div>
 
@@ -98,6 +96,8 @@ export default function SettingsPage() {
             <>
               <p className="font-semibold text-neutral-900 mb-3">Change password</p>
               <div className="space-y-2">
+                <input type="password" value={currentPass} onChange={e => { setCurrentPass(e.target.value); setPasswordError(''); }} placeholder="Current password"
+                  className="w-full border border-stone-200 rounded-xl px-3 py-2.5 text-sm text-neutral-800 placeholder:text-stone-300 focus:outline-none focus:border-neutral-400" />
                 <input type="password" value={newPassword} onChange={e => { setNewPassword(e.target.value); setPasswordError(''); }} placeholder="New password"
                   className="w-full border border-stone-200 rounded-xl px-3 py-2.5 text-sm text-neutral-800 placeholder:text-stone-300 focus:outline-none focus:border-neutral-400" />
                 <input type="password" value={confirmPass} onChange={e => { setConfirmPass(e.target.value); setPasswordError(''); }} placeholder="Confirm new password"
@@ -105,11 +105,14 @@ export default function SettingsPage() {
               </div>
               {passwordError && <p className="text-xs text-red-500 mt-2">{passwordError}</p>}
               <button
-                disabled={!newPassword || !confirmPass || savingPassword}
+                disabled={!currentPass || !newPassword || !confirmPass || savingPassword}
                 onClick={async () => {
                   if (newPassword.length < 6) { setPasswordError('Password must be at least 6 characters.'); return; }
                   if (newPassword !== confirmPass) { setPasswordError("Passwords don't match."); return; }
                   setSavingPassword(true);
+                  // Verify current password by re-signing in
+                  const { error: signInError } = await supabase.auth.signInWithPassword({ email, password: currentPass });
+                  if (signInError) { setSavingPassword(false); setPasswordError('Current password is incorrect.'); return; }
                   const { error } = await supabase.auth.updateUser({ password: newPassword });
                   setSavingPassword(false);
                   if (error) { setPasswordError(error.message); return; }
