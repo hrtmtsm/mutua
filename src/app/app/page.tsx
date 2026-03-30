@@ -360,10 +360,11 @@ function SchedulingCard({
           disabled={waitingOnPartner || s === 'computing'}
           className="px-5 py-3 btn-primary text-white text-sm font-semibold rounded-xl disabled:opacity-50 disabled:cursor-default"
         >
-          {s === 'no_overlap'    ? 'Update your times →'  :
-           waitingOnPartner      ? 'Scheduling…'          :
-           s === 'computing'     ? 'Scheduling…'          :
-                                   'Pick a time to meet →'}
+          {s === 'no_overlap'                          ? 'Update your times →'  :
+           waitingOnPartner                            ? 'Scheduling…'          :
+           s === 'computing'                           ? 'Scheduling…'          :
+           s === 'pending_both'                        ? 'Pick a time to meet →':
+                                                        'Update your times →'}
         </button>
 
         {/* Inline notification — small status text below button */}
