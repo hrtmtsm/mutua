@@ -94,8 +94,7 @@ function SetAvailabilityInner() {
     const { data: { session } } = await supabase.auth.getSession();
     // Signal session page to immediately show 'Finding a match' on load
     localStorage.setItem('mutua_just_saved_availability', 'true');
-    // Fire-and-forget — server handles matching in the background
-    fetch('/api/set-availability', {
+    await fetch('/api/set-availability', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
