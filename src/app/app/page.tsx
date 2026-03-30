@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase, getMatchBySessionId, type Match, type SchedulingState } from '@/lib/supabase';
+import { supabase, getMatchesBySessionId, type Match, type SchedulingState } from '@/lib/supabase';
 import { LANG_FLAGS, LANG_AVATAR_COLOR, INTEREST_CATEGORIES, INTEREST_MIGRATION } from '@/lib/constants';
 import type { SavedPartner } from '@/lib/types';
 import { track } from '@/lib/analytics';
@@ -392,114 +392,112 @@ function SchedulingCard({
 
 export default function SessionPage() {
   const router = useRouter();
-  const [partner,      setPartner]      = useState<PartnerCard | null>(null);
+  const [partners,     setPartners]     = useState<PartnerCard[]>([]);
   const [loading,      setLoading]      = useState(true);
-  const [matchId,      setMatchId]      = useState<string | null>(null);
   const [sessionId,    setSessionId]    = useState<string | null>(null);
   const [myName,       setMyName]       = useState<string | undefined>();
   const [myAvatarUrl,  setMyAvatarUrl]  = useState<string | null>(null);
 
+  const buildCard = useCallback(async (m: Match, sid: string): Promise<PartnerCard> => {
+    const isA = m.session_id_a === sid;
+    const partnerSessionId = isA ? m.session_id_b : m.session_id_a;
+
+    const { data: partnerProfile } = await supabase
+      .from('profiles').select('name, avatar_url, interests, bio').eq('session_id', partnerSessionId).maybeSingle();
+
+    const allTags = INTEREST_CATEGORIES.flatMap(c => c.tags);
+    const normalizeTags = (s?: string | null): string[] => {
+      if (!s) return [];
+      return [...new Set(
+        s.split(',').map(t => t.trim()).filter(Boolean).map(t => {
+          const exact = allTags.find(tag => tag.toLowerCase() === t.toLowerCase());
+          if (exact) return exact;
+          const migrationKey = Object.keys(INTEREST_MIGRATION).find(k => k.toLowerCase() === t.toLowerCase());
+          return migrationKey ? INTEREST_MIGRATION[migrationKey] : null;
+        }).filter(Boolean) as string[]
+      )];
+    };
+    const myStoredProfile = localStorage.getItem('mutua_profile');
+    const myRaw = myStoredProfile ? JSON.parse(myStoredProfile).interests : null;
+    const myInterests = normalizeTags(myRaw);
+    const partnerInterests = normalizeTags(partnerProfile?.interests);
+    const sharedInterests = myInterests.filter(t => partnerInterests.includes(t));
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const storageAvatarUrl = `${supabaseUrl}/storage/v1/object/public/avatars/${partnerSessionId}.jpg`;
+
+    const card = partnerFromMatch(m, sid);
+    if (partnerProfile?.name) card.name = partnerProfile.name;
+    card.avatarUrl = partnerProfile?.avatar_url ?? storageAvatarUrl;
+    card.sharedInterests = sharedInterests;
+    card.bio = partnerProfile?.bio ?? undefined;
+
+    // Auto-fire confirm notification once per user per match
+    if (card.schedulingState === 'scheduled' && !localStorage.getItem(`mutua_autoconfirmed_${m.id}`)) {
+      localStorage.setItem(`mutua_autoconfirmed_${m.id}`, '1');
+      const myNameStr = (() => { try { return JSON.parse(localStorage.getItem('mutua_profile') ?? '{}').name ?? ''; } catch { return ''; } })();
+      const partnerEmail = isA ? (m.email_b ?? '') : (m.email_a ?? '');
+      if (partnerEmail) {
+        fetch('/api/confirm-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            matchId: m.id,
+            partnerEmail,
+            partnerSessionId,
+            scheduledTime: card.scheduledAt ? new Date(card.scheduledAt).toLocaleString() : '',
+            confirmerName: myNameStr,
+          }),
+        }).catch(() => {});
+      }
+    }
+    if (card.schedulingState === 'scheduled' && card.scheduledAt) {
+      localStorage.setItem('mutua_last_notification', JSON.stringify({
+        type: 'session_scheduled',
+        partnerName: card.name,
+        scheduledAt: card.scheduledAt,
+      }));
+    }
+
+    return card;
+  }, []);
+
   const loadMatch = useCallback(async (sid: string) => {
     try {
-      const m = await getMatchBySessionId(sid);
-      if (!m) return false;
-
-      const isA = m.session_id_a === sid;
-      const partnerSessionId = isA ? m.session_id_b : m.session_id_a;
-
-      const { data: partnerProfile } = await supabase
-        .from('profiles').select('name, avatar_url, interests, bio').eq('session_id', partnerSessionId).maybeSingle();
-
-      const allTags = INTEREST_CATEGORIES.flatMap(c => c.tags);
-      const normalizeTags = (s?: string | null): string[] => {
-        if (!s) return [];
-        return [...new Set(
-          s.split(',').map(t => t.trim()).filter(Boolean).map(t => {
-            const exact = allTags.find(tag => tag.toLowerCase() === t.toLowerCase());
-            if (exact) return exact;
-            const migrationKey = Object.keys(INTEREST_MIGRATION).find(k => k.toLowerCase() === t.toLowerCase());
-            return migrationKey ? INTEREST_MIGRATION[migrationKey] : null;
-          }).filter(Boolean) as string[]
-        )];
-      };
-      const myStoredProfile = localStorage.getItem('mutua_profile');
-      const myRaw = myStoredProfile ? JSON.parse(myStoredProfile).interests : null;
-      const myInterests = normalizeTags(myRaw);
-      const partnerInterests = normalizeTags(partnerProfile?.interests);
-      const sharedInterests = myInterests.filter(t => partnerInterests.includes(t));
-
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-      const storageAvatarUrl = `${supabaseUrl}/storage/v1/object/public/avatars/${partnerSessionId}.jpg`;
-
-      const card = partnerFromMatch(m, sid);
-      if (partnerProfile?.name) card.name = partnerProfile.name;
-      card.avatarUrl = partnerProfile?.avatar_url ?? storageAvatarUrl;
-      card.sharedInterests = sharedInterests;
-      card.bio = partnerProfile?.bio ?? undefined;
-
-      setPartner(card);
-      setMatchId(m.id);
-
-      // Auto-fire confirm notification once per user per match
-      if (card.schedulingState === 'scheduled' && !localStorage.getItem(`mutua_autoconfirmed_${m.id}`)) {
-        localStorage.setItem(`mutua_autoconfirmed_${m.id}`, '1');
-        const myName = (() => { try { return JSON.parse(localStorage.getItem('mutua_profile') ?? '{}').name ?? ''; } catch { return ''; } })();
-        const partnerEmail = isA ? (m.email_b ?? '') : (m.email_a ?? '');
-        if (partnerEmail) {
-          fetch('/api/confirm-session', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              matchId: m.id,
-              partnerEmail,
-              partnerSessionId: partnerSessionId,
-              scheduledTime: card.scheduledAt ? new Date(card.scheduledAt).toLocaleString() : '',
-              confirmerName: myName,
-            }),
-          }).catch(() => {});
-        }
-      }
-      if (card.schedulingState === 'scheduled' && card.scheduledAt) {
-        localStorage.setItem('mutua_last_notification', JSON.stringify({
-          type: 'session_scheduled',
-          partnerName: card.name,
-          scheduledAt: card.scheduledAt,
-        }));
-      }
+      const matches = await getMatchesBySessionId(sid);
+      if (matches.length === 0) return false;
+      const cards = await Promise.all(matches.map(m => buildCard(m, sid)));
+      setPartners(cards);
       return true;
     } catch (err) {
       console.error('loadMatch error:', err);
       return false;
     }
-  }, []);
+  }, [buildCard]);
 
   // Fallback: build a card from localStorage if DB has no match yet
   const loadFromLocalStorage = useCallback(() => {
-    const multi  = localStorage.getItem('mutua_partners');
     const single = localStorage.getItem('mutua_match');
-
-    const raw = multi
-      ? (JSON.parse(multi) as Array<{ partner: any; reasons?: string[] }>)[0]
-      : single ? { partner: JSON.parse(single).partner, reasons: JSON.parse(single).reasons } : null;
-
-    if (!raw?.partner) return false;
-    const p = raw.partner;
-    setPartner({
+    if (!single) return false;
+    const raw = JSON.parse(single);
+    const p   = raw.partner;
+    if (!p) return false;
+    setPartners([{
       matchId:         '',
-      id:              p.session_id        ?? 'demo',
-      name:            p.name              ?? 'Your partner',
+      id:              p.session_id         ?? 'demo',
+      name:            p.name               ?? 'Your partner',
       nativeLang:      p.native_language,
       learningLang:    p.learning_language,
-      goal:            p.goal              ?? '',
-      commStyle:       p.comm_style        ?? '',
+      goal:            p.goal               ?? '',
+      commStyle:       p.comm_style         ?? '',
       frequency:       p.practice_frequency ?? '',
-      reasons:         raw.reasons         ?? [],
+      reasons:         raw.reasons          ?? [],
       schedulingState: 'pending_both',
       scheduledAt:     null,
       iAmA:            true,
       avatarUrl:       null,
       sharedInterests: [],
-    });
+    }]);
     return true;
   }, []);
 
@@ -539,11 +537,10 @@ export default function SessionPage() {
       const found = await loadMatch(sid);
       if (!found) loadFromLocalStorage();
 
-      // If user just saved availability, optimistically show computing state
-      // so they don't see stale data while the server catches up
+      // If user just saved availability, optimistically flip all computing cards
       if (localStorage.getItem('mutua_just_saved_availability')) {
         localStorage.removeItem('mutua_just_saved_availability');
-        setPartner(p => p ? { ...p, schedulingState: 'computing', scheduledAt: null } : p);
+        setPartners(prev => prev.map(p => ({ ...p, schedulingState: 'computing', scheduledAt: null })));
       }
 
       setLoading(false);
@@ -561,64 +558,50 @@ export default function SessionPage() {
     return () => document.removeEventListener('visibilitychange', onVisible);
   }, [sessionId, loadMatch]);
 
-  // Poll when state is 'computing' — re-fetch every 4s until it resolves
+  // Poll when any card is 'computing' — re-fetch every 4s until resolved
+  const anyComputing = partners.some(p => p.schedulingState === 'computing');
   useEffect(() => {
-    if (!partner || !sessionId) return;
-    if (partner.schedulingState !== 'computing') return;
-
+    if (!anyComputing || !sessionId) return;
     const interval = setInterval(async () => {
-      const prevState = partner.schedulingState;
       await loadMatch(sessionId);
-      // If resolved to scheduled, set unread badge on the bell
-      setPartner(p => {
-        if (p && prevState === 'computing' && p.schedulingState === 'scheduled') {
-          localStorage.setItem('mutua_unread_notification', 'session_scheduled');
-        }
-        return p;
+      setPartners(prev => {
+        const justScheduled = prev.some(p => p.schedulingState === 'scheduled');
+        if (justScheduled) localStorage.setItem('mutua_unread_notification', 'session_scheduled');
+        return prev;
       });
     }, 4000);
-
     return () => clearInterval(interval);
-  }, [partner?.schedulingState, sessionId, loadMatch]);
+  }, [anyComputing, sessionId, loadMatch]);
 
-  const handleBookExchange = () => {
-    if (partner) localStorage.setItem('mutua_scheduling_partner', partner.name);
+  const handleBookExchange = (partner: PartnerCard) => {
+    localStorage.setItem('mutua_scheduling_partner', partner.name);
     const params = new URLSearchParams();
-    if (partner?.matchId)         params.set('matchId', partner.matchId);
-    if (partner?.schedulingState) params.set('schedulingState', partner.schedulingState);
+    if (partner.matchId)         params.set('matchId', partner.matchId);
+    if (partner.schedulingState) params.set('schedulingState', partner.schedulingState);
     router.push(`/set-availability?${params.toString()}`);
   };
 
-  const handleAvailabilitySaved = (mId: string) => {
-    // Optimistically move to computing, then poll
-    setPartner(p => p ? { ...p, schedulingState: 'computing' } : p);
-    if (sessionId) loadMatch(sessionId);
-  };
-
-
-  const handleReschedule = () => {
-    if (partner) localStorage.setItem('mutua_scheduling_partner', partner.name);
+  const handleReschedule = (partner: PartnerCard) => {
+    localStorage.setItem('mutua_scheduling_partner', partner.name);
     const params = new URLSearchParams();
-    if (partner?.matchId)         params.set('matchId', partner.matchId);
-    if (partner?.schedulingState) params.set('schedulingState', partner.schedulingState);
+    if (partner.matchId)         params.set('matchId', partner.matchId);
+    if (partner.schedulingState) params.set('schedulingState', partner.schedulingState);
     router.push(`/set-availability?${params.toString()}`);
   };
 
-  const handleJoin = () => {
-    if (partner) {
-      const savedPartner: SavedPartner = {
-        partner_id:          partner.id,
-        name:                partner.name,
-        native_language:     partner.nativeLang as SavedPartner['native_language'],
-        learning_language:   partner.learningLang as SavedPartner['learning_language'],
-        goal:                partner.goal as SavedPartner['goal'],
-        comm_style:          partner.commStyle as SavedPartner['comm_style'],
-        practice_frequency:  partner.frequency as SavedPartner['practice_frequency'],
-        saved_at:            new Date().toISOString(),
-        match_id:            partner.matchId,
-      };
-      localStorage.setItem('mutua_current_partner', JSON.stringify(savedPartner));
-    }
+  const handleJoin = (partner: PartnerCard) => {
+    const savedPartner: SavedPartner = {
+      partner_id:          partner.id,
+      name:                partner.name,
+      native_language:     partner.nativeLang as SavedPartner['native_language'],
+      learning_language:   partner.learningLang as SavedPartner['learning_language'],
+      goal:                partner.goal as SavedPartner['goal'],
+      comm_style:          partner.commStyle as SavedPartner['comm_style'],
+      practice_frequency:  partner.frequency as SavedPartner['practice_frequency'],
+      saved_at:            new Date().toISOString(),
+      match_id:            partner.matchId,
+    };
+    localStorage.setItem('mutua_current_partner', JSON.stringify(savedPartner));
     router.push('/pre-session');
   };
 
@@ -630,26 +613,31 @@ export default function SessionPage() {
 
         {/* Context header */}
         <div>
-          <h1 className="font-serif font-semibold text-2xl text-[#171717]">Your exchange</h1>
+          <h1 className="font-serif font-semibold text-2xl text-[#171717]">Your exchanges</h1>
           <p className="text-sm text-stone-400 mt-1">
-            {loading ? '' : partner
-              ? 'You have an active language partner.'
-              : 'No partner yet — we\'ll reach out when we find your match.'}
+            {loading ? '' : partners.length > 0
+              ? `You have ${partners.length} active language ${partners.length === 1 ? 'partner' : 'partners'}.`
+              : 'No partners yet — we\'ll reach out when we find your match.'}
           </p>
         </div>
 
         {loading ? (
           <p className="text-sm text-stone-400">Loading...</p>
-        ) : partner ? (
-          <SchedulingCard
-            partner={partner}
-            onReschedule={handleReschedule}
-            onJoin={handleJoin}
-            onBookExchange={handleBookExchange}
-            onViewProfile={() => router.push(`/partner/${partner.matchId}`)}
-            myName={myName}
-            myAvatarUrl={myAvatarUrl}
-          />
+        ) : partners.length > 0 ? (
+          <div className="space-y-6">
+            {partners.map(partner => (
+              <SchedulingCard
+                key={partner.matchId || partner.id}
+                partner={partner}
+                onReschedule={() => handleReschedule(partner)}
+                onJoin={() => handleJoin(partner)}
+                onBookExchange={() => handleBookExchange(partner)}
+                onViewProfile={() => router.push(`/partner/${partner.matchId}`)}
+                myName={myName}
+                myAvatarUrl={myAvatarUrl}
+              />
+            ))}
+          </div>
         ) : (
           <div className="bg-white/60 border border-stone-200 border-dashed rounded-2xl px-6 py-10 text-center">
             <p className="text-sm text-stone-400">No partners yet — we'll email you when we find a match.</p>

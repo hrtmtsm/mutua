@@ -203,3 +203,16 @@ export async function getMatchBySessionId(sessionId: string): Promise<Match | nu
   if (error) throw error;
   return data as Match | null;
 }
+
+export async function getMatchesBySessionId(sessionId: string): Promise<Match[]> {
+  if (!isConfigured) return [];
+  const { data, error } = await supabase
+    .from('matches')
+    .select('*')
+    .or(`session_id_a.eq.${sessionId},session_id_b.eq.${sessionId}`)
+    .neq('scheduling_state', 'archived')
+    .order('created_at', { ascending: false })
+    .limit(3);
+  if (error) throw error;
+  return (data ?? []) as Match[];
+}
