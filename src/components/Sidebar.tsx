@@ -1,9 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { User, ArrowLeftRight, TrendingUp, Bell, ArrowLeft, Send, LogOut, Settings, MessageSquarePlus, X } from 'lucide-react';
+import { User, ArrowLeftRight, TrendingUp, Bell, ArrowLeft, Send, Settings, MessageSquarePlus, X } from 'lucide-react';
 import { LANG_AVATAR_COLOR } from '@/lib/constants';
 import { supabase, getMessages, sendMessage, type Message } from '@/lib/supabase';
 import { track } from '@/lib/analytics';
@@ -246,7 +246,6 @@ function MessageChat({
 // ── Top nav ───────────────────────────────────────────────────────────────────
 
 export default function TopNav() {
-  const router = useRouter();
   const { pathname, initials, name, avatarBg, avatarUrl, hasUnread, setHasUnread } = useNavState();
   const [inboxOpen, setInboxOpen] = useState(false);
   const [inboxTab, setInboxTab]   = useState<'notifications' | 'messages'>('notifications');
@@ -273,14 +272,6 @@ export default function TopNav() {
   const [feedbackSent,    setFeedbackSent]    = useState(false);
   const [sendingFeedback, setSendingFeedback] = useState(false);
 
-  // Logout
-  const [loggingOut, setLoggingOut] = useState(false);
-  const handleLogout = async () => {
-    setLoggingOut(true);
-    await supabase.auth.signOut();
-    localStorage.clear();
-    router.push('/');
-  };
 
   // Allow external components to open the chat directly
   useEffect(() => {
@@ -628,17 +619,6 @@ export default function TopNav() {
                   </button>
                 </div>
 
-                {/* Sign out */}
-                <div className="border-t border-stone-100">
-                  <button
-                    onClick={handleLogout}
-                    disabled={loggingOut}
-                    className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-stone-50 transition-colors text-left disabled:opacity-50"
-                  >
-                    <LogOut className="w-4 h-4 text-red-400 shrink-0" />
-                    <span className="text-sm font-medium text-red-500">{loggingOut ? 'Signing out…' : 'Sign out'}</span>
-                  </button>
-                </div>
               </div>
             )}
           </div>

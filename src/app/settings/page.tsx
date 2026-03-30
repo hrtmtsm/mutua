@@ -1,11 +1,22 @@
 'use client';
 
 import { useState } from 'react';
-import { X } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { X, LogOut } from 'lucide-react';
 import AppShell from '@/components/AppShell';
 import { supabase } from '@/lib/supabase';
 
 export default function SettingsPage() {
+  const router = useRouter();
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    await supabase.auth.signOut();
+    localStorage.clear();
+    router.push('/');
+  };
+
   const [showPassword,   setShowPassword]   = useState(false);
   const [newPassword,    setNewPassword]    = useState('');
   const [confirmPass,    setConfirmPass]    = useState('');
@@ -25,13 +36,21 @@ export default function SettingsPage() {
 
         <h1 className="font-serif font-semibold text-2xl text-[#171717]">Settings</h1>
 
-        <div className="bg-white rounded-2xl shadow-sm">
+        <div className="bg-white rounded-2xl shadow-sm divide-y divide-stone-100">
           <button
             onClick={openPassword}
-            className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-stone-50 transition-colors rounded-2xl"
+            className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-stone-50 transition-colors rounded-t-2xl"
           >
             <span className="text-sm font-medium text-neutral-700">Change password</span>
             <span className="text-stone-300 text-sm">→</span>
+          </button>
+          <button
+            onClick={handleLogout}
+            disabled={loggingOut}
+            className="w-full px-6 py-4 flex items-center gap-3 text-left hover:bg-stone-50 transition-colors rounded-b-2xl disabled:opacity-50"
+          >
+            <LogOut className="w-4 h-4 text-red-400 shrink-0" />
+            <span className="text-sm font-medium text-red-500">{loggingOut ? 'Signing out…' : 'Sign out'}</span>
           </button>
         </div>
 
