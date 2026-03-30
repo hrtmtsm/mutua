@@ -681,16 +681,32 @@ export default function HistoryPage() {
   const visibleSessions = showAll ? sortedSessions : sortedSessions.slice(0, 5);
 
 
-  // Weekly rhythm supporting line
-  let rhythmLine = '';
-  if (thisWeekDone && weeksRunning > 1) {
-    rhythmLine = `${weeksRunning} weeks running`;
-  } else if (!thisWeekDone && thisWeekSessions > 0 && weekGoal > 1) {
-    rhythmLine = `${thisWeekSessions} of ${weekGoal} sessions this week`;
-  } else if (!thisWeekDone && weeksRunning >= 2) {
-    rhythmLine = `${weeksRunning}-week rhythm at risk`;
-  } else if (!thisWeekDone && weeksRunning === 1) {
-    rhythmLine = 'keep your rhythm going';
+  // Best partner for relationship-based copy (highest streak, then most recent)
+  const topPartner      = partnerStats[0] ?? null;
+  const topPartnerName  = topPartner ? (liveProfiles[topPartner.partnerId]?.name || topPartner.partnerName) : null;
+  const topStreak       = topPartner?.streak ?? 0;
+  const hasStreak       = topStreak >= 2;
+
+  // Weekly check-in copy
+  let weekHeadline: string;
+  let weekSubline: string | null = null;
+  let weekCta: string | null     = null;
+
+  if (thisWeekDone) {
+    weekHeadline = 'You practiced this week';
+    if (hasStreak && topPartnerName) {
+      weekSubline = `🔥 ${weeksRunning > 1 ? `${weeksRunning} weeks` : 'Going'} in a row with ${topPartnerName}`;
+    }
+  } else if (hasStreak && topPartnerName) {
+    weekHeadline = 'You haven\'t practiced yet this week';
+    weekSubline  = `Don't break your streak with ${topPartnerName} 🔥`;
+    weekCta      = `Schedule with ${topPartnerName} →`;
+  } else if (!hasAnySessions) {
+    weekHeadline = 'You haven\'t practiced yet this week';
+    weekCta      = 'Let\'s get your first session in →';
+  } else {
+    weekHeadline = 'You haven\'t practiced yet this week';
+    weekCta      = 'Schedule a session →';
   }
 
   return (
@@ -701,33 +717,33 @@ export default function HistoryPage() {
         <div>
           <h1 className="font-serif font-semibold text-2xl text-[#171717]">Progress</h1>
           <p className="text-sm text-stone-400 mt-1">
-            {thisWeekDone ? 'You\'re on track this week.' : 'Keep your practice going.'}
+            {thisWeekDone ? 'Your exchange is going well.' : 'Keep your exchange going.'}
           </p>
         </div>
 
         {/* ── 1. This week ─────────────────────────────────────── */}
         <div className="space-y-2">
           <p className="text-sm font-medium text-stone-500">This week</p>
-        <div className="bg-white border border-stone-200 rounded-2xl px-7 py-6">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="font-serif font-semibold text-[#171717] text-xl leading-tight">
-                {thisWeekDone ? '✓ Done' : 'Not yet'}
-              </p>
-              {rhythmLine && (
-                <p className="text-sm text-stone-400 mt-1">{rhythmLine}</p>
-              )}
-            </div>
-            {!thisWeekDone && (
+          <div className="bg-white border border-stone-200 rounded-2xl px-7 py-6">
+            <p className="font-semibold text-[#171717] text-base leading-snug">
+              {weekHeadline}
+            </p>
+            {weekSubline && (
+              <p className="text-sm text-stone-500 mt-1">{weekSubline}</p>
+            )}
+            {weekCta && (
               <button
-                onClick={() => partners.length > 0 ? setScheduleModal(partners[0].partnerName) : router.push('/app')}
-                className="px-5 py-2.5 btn-primary text-white text-sm rounded-xl shrink-0"
+                onClick={() => {
+                  if (hasStreak && topPartner) setScheduleModal(topPartner.partnerName);
+                  else if (partners.length > 0) setScheduleModal(partners[0].partnerName);
+                  else router.push('/app');
+                }}
+                className="mt-4 px-5 py-2.5 btn-primary text-white text-sm font-semibold rounded-xl"
               >
-                Schedule a session →
+                {weekCta}
               </button>
             )}
           </div>
-        </div>
         </div>
 
         {/* ── 2. Practice rhythm ───────────────────────────────── */}
