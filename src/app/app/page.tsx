@@ -303,32 +303,8 @@ function SchedulingCard({
   return (
     <div className="overflow-hidden bg-white rounded-2xl border border-stone-200">
 
-      {/* Status pill — flows above identity block */}
-      {(waitingOnPartner || s === 'computing' || s === 'no_overlap') && (
-        <div className="px-5 pt-4 pb-0">
-          {waitingOnPartner && (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-sky-50 text-sky-600 border border-sky-100">
-              <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" />
-              Waiting on {partner.name}
-            </span>
-          )}
-          {s === 'computing' && (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-violet-50 text-violet-600 border border-violet-100">
-              <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
-              Finding a time…
-            </span>
-          )}
-          {s === 'no_overlap' && (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-600 border border-amber-100">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-              No overlap found — update your times
-            </span>
-          )}
-        </div>
-      )}
-
       {/* Identity block */}
-      <div className="px-7 pt-4 pb-0 flex items-start gap-4">
+      <div className="px-7 pt-6 pb-0 flex items-start gap-4">
         <button onClick={onViewProfile} className="shrink-0">
           <Avatar name={partner.name} lang={partner.nativeLang} avatarUrl={partner.avatarUrl} size="lg" />
         </button>
@@ -376,37 +352,32 @@ function SchedulingCard({
         </div>
       )}
 
-      {/* Action block — large gap before CTA creates landing zone */}
-      {iNeedToSet && (
-        <div className="px-7 mt-6 pb-7">
-          <button onClick={onBookExchange} className="px-5 py-3 btn-primary text-white text-sm rounded-xl">
+      {/* Action block — single unified area, style reflects state */}
+      <div className="px-7 mt-6 pb-7">
+        {iNeedToSet && (
+          <button onClick={onBookExchange} className="px-5 py-3 btn-primary text-white text-sm font-semibold rounded-xl">
             Pick a time to meet →
           </button>
-        </div>
-      )}
-
-      {waitingOnPartner && (
-        <div className="px-7 mt-6 pb-7">
-          <p className="text-sm text-stone-400">
-            You're set — waiting on <span className="font-medium text-neutral-600">{partner.name}</span> to share their availability.
-          </p>
-        </div>
-      )}
-
-      {s === 'computing' && (
-        <div className="px-7 mt-6 pb-7">
-          <p className="text-sm text-stone-400">Finding a time that works for both of you…</p>
-        </div>
-      )}
-
-      {s === 'no_overlap' && (
-        <div className="px-7 mt-6 pb-7 space-y-3">
-          <p className="text-sm text-stone-400">No overlapping slots yet. Update your free times and we'll keep trying.</p>
-          <button onClick={onBookExchange} className="px-5 py-3 btn-primary text-white text-sm rounded-xl">
-            Update my availability →
+        )}
+        {waitingOnPartner && (
+          <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-stone-100 text-stone-500 text-sm font-semibold">
+            <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse shrink-0" />
+            Waiting on {partner.name}…
+          </div>
+        )}
+        {s === 'computing' && (
+          <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-stone-100 text-stone-500 text-sm font-semibold">
+            <span className="w-2 h-2 rounded-full bg-violet-400 animate-pulse shrink-0" />
+            Finding a time…
+          </div>
+        )}
+        {s === 'no_overlap' && (
+          <button onClick={onBookExchange} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-sm font-semibold hover:bg-amber-100 transition-colors">
+            <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
+            No overlap — update your times →
           </button>
-        </div>
-      )}
+        )}
+      </div>
 
     </div>
   );
