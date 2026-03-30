@@ -44,22 +44,23 @@ export default function SettingsPage() {
 
         <h1 className="font-serif font-semibold text-2xl text-[#171717]">Settings</h1>
 
-        <div className="space-y-2">
-          <p className="text-xs font-semibold text-stone-400 px-1 uppercase tracking-wide">Account</p>
-
+        <div className="space-y-3">
           <div className="bg-white rounded-2xl shadow-sm divide-y divide-stone-100">
             {/* Email — display only */}
-            <div className="px-6 py-4">
-              <p className="text-xs font-semibold text-stone-400 mb-0.5">Email</p>
-              <p className="text-sm text-neutral-800">{email || '—'}</p>
+            <div className="px-6 py-4 flex items-center justify-between">
+              <span className="text-sm font-medium text-neutral-700">Email</span>
+              <span className="text-sm text-stone-400 truncate max-w-[55%] text-right">{email || '—'}</span>
             </div>
 
             <button
               onClick={openPassword}
-              className="w-full px-6 py-4 text-left hover:bg-stone-50 transition-colors"
+              className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-stone-50 transition-colors"
             >
-              <p className="text-xs font-semibold text-stone-400 mb-0.5">Password</p>
-              <p className="text-sm text-neutral-800">Change your password</p>
+              <span className="text-sm font-medium text-neutral-700">Password</span>
+              <span className="flex items-center gap-2 text-stone-400 text-sm">
+                <span className="tracking-widest">••••••••</span>
+                <span>→</span>
+              </span>
             </button>
           </div>
 
