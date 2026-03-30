@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { X, LogOut } from 'lucide-react';
 import AppShell from '@/components/AppShell';
@@ -8,7 +8,14 @@ import { supabase } from '@/lib/supabase';
 
 export default function SettingsPage() {
   const router = useRouter();
+  const [email, setEmail] = useState('');
   const [loggingOut, setLoggingOut] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user?.email) setEmail(data.user.email);
+    });
+  }, []);
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -36,22 +43,33 @@ export default function SettingsPage() {
 
         <h1 className="font-serif font-semibold text-2xl text-[#171717]">Settings</h1>
 
-        <div className="bg-white rounded-2xl shadow-sm divide-y divide-stone-100">
-          <button
-            onClick={openPassword}
-            className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-stone-50 transition-colors rounded-t-2xl"
-          >
-            <span className="text-sm font-medium text-neutral-700">Change password</span>
-            <span className="text-stone-300 text-sm">→</span>
-          </button>
-          <button
-            onClick={handleLogout}
-            disabled={loggingOut}
-            className="w-full px-6 py-4 flex items-center gap-3 text-left hover:bg-stone-50 transition-colors rounded-b-2xl disabled:opacity-50"
-          >
-            <LogOut className="w-4 h-4 text-red-400 shrink-0" />
-            <span className="text-sm font-medium text-red-500">{loggingOut ? 'Signing out…' : 'Sign out'}</span>
-          </button>
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-stone-400 px-1 uppercase tracking-wide">Account</p>
+
+          <div className="bg-white rounded-2xl shadow-sm divide-y divide-stone-100">
+            {/* Email — display only */}
+            <div className="px-6 py-4 flex items-center justify-between">
+              <span className="text-sm font-medium text-neutral-700">Email</span>
+              <span className="text-sm text-stone-400 truncate max-w-[55%] text-right">{email || '—'}</span>
+            </div>
+
+            <button
+              onClick={openPassword}
+              className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-stone-50 transition-colors"
+            >
+              <span className="text-sm font-medium text-neutral-700">Change password</span>
+              <span className="text-stone-300 text-sm">→</span>
+            </button>
+
+            <button
+              onClick={handleLogout}
+              disabled={loggingOut}
+              className="w-full px-6 py-4 flex items-center gap-3 text-left hover:bg-stone-50 transition-colors rounded-b-2xl disabled:opacity-50"
+            >
+              <LogOut className="w-4 h-4 text-red-400 shrink-0" />
+              <span className="text-sm font-medium text-red-500">{loggingOut ? 'Signing out…' : 'Sign out'}</span>
+            </button>
+          </div>
         </div>
 
       </main>
