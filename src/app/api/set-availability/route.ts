@@ -150,10 +150,13 @@ export async function POST(request: Request) {
   // Run the scheduler inline for all matches where both sides have availability.
   // Calling it directly (instead of via HTTP) avoids inter-function timeouts on Vercel.
   const db2 = adminClient();
+  const schedulerResults: Record<string, string> = {};
+
   await Promise.allSettled(
     matchesToSchedule.map(async (matchId) => {
       try {
         const result = await runScheduler(matchId);
+        schedulerResults[matchId] = result.state + (result.slot ? ` @ ${result.slot.start.toISOString()}` : '');
         if (result.state !== 'scheduled') {
           await db2.from('matches').update({ scheduling_state: result.state }).eq('id', matchId);
         }
@@ -161,10 +164,12 @@ export async function POST(request: Request) {
         // Retry once on slot conflict, otherwise fall back to no_overlap
         try {
           const result = await runScheduler(matchId);
+          schedulerResults[matchId] = 'retry:' + result.state + (result.slot ? ` @ ${result.slot.start.toISOString()}` : '');
           if (result.state !== 'scheduled') {
             await db2.from('matches').update({ scheduling_state: result.state }).eq('id', matchId);
           }
-        } catch {
+        } catch (err2) {
+          schedulerResults[matchId] = 'error:' + String(err2);
           await db2.from('matches').update({ scheduling_state: 'no_overlap' }).eq('id', matchId);
           console.error('[set-availability] scheduler failed for', matchId, err);
         }
@@ -172,5 +177,5 @@ export async function POST(request: Request) {
     })
   );
 
-  return NextResponse.json({ ok: true, matchesTriggered: matches.length });
+  return NextResponse.json({ ok: true, matchesTriggered: matches.length, schedulerResults });
 }
