@@ -754,23 +754,7 @@ export default function HistoryPage() {
           </div>
         )}
 
-        {/* ── 3. Partners ──────────────────────────────────────── */}
-        {partnerStats.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-stone-500">Partners</p>
-            <div className="space-y-2">
-              {partnerStats.map(s => (
-                <PartnerRelationshipCard
-                  key={s.partnerId}
-                  stats={s}
-                  live={liveProfiles[s.partnerId]}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ── 4. Your exchanges ────────────────────────────────── */}
+        {/* ── 3. Your exchanges ────────────────────────────────── */}
         {sortedSessions.length > 0 && (
           <div className="space-y-2">
             <p className="text-sm font-medium text-stone-500">Your exchanges</p>
