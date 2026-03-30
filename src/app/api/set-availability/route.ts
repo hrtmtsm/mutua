@@ -101,6 +101,7 @@ export async function POST(request: Request) {
   // Update availability timestamps; only move to computing when BOTH sides have saved
   const isA = (m: any) => m.session_id_a === profile.session_id;
   const matchesToSchedule: string[] = [];
+  const matchDebug: Record<string, unknown> = {};
 
   for (const m of matches) {
     const iAmA = isA(m);
@@ -117,6 +118,7 @@ export async function POST(request: Request) {
       const pendingState = iAmA ? 'pending_b' : 'pending_a';
       Object.assign(updatePayload, { [clearKey]: null, scheduling_state: pendingState });
       await db.from('matches').update(updatePayload).eq('id', m.id);
+      matchDebug[m.id] = { branch: 'no_overlap_reset', iAmA, pendingState };
       continue;
     }
 
@@ -130,6 +132,15 @@ export async function POST(request: Request) {
     const otherSideReady = iAmA
       ? !!current?.availability_b_set_at
       : !!current?.availability_a_set_at;
+
+    matchDebug[m.id] = {
+      branch: otherSideReady ? 'computing' : 'pending',
+      state: m.scheduling_state,
+      iAmA,
+      availability_a_set_at: current?.availability_a_set_at ?? null,
+      availability_b_set_at: current?.availability_b_set_at ?? null,
+      otherSideReady,
+    };
 
     if (otherSideReady) {
       // Both sides ready — clear any old confirmed session then re-run scheduler
@@ -177,5 +188,5 @@ export async function POST(request: Request) {
     })
   );
 
-  return NextResponse.json({ ok: true, matchesTriggered: matches.length, schedulerResults });
+  return NextResponse.json({ ok: true, matchesTriggered: matches.length, matchDebug, schedulerResults });
 }
