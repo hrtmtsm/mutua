@@ -612,7 +612,7 @@ export default function HistoryPage() {
   const [sessions,      setSessions]      = useState<SessionEntry[]>([]);
   const [targetLang,    setTargetLang]    = useState('');
   const [showAll,       setShowAll]       = useState(false);
-  const [scheduleModal, setScheduleModal] = useState<string | null>(null);
+  const [scheduleModal, setScheduleModal] = useState<{ name: string; partnerId: string } | null>(null);
   const [reviewModal,   setReviewModal]   = useState<string | null>(null);
   const [myLang,        setMyLang]        = useState('');
   // Live partner profiles keyed by partnerId
@@ -734,8 +734,8 @@ export default function HistoryPage() {
             {weekCta && (
               <button
                 onClick={() => {
-                  if (hasStreak && topPartner) setScheduleModal(topPartner.partnerName);
-                  else if (partners.length > 0) setScheduleModal(partners[0].partnerName);
+                  if (hasStreak && topPartner) setScheduleModal({ name: topPartner.partnerName, partnerId: topPartner.partnerId });
+                  else if (partners.length > 0) setScheduleModal({ name: partners[0].partnerName, partnerId: partners[0].partnerId });
                   else router.push('/app');
                 }}
                 className="mt-4 px-5 py-2.5 btn-primary text-white text-sm font-semibold rounded-xl"
@@ -794,7 +794,7 @@ export default function HistoryPage() {
                   missed={s.missed}
                   matchId={matchId}
                   onReview={() => { track('review_session_clicked', { partner_name: displayName }); setReviewModal(displayName); }}
-                  onSchedule={() => setScheduleModal(s.partnerName)}
+                  onSchedule={() => setScheduleModal({ name: s.partnerName, partnerId: s.partnerId })}
                 />
               );
             })}
@@ -834,24 +834,44 @@ export default function HistoryPage() {
       )}
 
       {/* Schedule modal */}
-      {scheduleModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 px-4 pb-6 sm:pb-0">
-          <div className="bg-white border border-stone-200 rounded-2xl px-5 py-5 w-full max-w-sm">
-            <p className="font-bold text-neutral-900 mb-1">Keep the momentum going</p>
-            <p className="text-sm text-stone-500 leading-relaxed">
-              We'll match you with {scheduleModal} again using your current schedule.
-            </p>
-            <div className="flex gap-2 mt-4">
-              <button onClick={() => setScheduleModal(null)} className="flex-1 py-3 btn-primary text-white font-bold rounded-xl text-sm">
-                Sounds good
+      {scheduleModal && (() => {
+        const live        = liveProfiles[scheduleModal.partnerId];
+        const name        = live?.name || scheduleModal.name;
+        const avatarUrl   = live?.avatarUrl ?? null;
+        const nativeLang  = live?.nativeLang ?? '';
+        return (
+          <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 px-4 pb-6 sm:pb-0">
+            <div className="bg-white border border-stone-200 rounded-2xl px-5 py-5 w-full max-w-sm relative">
+              {/* Close button */}
+              <button
+                onClick={() => setScheduleModal(null)}
+                className="absolute top-4 right-4 w-7 h-7 flex items-center justify-center rounded-full text-stone-400 hover:text-neutral-700 hover:bg-stone-100 transition-colors"
+                aria-label="Close"
+              >
+                <X className="w-4 h-4" />
               </button>
-              <button onClick={() => router.push('/set-availability')} className="flex-1 py-3 border border-stone-200 bg-white text-stone-500 font-medium rounded-xl text-sm hover:bg-stone-100 transition-colors">
-                Update schedule
-              </button>
+
+              {/* Partner avatar */}
+              <div className="mb-4">
+                <PartnerAvatar name={name} avatarUrl={avatarUrl} nativeLang={nativeLang} />
+              </div>
+
+              <p className="font-bold text-neutral-900 mb-1">Keep the momentum going</p>
+              <p className="text-sm text-stone-500 leading-relaxed">
+                We'll match you with {name} again using your current schedule.
+              </p>
+              <div className="flex gap-2 mt-4">
+                <button onClick={() => setScheduleModal(null)} className="flex-1 py-3 btn-primary text-white font-bold rounded-xl text-sm">
+                  Sounds good
+                </button>
+                <button onClick={() => router.push('/set-availability')} className="flex-1 py-3 border border-stone-200 bg-white text-stone-500 font-medium rounded-xl text-sm hover:bg-stone-100 transition-colors">
+                  Update schedule
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </AppShell>
   );
 }
