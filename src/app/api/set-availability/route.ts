@@ -9,6 +9,7 @@
 
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { runScheduler } from '@/lib/scheduler';
 
 function adminClient() {
   return createClient(
@@ -146,19 +147,29 @@ export async function POST(request: Request) {
     await db.from('matches').update(updatePayload).eq('id', m.id);
   }
 
-  // Trigger scheduler only for matches where both sides have availability
-  // Must be awaited — Vercel kills the process as soon as response is sent
-  const vercelUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null;
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? vercelUrl ?? 'http://localhost:3000';
-
+  // Run the scheduler inline for all matches where both sides have availability.
+  // Calling it directly (instead of via HTTP) avoids inter-function timeouts on Vercel.
+  const db2 = adminClient();
   await Promise.allSettled(
-    matchesToSchedule.map(matchId =>
-      fetch(`${baseUrl}/api/schedule-match`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ matchId }),
-      }).catch(err => console.error('[set-availability] scheduler trigger failed', err))
-    )
+    matchesToSchedule.map(async (matchId) => {
+      try {
+        const result = await runScheduler(matchId);
+        if (result.state !== 'scheduled') {
+          await db2.from('matches').update({ scheduling_state: result.state }).eq('id', matchId);
+        }
+      } catch (err: any) {
+        // Retry once on slot conflict, otherwise fall back to no_overlap
+        try {
+          const result = await runScheduler(matchId);
+          if (result.state !== 'scheduled') {
+            await db2.from('matches').update({ scheduling_state: result.state }).eq('id', matchId);
+          }
+        } catch {
+          await db2.from('matches').update({ scheduling_state: 'no_overlap' }).eq('id', matchId);
+          console.error('[set-availability] scheduler failed for', matchId, err);
+        }
+      }
+    })
   );
 
   return NextResponse.json({ ok: true, matchesTriggered: matches.length });
