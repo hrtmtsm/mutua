@@ -408,7 +408,7 @@ export default function ProfilePage() {
 
         {/* ════ PROFILE SECTION ════ */}
         <div className="space-y-5">
-          <h2 className="font-serif font-semibold text-2xl text-[#171717]">Profile</h2>
+          <p className="text-xs font-bold tracking-widest uppercase text-stone-400 px-1">Profile</p>
 
         {profile ? (
           <>
@@ -656,22 +656,20 @@ export default function ProfilePage() {
 
         {/* ════ ACCOUNT SECTION ════ */}
         <div className="space-y-5">
-          <h2 className="font-serif font-semibold text-2xl text-[#171717]">Account</h2>
+          <p className="text-xs font-bold tracking-widest uppercase text-stone-400 px-1">Account</p>
 
           <div className="bg-white rounded-2xl shadow-sm divide-y divide-stone-100">
             <button
               onClick={() => { setShowPassword(true); setNewPassword(''); setConfirmPass(''); setPasswordError(''); setPasswordSaved(false); }}
-              className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-stone-50 transition-colors rounded-t-2xl"
+              className="w-full px-6 py-4 flex items-center text-left hover:bg-stone-50 transition-colors rounded-t-2xl"
             >
-              <span className="text-sm font-medium text-neutral-700">Change password</span>
-              <span className="text-stone-300 text-sm">→</span>
+              <span className="text-sm font-semibold tracking-wide uppercase text-stone-500">Change password</span>
             </button>
             <button
               onClick={() => { setShowFeedback(true); setFeedbackSent(false); setFeedbackText(''); }}
-              className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-stone-50 transition-colors"
+              className="w-full px-6 py-4 flex items-center text-left hover:bg-stone-50 transition-colors"
             >
-              <span className="text-sm font-medium text-neutral-700">Send feedback</span>
-              <span className="text-stone-300 text-sm">→</span>
+              <span className="text-sm font-semibold tracking-wide uppercase text-stone-500">Send feedback</span>
             </button>
             <button
               onClick={handleLogout}
@@ -679,7 +677,7 @@ export default function ProfilePage() {
               className="w-full px-6 py-4 flex items-center gap-3 text-left hover:bg-stone-50 transition-colors rounded-b-2xl disabled:opacity-50"
             >
               <LogOut className="w-4 h-4 text-red-400" />
-              <span className="text-sm font-medium text-red-500">{loggingOut ? 'Signing out…' : 'Sign out'}</span>
+              <span className="text-sm font-semibold tracking-wide uppercase text-red-400">{loggingOut ? 'Signing out…' : 'Sign out'}</span>
             </button>
           </div>
         </div>
