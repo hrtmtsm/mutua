@@ -81,7 +81,7 @@ export default function LandingPage() {
               href="/onboarding"
               className="inline-block px-8 py-4 btn-primary text-white font-bold text-base rounded-xl shadow-lg"
             >
-              Join the waitlist
+              Get started
             </Link>
           </div>
         </section>
