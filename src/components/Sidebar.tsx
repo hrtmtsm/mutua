@@ -1,9 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { User, ArrowLeftRight, TrendingUp, Bell, ArrowLeft, Send } from 'lucide-react';
+import { User, ArrowLeftRight, TrendingUp, Bell, ArrowLeft, Send, X, LogOut, KeyRound, MessageSquarePlus } from 'lucide-react';
 import { LANG_AVATAR_COLOR } from '@/lib/constants';
 import { supabase, getMessages, sendMessage, type Message } from '@/lib/supabase';
 import { track } from '@/lib/analytics';
@@ -28,23 +28,27 @@ const DESKTOP_NAV = [...BOTTOM_NAV];
 function useNavState() {
   const pathname = usePathname();
   const [initials, setInitials]   = useState('');
+  const [name,     setName]       = useState('');
   const [avatarBg, setAvatarBg]   = useState('#171717');
   const [avatarUrl, setAvatarUrl] = useState('');
+  const [sessionId, setSessionId] = useState('');
   const [hasUnread, setHasUnreadState] = useState(false);
 
   const refreshProfile = () => {
     const raw = localStorage.getItem('mutua_profile');
     if (raw) {
       const profile = JSON.parse(raw);
-      const name: string = profile.name ?? '';
-      const parts = name.trim().split(' ');
+      const n: string = profile.name ?? '';
+      const parts = n.trim().split(' ');
       setInitials(parts.length >= 2
         ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-        : name.slice(0, 2).toUpperCase()
+        : n.slice(0, 2).toUpperCase()
       );
+      setName(n);
       const lang: string = profile.native_language ?? '';
       setAvatarBg(LANG_AVATAR_COLOR[lang] ?? '#171717');
       setAvatarUrl(profile.avatar_url ?? '');
+      setSessionId(profile.session_id ?? '');
     }
     setHasUnreadState(
       !!localStorage.getItem('mutua_unread_notification') ||
@@ -60,7 +64,7 @@ function useNavState() {
   }, []);
 
   const setHasUnread = (v: boolean) => setHasUnreadState(v);
-  return { pathname, initials, avatarBg, avatarUrl, hasUnread, setHasUnread };
+  return { pathname, initials, name, avatarBg, avatarUrl, sessionId, hasUnread, setHasUnread };
 }
 
 // ── Thread list ───────────────────────────────────────────────────────────────
@@ -242,11 +246,49 @@ function MessageChat({
 // ── Top nav ───────────────────────────────────────────────────────────────────
 
 export default function TopNav() {
-  const { pathname, initials, avatarBg, avatarUrl, hasUnread, setHasUnread } = useNavState();
+  const router = useRouter();
+  const { pathname, initials, name, avatarBg, avatarUrl, sessionId, hasUnread, setHasUnread } = useNavState();
   const [inboxOpen, setInboxOpen] = useState(false);
   const [inboxTab, setInboxTab]   = useState<'notifications' | 'messages'>('notifications');
   const [msgView, setMsgView]     = useState<'list' | 'chat'>('list');
   const inboxRef = useRef<HTMLDivElement>(null);
+
+  // Profile dropdown
+  const [profileOpen,   setProfileOpen]   = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+        setProfileOpen(false);
+      }
+    }
+    if (profileOpen) document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [profileOpen]);
+
+  // Password modal
+  const [showPassword,   setShowPassword]   = useState(false);
+  const [newPassword,    setNewPassword]    = useState('');
+  const [confirmPass,    setConfirmPass]    = useState('');
+  const [passwordError,  setPasswordError]  = useState('');
+  const [passwordSaved,  setPasswordSaved]  = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
+
+  // Feedback modal
+  const [showFeedback,    setShowFeedback]    = useState(false);
+  const [feedbackText,    setFeedbackText]    = useState('');
+  const [feedbackSent,    setFeedbackSent]    = useState(false);
+  const [sendingFeedback, setSendingFeedback] = useState(false);
+
+  // Logout
+  const [loggingOut, setLoggingOut] = useState(false);
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    await supabase.auth.signOut();
+    localStorage.clear();
+    router.push('/');
+  };
 
   // Allow external components to open the chat directly
   useEffect(() => {
@@ -395,6 +437,7 @@ export default function TopNav() {
   }, [inboxOpen]);
 
   return (
+    <>
     <header className="sticky top-0 z-20 bg-white border-b border-stone-200/60">
       <div className="max-w-5xl mx-auto px-4 md:px-6 flex items-center h-14">
 
@@ -544,21 +587,168 @@ export default function TopNav() {
             </div>
           )}
 
-          {/* Profile avatar */}
-          <Link href="/profile" className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center text-white text-xs font-bold hover:opacity-80 transition-opacity shrink-0"
-            style={avatarUrl ? undefined : { backgroundColor: avatarBg }}>
-            {avatarUrl
-              ? <img src={avatarUrl} alt="" className="w-full h-full object-cover"
-                  onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-                />
-              : (initials || <User className="w-4 h-4" />)
-            }
-          </Link>
+          {/* Profile avatar + dropdown */}
+          <div className="relative" ref={profileRef}>
+            <button
+              onClick={() => setProfileOpen(o => !o)}
+              className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center text-white text-xs font-bold hover:opacity-80 transition-opacity shrink-0"
+              style={avatarUrl ? undefined : { backgroundColor: avatarBg }}
+            >
+              {avatarUrl
+                ? <img src={avatarUrl} alt="" className="w-full h-full object-cover"
+                    onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                  />
+                : (initials || <User className="w-4 h-4" />)
+              }
+            </button>
+
+            {profileOpen && (
+              <div className="absolute top-11 right-0 w-64 bg-white border border-stone-200 rounded-2xl shadow-xl overflow-hidden z-30">
+                {/* Header */}
+                <Link href="/profile" onClick={() => setProfileOpen(false)}
+                  className="flex items-center gap-3 px-4 py-4 hover:bg-stone-50 transition-colors border-b border-stone-100">
+                  <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 flex items-center justify-center text-white text-sm font-bold"
+                    style={avatarUrl ? undefined : { backgroundColor: avatarBg }}>
+                    {avatarUrl
+                      ? <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+                      : (initials || <User className="w-4 h-4" />)
+                    }
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-neutral-900 truncate">{name || 'Your profile'}</p>
+                    <p className="text-xs text-stone-400">View profile</p>
+                  </div>
+                </Link>
+
+                {/* Account actions */}
+                <div className="divide-y divide-stone-100">
+                  <button
+                    onClick={() => { setProfileOpen(false); setShowPassword(true); setNewPassword(''); setConfirmPass(''); setPasswordError(''); setPasswordSaved(false); }}
+                    className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-stone-50 transition-colors text-left"
+                  >
+                    <KeyRound className="w-4 h-4 text-stone-400 shrink-0" />
+                    <span className="text-sm font-medium text-neutral-700">Change password</span>
+                  </button>
+                  <button
+                    onClick={() => { setProfileOpen(false); setShowFeedback(true); setFeedbackText(''); setFeedbackSent(false); }}
+                    className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-stone-50 transition-colors text-left"
+                  >
+                    <MessageSquarePlus className="w-4 h-4 text-stone-400 shrink-0" />
+                    <span className="text-sm font-medium text-neutral-700">Send feedback</span>
+                  </button>
+                </div>
+
+                {/* Sign out */}
+                <div className="border-t border-stone-100">
+                  <button
+                    onClick={handleLogout}
+                    disabled={loggingOut}
+                    className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-stone-50 transition-colors text-left disabled:opacity-50"
+                  >
+                    <LogOut className="w-4 h-4 text-red-400 shrink-0" />
+                    <span className="text-sm font-medium text-red-500">{loggingOut ? 'Signing out…' : 'Sign out'}</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
 
         </div>
 
       </div>
     </header>
+
+    {/* Change password modal */}
+    {showPassword && (
+      <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 px-4 pb-6 sm:pb-0">
+        <div className="bg-white rounded-2xl px-5 py-5 w-full max-w-sm relative">
+          <button onClick={() => setShowPassword(false)}
+            className="absolute top-4 right-4 w-7 h-7 flex items-center justify-center rounded-full text-stone-400 hover:text-neutral-700 hover:bg-stone-100 transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+          {passwordSaved ? (
+            <div className="py-4 text-center space-y-2">
+              <p className="font-semibold text-neutral-900">Password updated</p>
+              <p className="text-sm text-stone-400">You're all set.</p>
+              <button onClick={() => setShowPassword(false)} className="mt-3 px-5 py-2.5 btn-primary text-white text-sm font-semibold rounded-xl">Done</button>
+            </div>
+          ) : (
+            <>
+              <p className="font-semibold text-neutral-900 mb-3">Change password</p>
+              <div className="space-y-2">
+                <input type="password" value={newPassword} onChange={e => { setNewPassword(e.target.value); setPasswordError(''); }} placeholder="New password"
+                  className="w-full border border-stone-200 rounded-xl px-3 py-2.5 text-sm text-neutral-800 placeholder:text-stone-300 focus:outline-none focus:border-neutral-400" />
+                <input type="password" value={confirmPass} onChange={e => { setConfirmPass(e.target.value); setPasswordError(''); }} placeholder="Confirm new password"
+                  className="w-full border border-stone-200 rounded-xl px-3 py-2.5 text-sm text-neutral-800 placeholder:text-stone-300 focus:outline-none focus:border-neutral-400" />
+              </div>
+              {passwordError && <p className="text-xs text-red-500 mt-2">{passwordError}</p>}
+              <button
+                disabled={!newPassword || !confirmPass || savingPassword}
+                onClick={async () => {
+                  if (newPassword.length < 6) { setPasswordError('Password must be at least 6 characters.'); return; }
+                  if (newPassword !== confirmPass) { setPasswordError("Passwords don't match."); return; }
+                  setSavingPassword(true);
+                  const { error } = await supabase.auth.updateUser({ password: newPassword });
+                  setSavingPassword(false);
+                  if (error) { setPasswordError(error.message); return; }
+                  setPasswordSaved(true);
+                }}
+                className="mt-3 w-full py-3 btn-primary text-white font-semibold text-sm rounded-xl disabled:opacity-40"
+              >
+                {savingPassword ? 'Updating…' : 'Update password'}
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    )}
+
+    {/* Feedback modal */}
+    {showFeedback && (
+      <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 px-4 pb-6 sm:pb-0">
+        <div className="bg-white rounded-2xl px-5 py-5 w-full max-w-sm relative">
+          <button onClick={() => setShowFeedback(false)}
+            className="absolute top-4 right-4 w-7 h-7 flex items-center justify-center rounded-full text-stone-400 hover:text-neutral-700 hover:bg-stone-100 transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+          {feedbackSent ? (
+            <div className="py-4 text-center space-y-2">
+              <p className="font-semibold text-neutral-900">Thanks for the feedback</p>
+              <p className="text-sm text-stone-400">We read everything.</p>
+              <button onClick={() => setShowFeedback(false)} className="mt-3 px-5 py-2.5 btn-primary text-white text-sm font-semibold rounded-xl">Done</button>
+            </div>
+          ) : (
+            <>
+              <p className="font-semibold text-neutral-900 mb-1">Send feedback</p>
+              <p className="text-sm text-stone-400 mb-3">What's working, what's not, or anything else.</p>
+              <textarea value={feedbackText} onChange={e => setFeedbackText(e.target.value)}
+                placeholder="Your thoughts..." rows={4}
+                className="w-full border border-stone-200 rounded-xl px-3 py-2.5 text-sm text-neutral-800 placeholder:text-stone-300 focus:outline-none focus:border-neutral-400 resize-none" />
+              <button
+                disabled={!feedbackText.trim() || sendingFeedback}
+                onClick={async () => {
+                  if (!feedbackText.trim()) return;
+                  setSendingFeedback(true);
+                  try {
+                    await fetch('/api/feedback', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ text: feedbackText.trim(), sessionId, name }),
+                    });
+                  } catch { /* best effort */ }
+                  setSendingFeedback(false);
+                  setFeedbackSent(true);
+                }}
+                className="mt-3 w-full py-3 btn-primary text-white font-semibold text-sm rounded-xl disabled:opacity-40"
+              >
+                {sendingFeedback ? 'Sending…' : 'Send'}
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    )}
+    </>
   );
 }
 
