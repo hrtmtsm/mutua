@@ -37,10 +37,14 @@ export default function WelcomePage() {
     const sessionId = localStorage.getItem('mutua_session_id');
     if (sessionId) {
       const trimmed = name.trim();
+      const { data: { session: authSession } } = await supabase.auth.getSession();
 
       await fetch('/api/update-profile', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authSession?.access_token ? { 'Authorization': `Bearer ${authSession.access_token}` } : {}),
+        },
         body: JSON.stringify({ sessionId, name: trimmed }),
       });
 

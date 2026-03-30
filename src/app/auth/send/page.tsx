@@ -29,7 +29,7 @@ export default function SignInPage() {
         localStorage.setItem('mutua_session_id', profile.session_id);
         localStorage.setItem('mutua_profile', JSON.stringify(profile));
       }
-      router.replace('/find-match');
+      router.replace('/app');
     });
   }, [router]);
 
@@ -59,7 +59,7 @@ export default function SignInPage() {
       localStorage.setItem('mutua_profile', JSON.stringify(profile));
     }
 
-    router.replace('/find-match');
+    router.replace('/app');
   };
 
 
