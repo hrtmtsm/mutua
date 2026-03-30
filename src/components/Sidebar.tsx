@@ -321,14 +321,18 @@ export default function TopNav() {
         setHasUnread(true);
       }
 
-      // Check for unread on load: dot shows if the last message is from the partner
+      // Check for unread on load: dot shows if last message is from partner AND newer than last-seen
       const { data: lastMsgs } = await supabase
         .from('messages')
-        .select('sender_id')
+        .select('sender_id, created_at')
         .eq('match_id', match.id)
         .order('created_at', { ascending: false })
         .limit(1);
-      if (lastMsgs && lastMsgs.length > 0 && lastMsgs[0].sender_id !== sessionId) {
+      const lastSeenMsgTs = localStorage.getItem('mutua_last_seen_msg_ts');
+      const msgIsUnread = lastMsgs && lastMsgs.length > 0
+        && lastMsgs[0].sender_id !== sessionId
+        && (!lastSeenMsgTs || new Date(lastMsgs[0].created_at) > new Date(lastSeenMsgTs));
+      if (msgIsUnread) {
         localStorage.setItem('mutua_unread_message', '1');
         setHasUnread(true);
       }
