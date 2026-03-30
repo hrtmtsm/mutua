@@ -7,7 +7,7 @@ import {
   type Language, type Goal, type CommStyle, type Frequency, type UserProfile,
 } from '@/lib/types';
 import { GOAL_DETAILS, COMM_STYLE_DETAILS, FREQUENCY_DETAILS, LANG_FLAGS } from '@/lib/constants';
-import { saveProfile, saveToWaitlist, isEmailOnWaitlist } from '@/lib/supabase';
+import { supabase, saveProfile, saveToWaitlist } from '@/lib/supabase';
 
 // ---- sub-components --------------------------------------------------------
 
@@ -90,7 +90,7 @@ const QUESTIONS = [
   'Why do you want to practice this language?',
   'How would you like to practice?',
   'How often do you want to practice?',
-  'What\'s your email?',
+  'Create your account',
 ];
 
 const SUBTITLES = [
@@ -99,7 +99,7 @@ const SUBTITLES = [
   'We use this to find a partner with the same purpose.',
   'We match you with someone who prefers the same format.',
   'We match you with someone who has the same commitment level.',
-  'We\'ll notify you when your partner is ready.',
+  'You\'re almost there. Create an account to see your matches.',
 ];
 
 export default function OnboardingPage() {
@@ -107,12 +107,13 @@ export default function OnboardingPage() {
 
   useEffect(() => {
     if (localStorage.getItem('mutua_profile')) {
-      router.replace('/waitlist');
+      router.replace('/app');
     }
   }, [router]);
 
   const [step,    setStep]    = useState(1);
   const [saving,  setSaving]  = useState(false);
+  const [authError, setAuthError] = useState('');
 
   const [native,             setNative]            = useState<Language | null>(null);
   const [learning,           setLearning]          = useState<Language | null>(null);
@@ -120,6 +121,8 @@ export default function OnboardingPage() {
   const [commStyle,          setCommStyle]         = useState<CommStyle | null>(null);
   const [practiceFrequency,  setPracticeFrequency] = useState<Frequency | null>(null);
   const [email,              setEmail]             = useState('');
+  const [password,           setPassword]          = useState('');
+  const [showPassword,       setShowPassword]      = useState(false);
 
   const canAdvance =
     (step === 1 && native !== null) ||
@@ -127,23 +130,31 @@ export default function OnboardingPage() {
     (step === 3 && goal !== null) ||
     (step === 4 && commStyle !== null) ||
     (step === 5 && practiceFrequency !== null) ||
-    (step === 6 && /\S+@\S+\.\S+/.test(email));
+    (step === 6 && /\S+@\S+\.\S+/.test(email) && password.length >= 8);
 
   const handleNext = async () => {
     if (step < 6) { setStep(s => s + 1); return; }
 
     setSaving(true);
+    setAuthError('');
 
-    const alreadyOnWaitlist = await isEmailOnWaitlist(email);
-    if (alreadyOnWaitlist) {
-      router.push('/waitlist');
+    const trimmedEmail = email.trim().toLowerCase();
+
+    // Sign up with Supabase auth
+    const { data: authData, error: signUpErr } = await supabase.auth.signUp({
+      email:    trimmedEmail,
+      password,
+    });
+
+    if (signUpErr) {
+      setAuthError(signUpErr.message);
+      setSaving(false);
       return;
     }
 
     const sessionId = crypto.randomUUID();
     localStorage.setItem('mutua_session_id', sessionId);
 
-    const trimmedEmail = email.trim().toLowerCase();
     const profile: UserProfile = {
       session_id:         sessionId,
       email:              trimmedEmail,
@@ -158,6 +169,7 @@ export default function OnboardingPage() {
 
     try { await saveProfile(profile); } catch (err) { console.error('saveProfile error:', err); }
 
+    // Keep waitlist entry as a backup record
     try {
       await saveToWaitlist({
         email:                profile.email!,
@@ -178,7 +190,12 @@ export default function OnboardingPage() {
       });
     } catch (err) { console.error('auto-match error:', err); }
 
-    router.push('/waitlist');
+    // Store auth user id if available
+    if (authData.user) {
+      localStorage.setItem('mutua_auth_user_id', authData.user.id);
+    }
+
+    router.push('/app');
   };
 
   return (
@@ -252,15 +269,38 @@ export default function OnboardingPage() {
             </div>
           )}
 
-          {/* Q6 — Email */}
+          {/* Q6 — Email + Password */}
           {step === 6 && (
-            <input
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder="your@email.com"
-              className="w-full px-4 py-3 border border-stone-200 rounded-xl text-sm text-neutral-900 placeholder:text-stone-400 focus:outline-none focus:border-[#2B8FFF]"
-            />
+            <div className="space-y-3">
+              <input
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="your@email.com"
+                className="w-full px-4 py-3 border border-stone-200 rounded-xl text-sm text-neutral-900 placeholder:text-stone-400 focus:outline-none focus:border-[#2B8FFF]"
+              />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="Password (min 8 characters)"
+                  className="w-full px-4 py-3 pr-14 border border-stone-200 rounded-xl text-sm text-neutral-900 placeholder:text-stone-400 focus:outline-none focus:border-[#2B8FFF]"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(s => !s)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-stone-400 hover:text-neutral-900 font-medium"
+                >
+                  {showPassword ? 'Hide' : 'Show'}
+                </button>
+              </div>
+              {authError && <p className="text-xs text-red-500">{authError}</p>}
+              <p className="text-xs text-stone-400">
+                Already have an account?{' '}
+                <a href="/auth/send" className="text-[#2B8FFF] font-semibold">Sign in</a>
+              </p>
+            </div>
           )}
         </div>
 
