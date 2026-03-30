@@ -47,13 +47,20 @@ export async function POST(request: Request) {
   // Delete confirmed session
   await db.from('confirmed_sessions').delete().eq('match_id', matchId);
 
-  // Reset match state — both sides need to re-engage
+  // Move to computing — both users still have slots in user_availability,
+  // so immediately try to find the next open slot instead of forcing re-submission.
   await db.from('matches').update({
-    scheduling_state: 'pending_both',
-    scheduled_at: null,
-    availability_a_set_at: null,
-    availability_b_set_at: null,
+    scheduling_state: 'computing',
+    scheduled_at:     null,
   }).eq('id', matchId);
+
+  // Re-run scheduler to book the next available slot. Fire-and-forget.
+  const origin = request.headers.get('origin') ?? process.env.NEXT_PUBLIC_APP_URL ?? 'https://trymutua.com';
+  fetch(`${origin}/api/schedule-match`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ matchId }),
+  }).catch(() => null);
 
   return NextResponse.json({ ok: true });
 }

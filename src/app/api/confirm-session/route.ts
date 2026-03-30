@@ -88,12 +88,6 @@ export async function POST(request: Request) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   );
 
-  // Update match status in DB
-  await adminClient
-    .from('matches')
-    .update({ status: 'confirmed' })
-    .eq('id', matchId);
-
   const displayName = confirmerName ?? 'Your partner';
 
   const { error: sendError } = await resend.emails.send({
