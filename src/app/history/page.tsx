@@ -55,6 +55,71 @@ function getWeekStart(d: Date): Date {
   return day;
 }
 
+interface PartnerStats {
+  partnerId:    string;
+  partnerName:  string;
+  sessionCount: number;
+  totalMin:     number;
+  streak:       number;   // consecutive weeks with ≥1 session
+  lastDate:     string;   // ISO
+  daysSinceLast: number;
+}
+
+function computePartnerStats(sessions: SessionEntry[]): PartnerStats[] {
+  const map = new Map<string, SessionEntry[]>();
+  for (const s of sessions) {
+    if (s.missed) continue; // only count completed sessions
+    const key = s.partnerId || s.partnerName;
+    if (!map.has(key)) map.set(key, []);
+    map.get(key)!.push(s);
+  }
+
+  const now = new Date();
+  const stats: PartnerStats[] = [];
+
+  for (const [key, pSessions] of map.entries()) {
+    const sorted = [...pSessions].sort((a, b) => b.date.localeCompare(a.date));
+    const totalMin = sorted.reduce((s, x) => s + (x.duration ?? 0), 0);
+    const lastDate = sorted[0].date;
+    const daysSinceLast = Math.floor((now.getTime() - new Date(lastDate).getTime()) / 86400000);
+
+    // Consecutive weeks: walk back from current week
+    const weekKeys = new Set(sorted.map(s => localKey(getWeekStart(new Date(s.date)))));
+    let streak = 0;
+    const cursor = getWeekStart(new Date());
+    for (let i = 0; i < 52; i++) {
+      const k = localKey(cursor);
+      if (weekKeys.has(k)) {
+        streak++;
+        cursor.setDate(cursor.getDate() - 7);
+      } else {
+        // allow one gap if we're still in the current week and haven't had a session yet
+        if (i === 0) { cursor.setDate(cursor.getDate() - 7); continue; }
+        break;
+      }
+    }
+
+    stats.push({
+      partnerId:    key,
+      partnerName:  sorted[0].partnerName,
+      sessionCount: sorted.length,
+      totalMin,
+      streak,
+      lastDate,
+      daysSinceLast,
+    });
+  }
+
+  // Sort: active streak first → recent → total depth
+  return stats.sort((a, b) => {
+    const aActive = a.daysSinceLast <= 14 && a.streak >= 2;
+    const bActive = b.daysSinceLast <= 14 && b.streak >= 2;
+    if (aActive !== bActive) return aActive ? -1 : 1;
+    if (a.daysSinceLast !== b.daysSinceLast) return a.daysSinceLast - b.daysSinceLast;
+    return b.sessionCount - a.sessionCount;
+  });
+}
+
 function groupByPartner(sessions: SessionEntry[]): PartnerSummary[] {
   const map = new Map<string, PartnerSummary>();
   for (const s of sessions) {
@@ -372,6 +437,45 @@ function RhythmChart({ sessions, targetLang, liveProfiles }: {
   );
 }
 
+function PartnerRelationshipCard({ stats, live }: {
+  stats: PartnerStats;
+  live?: { name: string; avatarUrl: string | null; nativeLang: string; matchId: string | null };
+}) {
+  const name       = live?.name || stats.partnerName;
+  const avatarUrl  = live?.avatarUrl ?? null;
+  const nativeLang = live?.nativeLang ?? '';
+
+  const primaryLine = [
+    `${stats.sessionCount} session${stats.sessionCount !== 1 ? 's' : ''}`,
+    stats.totalMin > 0 ? `${stats.totalMin} min together` : null,
+  ].filter(Boolean).join(' · ');
+
+  const streakLine = stats.streak >= 2 ? `${stats.streak} weeks in a row` : null;
+
+  let recencyLine: string;
+  if (stats.daysSinceLast === 0)       recencyLine = 'Last talked today';
+  else if (stats.daysSinceLast === 1)  recencyLine = 'Last talked yesterday';
+  else                                  recencyLine = `Last talked ${stats.daysSinceLast} days ago`;
+
+  const fading = stats.daysSinceLast > 21;
+
+  return (
+    <div className={`bg-white border border-stone-200 rounded-2xl px-4 py-4 flex items-center gap-3 ${fading ? 'opacity-60' : ''}`}>
+      <PartnerAvatar name={name} avatarUrl={avatarUrl} nativeLang={nativeLang} />
+      <div className="flex-1 min-w-0">
+        <p className="font-semibold text-[#171717] text-sm truncate">{name}</p>
+        <p className="text-xs text-stone-500 mt-0.5">{primaryLine}</p>
+        {streakLine && (
+          <p className="text-xs text-blue-500 font-medium mt-0.5">{streakLine}</p>
+        )}
+        <p className={`text-xs mt-0.5 ${fading ? 'text-stone-400' : 'text-stone-400'}`}>
+          {fading ? 'Haven\'t talked recently' : recencyLine}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function PartnerAvatar({ name, avatarUrl, nativeLang }: { name: string; avatarUrl: string | null; nativeLang?: string }) {
   const [failed, setFailed] = useState(false);
   const bg = LANG_AVATAR_COLOR[nativeLang ?? ''] ?? '#3b82f6';
@@ -563,6 +667,7 @@ export default function HistoryPage() {
 
   const { thisWeekSessions, thisWeekDone, weekGoal, weeksRunning } = rhythm;
   const hasAnySessions = sessions.length > 0;
+  const partnerStats = computePartnerStats(sessions);
   // Sessions sorted newest-first for the card list
   const sortedSessions = [...sessions].sort((a, b) => b.date.localeCompare(a.date));
   const visibleSessions = showAll ? sortedSessions : sortedSessions.slice(0, 5);
@@ -625,7 +730,23 @@ export default function HistoryPage() {
           </div>
         )}
 
-        {/* ── 3. Your exchanges ────────────────────────────────── */}
+        {/* ── 3. Partners ──────────────────────────────────────── */}
+        {partnerStats.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-stone-500">Partners</p>
+            <div className="space-y-2">
+              {partnerStats.map(s => (
+                <PartnerRelationshipCard
+                  key={s.partnerId}
+                  stats={s}
+                  live={liveProfiles[s.partnerId]}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── 4. Your exchanges ────────────────────────────────── */}
         {sortedSessions.length > 0 && (
           <div className="space-y-2">
             <p className="text-sm font-medium text-stone-500">Your exchanges</p>
