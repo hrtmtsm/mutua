@@ -19,8 +19,8 @@ export async function POST(request: Request) {
   });
 
   if (error) {
-    // Table may not exist yet — fail silently so UX isn't broken
     console.error('feedback insert error:', error.message);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });
