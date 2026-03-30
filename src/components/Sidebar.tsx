@@ -70,7 +70,7 @@ function useNavState() {
 // ── Thread list ───────────────────────────────────────────────────────────────
 
 function MessagesList({
-  matchId, partnerName, messages, myId, onOpen, hasUnreadMsg,
+  matchId, partnerName, messages, myId, onOpen, hasUnreadMsg, avatarBg,
 }: {
   matchId: string | null;
   partnerName: string;
@@ -78,6 +78,7 @@ function MessagesList({
   myId: string;
   onOpen: () => void;
   hasUnreadMsg: boolean;
+  avatarBg: string;
 }) {
   if (!matchId || messages.length === 0) {
     return (
@@ -100,7 +101,7 @@ function MessagesList({
         onClick={onOpen}
         className="w-full flex items-center gap-3 px-4 py-3 hover:bg-stone-50 transition-colors text-left"
       >
-        <div className="w-9 h-9 rounded-xl bg-neutral-800 flex items-center justify-center shrink-0">
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: avatarBg }}>
           <span className="text-xs font-black text-white">{initials}</span>
         </div>
         <div className="flex-1 min-w-0">
@@ -120,13 +121,14 @@ function MessagesList({
 // ── Chat detail ───────────────────────────────────────────────────────────────
 
 function MessageChat({
-  matchId, partnerName, messages: serverMessages, myId, onBack,
+  matchId, partnerName, messages: serverMessages, myId, onBack, avatarBg,
 }: {
   matchId: string;
   partnerName: string;
   messages: Message[];
   myId: string;
   onBack: () => void;
+  avatarBg: string;
 }) {
   const [draft, setDraft] = useState('');
   const [error, setError] = useState('');
@@ -194,7 +196,7 @@ function MessageChat({
         <button onClick={onBack} className="text-stone-400 hover:text-neutral-700 transition-colors">
           <ArrowLeft className="w-4 h-4" />
         </button>
-        <div className="w-7 h-7 rounded-lg bg-neutral-800 flex items-center justify-center shrink-0">
+        <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: avatarBg }}>
           <span className="text-[10px] font-black text-white">{initials}</span>
         </div>
         <p className="text-sm font-semibold text-neutral-900">{partnerName}</p>
@@ -292,6 +294,7 @@ export default function TopNav() {
   const [myId, setMyId]                     = useState('');
   const [messages, setMessages]             = useState<Message[]>([]);
   const [scheduleState, setScheduleState]   = useState<string | null>(null);
+  const [partnerAvatarBg, setPartnerAvatarBg] = useState('#171717');
   const currentSchedStateRef                = useRef<string | null>(null);
 
   // Always-on: watch for scheduling updates + new messages → set unread dot
@@ -399,7 +402,7 @@ export default function TopNav() {
     async function load() {
       const { data: match } = await supabase
         .from('matches')
-        .select('id, name_a, name_b, session_id_a, session_id_b')
+        .select('id, name_a, name_b, session_id_a, session_id_b, native_language_a, native_language_b')
         .or(`session_id_a.eq.${sessionId},session_id_b.eq.${sessionId}`)
         .order('created_at', { ascending: false })
         .limit(1)
@@ -409,6 +412,8 @@ export default function TopNav() {
       setMatchId(match.id);
       const isA = match.session_id_a === sessionId;
       setPartnerName(isA ? (match.name_b ?? 'Partner') : (match.name_a ?? 'Partner'));
+      const partnerLang = isA ? (match.native_language_b ?? '') : (match.native_language_a ?? '');
+      setPartnerAvatarBg(LANG_AVATAR_COLOR[partnerLang] ?? '#171717');
       const msgs = await getMessages(match.id);
       setMessages(msgs);
 
@@ -525,6 +530,7 @@ export default function TopNav() {
                   messages={messages}
                   myId={myId}
                   onBack={() => setMsgView('list')}
+                  avatarBg={partnerAvatarBg}
                 />
               ) : inboxTab === 'notifications' ? (
                 <div className="px-4 py-4 space-y-2">
@@ -577,6 +583,7 @@ export default function TopNav() {
                   partnerName={partnerName}
                   messages={messages}
                   myId={myId}
+                  avatarBg={partnerAvatarBg}
                   hasUnreadMsg={!!localStorage.getItem('mutua_unread_message')}
                   onOpen={() => {
                     setMsgView('chat');
