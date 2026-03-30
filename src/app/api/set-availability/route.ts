@@ -103,9 +103,21 @@ export async function POST(request: Request) {
 
   for (const m of matches) {
     const iAmA = isA(m);
-    const updatePayload = iAmA
+    const updatePayload: Record<string, unknown> = iAmA
       ? { availability_a_set_at: now }
       : { availability_b_set_at: now };
+
+    // When recovering from no_overlap, start a fresh round: clear the other
+    // side's stale timestamp so both must explicitly re-submit before the
+    // scheduler runs again. This prevents User 1's update from immediately
+    // triggering the scheduler against User 2's unchanged old slots.
+    if (m.scheduling_state === 'no_overlap') {
+      const clearKey     = iAmA ? 'availability_b_set_at' : 'availability_a_set_at';
+      const pendingState = iAmA ? 'pending_b' : 'pending_a';
+      Object.assign(updatePayload, { [clearKey]: null, scheduling_state: pendingState });
+      await db.from('matches').update(updatePayload).eq('id', m.id);
+      continue;
+    }
 
     // Fetch current timestamps to check if other side already saved
     const { data: current } = await db
