@@ -49,6 +49,7 @@ async function ensureProfile(admin: any, entry: WaitlistEntry): Promise<string> 
     learning_language:  entry.target_language,
     goal:               entry.goal,
     comm_style:         entry.communication_style,
+    availability:       'Flexible',
     practice_frequency: entry.practice_frequency ?? 'Once a week',
   });
   if (error) throw new Error(`Profile insert failed for ${entry.email}: ${error.message}`);
