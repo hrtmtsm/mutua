@@ -10,7 +10,7 @@ import { supabase, saveProfile } from '@/lib/supabase';
 import type { UserAvailability } from '@/lib/supabase';
 import AppShell from '@/components/AppShell';
 import AvailabilityPicker from '@/components/AvailabilityPicker';
-import { Pencil, Camera, ChevronDown, X } from 'lucide-react';
+import { Pencil, Camera, ChevronDown, X, LogOut } from 'lucide-react';
 
 
 const CROP_SIZE = 260;
@@ -231,6 +231,15 @@ export default function ProfilePage() {
   const [interests, setInterests] = useState<string[]>([]);
   const [bio,       setBio]       = useState('');
 
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    await supabase.auth.signOut();
+    localStorage.clear();
+    router.push('/');
+  };
+
   const [showFeedback,    setShowFeedback]    = useState(false);
   const [feedbackText,    setFeedbackText]    = useState('');
   const [feedbackSent,    setFeedbackSent]    = useState(false);
@@ -395,9 +404,11 @@ export default function ProfilePage() {
     <>
     {cropSrc && <CropModal src={cropSrc} onConfirm={handleCropConfirm} onCancel={() => setCropSrc(null)} />}
     <AppShell>
-      <main className="flex-1 px-6 py-10 max-w-2xl mx-auto w-full space-y-5">
+      <main className="flex-1 px-6 py-10 max-w-2xl mx-auto w-full space-y-8">
 
-        <h1 className="font-serif font-semibold text-2xl text-[#171717]">Profile</h1>
+        {/* ════ PROFILE SECTION ════ */}
+        <div className="space-y-5">
+          <h2 className="font-serif font-semibold text-2xl text-[#171717]">Profile</h2>
 
         {profile ? (
           <>
@@ -641,23 +652,36 @@ export default function ProfilePage() {
             </button>
           </div>
         )}
+        </div>
 
-        {/* ── Account actions ── */}
-        <div className="bg-white rounded-2xl shadow-sm divide-y divide-stone-100">
-          <button
-            onClick={() => { setShowPassword(true); setNewPassword(''); setConfirmPass(''); setPasswordError(''); setPasswordSaved(false); }}
-            className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-stone-50 transition-colors rounded-t-2xl"
-          >
-            <span className="text-sm font-medium text-neutral-700">Change password</span>
-            <span className="text-stone-300 text-sm">→</span>
-          </button>
-          <button
-            onClick={() => { setShowFeedback(true); setFeedbackSent(false); setFeedbackText(''); }}
-            className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-stone-50 transition-colors rounded-b-2xl"
-          >
-            <span className="text-sm font-medium text-neutral-700">Send feedback</span>
-            <span className="text-stone-300 text-sm">→</span>
-          </button>
+        {/* ════ ACCOUNT SECTION ════ */}
+        <div className="space-y-5">
+          <h2 className="font-serif font-semibold text-2xl text-[#171717]">Account</h2>
+
+          <div className="bg-white rounded-2xl shadow-sm divide-y divide-stone-100">
+            <button
+              onClick={() => { setShowPassword(true); setNewPassword(''); setConfirmPass(''); setPasswordError(''); setPasswordSaved(false); }}
+              className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-stone-50 transition-colors rounded-t-2xl"
+            >
+              <span className="text-sm font-medium text-neutral-700">Change password</span>
+              <span className="text-stone-300 text-sm">→</span>
+            </button>
+            <button
+              onClick={() => { setShowFeedback(true); setFeedbackSent(false); setFeedbackText(''); }}
+              className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-stone-50 transition-colors"
+            >
+              <span className="text-sm font-medium text-neutral-700">Send feedback</span>
+              <span className="text-stone-300 text-sm">→</span>
+            </button>
+            <button
+              onClick={handleLogout}
+              disabled={loggingOut}
+              className="w-full px-6 py-4 flex items-center gap-3 text-left hover:bg-stone-50 transition-colors rounded-b-2xl disabled:opacity-50"
+            >
+              <LogOut className="w-4 h-4 text-red-400" />
+              <span className="text-sm font-medium text-red-500">{loggingOut ? 'Signing out…' : 'Sign out'}</span>
+            </button>
+          </div>
         </div>
 
       </main>
