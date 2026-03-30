@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 const ADMIN_SECRET  = process.env.ADMIN_SECRET ?? 'mutua-dev';
-const MAX_MATCHES   = 3;   // max active matches per person
+const MAX_MATCHES   = 5;   // max active matches per person
 
 // ── Scoring ───────────────────────────────────────────────────────────────────
 
