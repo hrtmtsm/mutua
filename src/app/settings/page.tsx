@@ -33,12 +33,14 @@ export default function SettingsPage() {
   const [passwordSaved,  setPasswordSaved]  = useState(false);
   const [savingPassword,  setSavingPassword]  = useState(false);
   const [resetSent,       setResetSent]       = useState(false);
+  const [resetEmail,      setResetEmail]      = useState('');
+  const [showResetInput,  setShowResetInput]  = useState(false);
   const [showCurrentPass, setShowCurrentPass] = useState(false);
   const [showNewPass,     setShowNewPass]     = useState(false);
   const [showConfirmPass, setShowConfirmPass] = useState(false);
 
   const openPassword = () => {
-    setCurrentPass(''); setNewPassword(''); setConfirmPass(''); setPasswordError(''); setPasswordSaved(false); setResetSent(false);
+    setCurrentPass(''); setNewPassword(''); setConfirmPass(''); setPasswordError(''); setPasswordSaved(false); setResetSent(false); setShowResetInput(false); setResetEmail('');
     setShowPassword(true);
   };
 
@@ -120,34 +122,53 @@ export default function SettingsPage() {
                       </button>
                     </div>
                     {i === 0 && (
-                      <div className="flex justify-end mt-1">
+                      <div className="mt-1">
                         {resetSent ? (
-                          <span className="text-xs text-emerald-600">Reset link sent — check your email</span>
+                          <p className="text-xs text-emerald-600 text-right">Reset link sent — check your email</p>
+                        ) : showResetInput ? (
+                          <div className="flex gap-2 mt-1">
+                            <input
+                              type="email"
+                              value={resetEmail}
+                              onChange={e => setResetEmail(e.target.value)}
+                              placeholder="Your email"
+                              className="flex-1 border border-stone-200 rounded-xl px-3 py-2 text-sm text-neutral-800 placeholder:text-stone-300 focus:outline-none focus:border-neutral-400"
+                            />
+                            <button type="button"
+                              disabled={!resetEmail.trim()}
+                              onClick={async () => {
+                                const { error: resetErr } = await supabase.auth.resetPasswordForEmail(resetEmail.trim(), {
+                                  redirectTo: `${window.location.origin}/auth/callback`,
+                                });
+                                if (resetErr) { setPasswordError(resetErr.message); return; }
+                                setResetSent(true);
+                              }}
+                              className="px-3 py-2 btn-primary text-white text-xs font-semibold rounded-xl disabled:opacity-40"
+                            >
+                              Send
+                            </button>
+                          </div>
                         ) : (
-                          <button type="button"
-                            onClick={async () => {
-                              let addr = email;
-                              if (!addr) {
-                                const { data } = await supabase.auth.getSession();
-                                addr = data.session?.user?.email ?? '';
-                              }
-                              if (!addr) {
-                                setPasswordError('Could not find your email. Try signing out and back in.');
-                                return;
-                              }
-                              const { error: resetErr } = await supabase.auth.resetPasswordForEmail(addr, {
-                                redirectTo: `${window.location.origin}/auth/callback`,
-                              });
-                              if (resetErr) {
-                                setPasswordError(resetErr.message);
-                                return;
-                              }
-                              setResetSent(true);
-                            }}
-                            className="text-xs text-[#2B8FFF] hover:underline"
-                          >
-                            Forgot password?
-                          </button>
+                          <div className="flex justify-end">
+                            <button type="button"
+                              onClick={async () => {
+                                let addr = email;
+                                if (!addr) {
+                                  const { data } = await supabase.auth.getSession();
+                                  addr = data.session?.user?.email ?? '';
+                                }
+                                if (!addr) { setShowResetInput(true); return; }
+                                const { error: resetErr } = await supabase.auth.resetPasswordForEmail(addr, {
+                                  redirectTo: `${window.location.origin}/auth/callback`,
+                                });
+                                if (resetErr) { setPasswordError(resetErr.message); return; }
+                                setResetSent(true);
+                              }}
+                              className="text-xs text-[#2B8FFF] hover:underline"
+                            >
+                              Forgot password?
+                            </button>
+                          </div>
                         )}
                       </div>
                     )}
