@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { X, LogOut } from 'lucide-react';
+import { X, LogOut, Eye, EyeOff } from 'lucide-react';
 import AppShell from '@/components/AppShell';
 import { supabase } from '@/lib/supabase';
 
@@ -32,6 +32,9 @@ export default function SettingsPage() {
   const [passwordError,  setPasswordError]  = useState('');
   const [passwordSaved,  setPasswordSaved]  = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
+  const [showCurrentPass, setShowCurrentPass] = useState(false);
+  const [showNewPass,     setShowNewPass]     = useState(false);
+  const [showConfirmPass, setShowConfirmPass] = useState(false);
 
   const openPassword = () => {
     setCurrentPass(''); setNewPassword(''); setConfirmPass(''); setPasswordError(''); setPasswordSaved(false);
@@ -96,12 +99,25 @@ export default function SettingsPage() {
             <>
               <p className="font-semibold text-neutral-900 mb-3">Change password</p>
               <div className="space-y-2">
-                <input type="password" value={currentPass} onChange={e => { setCurrentPass(e.target.value); setPasswordError(''); }} placeholder="Current password"
-                  className="w-full border border-stone-200 rounded-xl px-3 py-2.5 text-sm text-neutral-800 placeholder:text-stone-300 focus:outline-none focus:border-neutral-400" />
-                <input type="password" value={newPassword} onChange={e => { setNewPassword(e.target.value); setPasswordError(''); }} placeholder="New password"
-                  className="w-full border border-stone-200 rounded-xl px-3 py-2.5 text-sm text-neutral-800 placeholder:text-stone-300 focus:outline-none focus:border-neutral-400" />
-                <input type="password" value={confirmPass} onChange={e => { setConfirmPass(e.target.value); setPasswordError(''); }} placeholder="Confirm new password"
-                  className="w-full border border-stone-200 rounded-xl px-3 py-2.5 text-sm text-neutral-800 placeholder:text-stone-300 focus:outline-none focus:border-neutral-400" />
+                {([
+                  { value: currentPass, set: setCurrentPass, show: showCurrentPass, toggle: () => setShowCurrentPass(v => !v), placeholder: 'Current password' },
+                  { value: newPassword, set: setNewPassword, show: showNewPass,     toggle: () => setShowNewPass(v => !v),     placeholder: 'New password' },
+                  { value: confirmPass, set: setConfirmPass, show: showConfirmPass, toggle: () => setShowConfirmPass(v => !v), placeholder: 'Confirm new password' },
+                ] as const).map(({ value, set, show, toggle, placeholder }) => (
+                  <div key={placeholder} className="relative">
+                    <input
+                      type={show ? 'text' : 'password'}
+                      value={value}
+                      onChange={e => { set(e.target.value); setPasswordError(''); }}
+                      placeholder={placeholder}
+                      className="w-full border border-stone-200 rounded-xl px-3 pr-10 py-2.5 text-sm text-neutral-800 placeholder:text-stone-300 focus:outline-none focus:border-neutral-400"
+                    />
+                    <button type="button" onClick={toggle}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-neutral-600 transition-colors">
+                      {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                ))}
               </div>
               {passwordError && <p className="text-xs text-red-500 mt-2">{passwordError}</p>}
               <button
