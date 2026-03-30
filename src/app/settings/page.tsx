@@ -131,10 +131,17 @@ export default function SettingsPage() {
                                 const { data } = await supabase.auth.getSession();
                                 addr = data.session?.user?.email ?? '';
                               }
-                              if (!addr) return;
-                              await supabase.auth.resetPasswordForEmail(addr, {
+                              if (!addr) {
+                                setPasswordError('Could not find your email. Try signing out and back in.');
+                                return;
+                              }
+                              const { error: resetErr } = await supabase.auth.resetPasswordForEmail(addr, {
                                 redirectTo: `${window.location.origin}/auth/callback`,
                               });
+                              if (resetErr) {
+                                setPasswordError(resetErr.message);
+                                return;
+                              }
                               setResetSent(true);
                             }}
                             className="text-xs text-[#2B8FFF] hover:underline"
