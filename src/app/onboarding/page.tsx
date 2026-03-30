@@ -169,6 +169,15 @@ export default function OnboardingPage() {
       });
     } catch (err) { console.error('saveToWaitlist error:', err); }
 
+    // Auto-match against existing profiles (no email sent)
+    try {
+      await fetch('/api/auto-match', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ session_id: sessionId }),
+      });
+    } catch (err) { console.error('auto-match error:', err); }
+
     router.push('/waitlist');
   };
 
