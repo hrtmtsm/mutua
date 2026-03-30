@@ -14,7 +14,7 @@ export default function BioPage() {
 
   const save = async () => {
     const text = bio.trim();
-    if (!text) { router.replace('/find-match'); return; }
+    if (!text) { router.replace('/app'); return; }
 
     setLoading(true);
     const sid = localStorage.getItem('mutua_session_id');
@@ -26,12 +26,12 @@ export default function BioPage() {
       }
     }
     track('bio_submitted', { skipped: !text });
-    router.replace('/find-match');
+    router.replace('/app');
   };
 
   const skip = () => {
     track('bio_submitted', { skipped: true });
-    router.replace('/find-match');
+    router.replace('/app');
   };
 
   return (
