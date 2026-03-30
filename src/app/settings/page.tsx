@@ -48,23 +48,26 @@ export default function SettingsPage() {
 
           <div className="bg-white rounded-2xl shadow-sm divide-y divide-stone-100">
             {/* Email — display only */}
-            <div className="px-6 py-4 flex items-center justify-between">
-              <span className="text-sm font-medium text-neutral-700">Email</span>
-              <span className="text-sm text-stone-400 truncate max-w-[55%] text-right">{email || '—'}</span>
+            <div className="px-6 py-4">
+              <p className="text-xs font-semibold text-stone-400 mb-0.5">Email</p>
+              <p className="text-sm text-neutral-800">{email || <span className="text-stone-300">Loading…</span>}</p>
             </div>
 
             <button
               onClick={openPassword}
-              className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-stone-50 transition-colors"
+              className="w-full px-6 py-4 text-left hover:bg-stone-50 transition-colors"
             >
-              <span className="text-sm font-medium text-neutral-700">Change password</span>
-              <span className="text-stone-300 text-sm">→</span>
+              <p className="text-xs font-semibold text-stone-400 mb-0.5">Password</p>
+              <p className="text-sm text-neutral-800">Change your password</p>
             </button>
+          </div>
 
+          {/* Sign out — visually separated */}
+          <div className="bg-white rounded-2xl shadow-sm">
             <button
               onClick={handleLogout}
               disabled={loggingOut}
-              className="w-full px-6 py-4 flex items-center gap-3 text-left hover:bg-stone-50 transition-colors rounded-b-2xl disabled:opacity-50"
+              className="w-full px-6 py-4 flex items-center gap-3 text-left hover:bg-stone-50 transition-colors rounded-2xl disabled:opacity-50"
             >
               <LogOut className="w-4 h-4 text-red-400 shrink-0" />
               <span className="text-sm font-medium text-red-500">{loggingOut ? 'Signing out…' : 'Sign out'}</span>
