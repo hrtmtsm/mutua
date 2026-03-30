@@ -103,7 +103,10 @@ export async function POST(request: Request) {
     html: emailHtml(displayName, scheduledTime, partnerSessionId),
   });
 
-  if (sendError) return NextResponse.json({ success: true, emailSent: false });
+  if (sendError) {
+    console.error('[confirm-session] email failed to send to', partnerEmail, sendError);
+    return NextResponse.json({ success: true, emailSent: false });
+  }
 
   return NextResponse.json({ success: true, emailSent: true });
 }

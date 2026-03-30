@@ -33,6 +33,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'slots and timezone required' }, { status: 400 });
   }
 
+  // Validate slot values to prevent garbage data in DB
+  for (const s of slots) {
+    if (!Number.isInteger(s.day_of_week) || s.day_of_week < 0 || s.day_of_week > 6) {
+      return NextResponse.json({ error: `invalid day_of_week: ${s.day_of_week}` }, { status: 400 });
+    }
+    if (!Number.isInteger(s.start_minute) || s.start_minute < 0 || s.start_minute > 1410) {
+      return NextResponse.json({ error: `invalid start_minute: ${s.start_minute}` }, { status: 400 });
+    }
+  }
+  try { Intl.DateTimeFormat(undefined, { timeZone: timezone }); } catch {
+    return NextResponse.json({ error: `invalid timezone: ${timezone}` }, { status: 400 });
+  }
+
   const db = adminClient();
 
   // Verify token and get user
@@ -69,6 +82,7 @@ export async function POST(request: Request) {
     .maybeSingle();
 
   if (!profile?.session_id) {
+    console.warn('[set-availability] no profile found for user', user.email, '— availability saved but matches not triggered');
     return NextResponse.json({ ok: true, matchesTriggered: 0 });
   }
 

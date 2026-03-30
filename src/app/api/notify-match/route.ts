@@ -30,7 +30,7 @@ export async function POST(request: Request) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          from: 'Mutua <hello@mutua.app>',
+          from: 'Mutua <hello@trymutua.com>',
           to,
           subject: 'We found your language partner on Mutua',
           html: emailHtml,

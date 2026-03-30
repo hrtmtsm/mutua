@@ -37,7 +37,7 @@ export default function FindMatchPage() {
       setProfile(p);
 
       const [candidates] = await Promise.all([
-        findCandidates(p).catch(() => [] as UserProfile[]),
+        findCandidates(p).catch((err) => { console.error('[find-match] findCandidates failed:', err); return [] as UserProfile[]; }),
         new Promise(r => setTimeout(r, 3000)),
       ]);
 

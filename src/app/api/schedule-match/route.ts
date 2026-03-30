@@ -31,12 +31,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    let result = await runScheduler(matchId);
-
-    // If slot conflict (concurrent booking), retry once
-    if ((result as any)?.conflict) {
-      result = await runScheduler(matchId);
-    }
+    const result = await runScheduler(matchId);
 
     // Update scheduling_state on the match for non-booking transitions
     if (result.state !== 'scheduled') {
