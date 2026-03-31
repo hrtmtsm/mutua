@@ -596,6 +596,7 @@ export default function SessionPage() {
       practice_frequency:  partner.frequency as SavedPartner['practice_frequency'],
       saved_at:            new Date().toISOString(),
       match_id:            partner.matchId,
+      avatar_url:          partner.avatarUrl,
     };
     localStorage.setItem('mutua_current_partner', JSON.stringify(savedPartner));
     router.push('/pre-session');

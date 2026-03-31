@@ -675,10 +675,12 @@ export default function SessionPage() {
               disabled={pillsChecked[1]}
               className={`mx-3 mt-2 mb-3 w-[calc(100%-1.5rem)] text-left rounded-xl border border-stone-200 px-3 py-2.5 flex items-center gap-3 transition-opacity ${pillsChecked[1] ? 'opacity-50' : 'hover:bg-stone-50 active:bg-stone-50'}`}
             >
-              <div className="w-6 h-6 rounded-full bg-[#2B8FFF] flex items-center justify-center shrink-0 self-start mt-0.5">
-                <span className="text-[9px] font-black text-white leading-none">
-                  {partnerName.trim().slice(0, 2).toUpperCase()}
-                </span>
+              <div className="w-6 h-6 rounded-full overflow-hidden shrink-0 self-start mt-0.5 flex items-center justify-center"
+                style={{ backgroundColor: LANG_AVATAR_COLOR[partner.native_language] ?? '#2B8FFF' }}>
+                {partner.avatar_url
+                  ? <img src={partner.avatar_url} alt="" className="w-full h-full object-cover" />
+                  : <span className="text-[9px] font-black text-white leading-none">{(() => { const p = partnerName.trim().split(/\s+/); return (p.length >= 2 ? p[0][0] + p[p.length-1][0] : partnerName.trim().slice(0,2)).toUpperCase(); })()}</span>
+                }
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 mb-1">
@@ -815,8 +817,11 @@ export default function SessionPage() {
                   </div>
                 )}
                 {partnerSpeaking && <div className="absolute w-44 h-44 rounded-full bg-white/20 animate-speak-pulse" />}
-                <div className={`relative w-28 h-28 rounded-full bg-white/20 backdrop-blur-md ring-2 ring-white/40 flex items-center justify-center font-black text-white text-3xl select-none transition-transform duration-200 ${partnerSpeaking ? 'scale-110' : ''}`}>
-                  {partnerName.trim().slice(0, 2).toUpperCase()}
+                <div className={`relative w-28 h-28 rounded-full overflow-hidden bg-white/20 backdrop-blur-md ring-2 ring-white/40 flex items-center justify-center font-black text-white text-3xl select-none transition-transform duration-200 ${partnerSpeaking ? 'scale-110' : ''}`}>
+                  {partner.avatar_url
+                    ? <img src={partner.avatar_url} alt="" className="w-full h-full object-cover" />
+                    : (() => { const p = partnerName.trim().split(/\s+/); return (p.length >= 2 ? p[0][0] + p[p.length-1][0] : partnerName.trim().slice(0,2)).toUpperCase(); })()
+                  }
                 </div>
               </div>
             )}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import type { SavedPartner } from '@/lib/types';
 import { LANG_FLAGS, LANG_AVATAR_COLOR } from '@/lib/constants';
@@ -9,12 +9,22 @@ import TopNav from '@/components/Sidebar';
 import { Mic, MicOff, Video, VideoOff } from 'lucide-react';
 import { supabase, isConfigured } from '@/lib/supabase';
 
-function Avatar({ name, lang, size = 'lg' }: { name: string; lang: string; size?: 'sm' | 'lg' }) {
+function Avatar({ name, lang, avatarUrl, size = 'lg' }: { name: string; lang: string; avatarUrl?: string | null; size?: 'sm' | 'lg' }) {
   const bg = LANG_AVATAR_COLOR[lang] ?? '#3b82f6';
   const cls = size === 'lg' ? 'w-14 h-14 text-xl' : 'w-10 h-10 text-sm';
+  const parts = name.trim().split(/\s+/);
+  const initials = (parts.length >= 2 ? parts[0][0] + parts[parts.length - 1][0] : name.trim().slice(0, 2)).toUpperCase();
+  const [imgFailed, setImgFailed] = useState(false);
+  if (avatarUrl && !imgFailed) {
+    return (
+      <div className={`${cls} rounded-2xl overflow-hidden shrink-0`}>
+        <img src={avatarUrl} alt={name} className="w-full h-full object-cover" onError={() => setImgFailed(true)} />
+      </div>
+    );
+  }
   return (
     <div style={{ backgroundColor: bg }} className={`${cls} rounded-2xl flex items-center justify-center font-black text-white shrink-0`}>
-      {name.trim().slice(0, 2).toUpperCase()}
+      {initials}
     </div>
   );
 }
@@ -204,7 +214,7 @@ export default function PreSessionPage() {
             <p className="font-serif font-black text-2xl text-neutral-900">Ready to join?</p>
 
             <div className="flex flex-col items-center gap-2">
-              <Avatar name={partner.name} lang={partner.native_language} size="lg" />
+              <Avatar name={partner.name} lang={partner.native_language} avatarUrl={partner.avatar_url} size="lg" />
               <p className="text-sm text-stone-500">
                 <span className="font-semibold text-neutral-900">{partner.name}</span>
                 {partnerOnline && (
