@@ -827,27 +827,33 @@ export default function HistoryPage() {
           <p className="text-sm font-medium text-stone-500">All time</p>
           <div className="grid grid-cols-2 gap-3">
             {/* Sessions */}
-            <div className="bg-white border border-stone-200 rounded-2xl px-4 py-5 flex flex-col items-center text-center">
-              <span className="text-2xl mb-1">🗣️</span>
-              <p className="font-black text-2xl text-[#171717]">{sessions.length}</p>
-              <p className="text-xs text-stone-400 mt-1">{sessions.length === 1 ? 'session' : 'sessions'}</p>
+            <div className="bg-white border border-stone-200 rounded-2xl px-4 py-4 flex items-center gap-3">
+              <span className="text-xl shrink-0">🗣️</span>
+              <div>
+                <p className="font-black text-xl text-[#171717] leading-none">{sessions.length}</p>
+                <p className="text-xs text-stone-400 mt-0.5">{sessions.length === 1 ? 'session' : 'sessions'}</p>
+              </div>
             </div>
             {/* Time */}
-            <div className="bg-white border border-stone-200 rounded-2xl px-4 py-5 flex flex-col items-center text-center">
-              <span className="text-2xl mb-1">⏱️</span>
-              <p className="font-black text-2xl text-[#171717]">{totalTimeLabel}</p>
-              <p className="text-xs text-stone-400 mt-1">practiced</p>
+            <div className="bg-white border border-stone-200 rounded-2xl px-4 py-4 flex items-center gap-3">
+              <span className="text-xl shrink-0">⏱️</span>
+              <div>
+                <p className="font-black text-xl text-[#171717] leading-none">{totalTimeLabel}</p>
+                <p className="text-xs text-stone-400 mt-0.5">practiced</p>
+              </div>
             </div>
             {/* Week streak */}
-            <div className="bg-white border border-stone-200 rounded-2xl px-4 py-5 flex flex-col items-center text-center">
-              <span className="text-2xl mb-1">🔥</span>
-              <p className="font-black text-2xl text-[#171717]">{weeksRunning > 0 ? weeksRunning : '–'}</p>
-              <p className="text-xs text-stone-400 mt-1">wk streak</p>
+            <div className="bg-white border border-stone-200 rounded-2xl px-4 py-4 flex items-center gap-3">
+              <span className="text-xl shrink-0">🔥</span>
+              <div>
+                <p className="font-black text-xl text-[#171717] leading-none">{weeksRunning > 0 ? weeksRunning : '–'}</p>
+                <p className="text-xs text-stone-400 mt-0.5">wk streak</p>
+              </div>
             </div>
             {/* Partner streak — tappable → /partners */}
             <button
               onClick={() => router.push('/partners')}
-              className="bg-white border border-stone-200 rounded-2xl px-4 py-5 flex flex-col items-center text-center hover:bg-stone-50 transition-colors"
+              className="bg-white border border-stone-200 rounded-2xl px-4 py-4 flex items-center gap-3 hover:bg-stone-50 transition-colors text-left"
             >
               {topPartner ? (() => {
                 const live = liveProfiles[topPartner.partnerId];
@@ -856,11 +862,13 @@ export default function HistoryPage() {
                 const initials = name.trim().slice(0, 2).toUpperCase();
                 const bg = LANG_AVATAR_COLOR[live?.nativeLang ?? ''] ?? '#3b82f6';
                 return avatarUrl
-                  ? <img src={avatarUrl} alt={name} className="w-8 h-8 rounded-xl object-cover mb-1" />
-                  : <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white text-xs font-black mb-1" style={{ backgroundColor: bg }}>{initials}</div>;
-              })() : <span className="text-2xl mb-1">🤝</span>}
-              <p className="font-black text-2xl text-[#171717]">{topStreak > 0 ? topStreak : '–'}</p>
-              <p className="text-xs text-stone-400 mt-1">{topPartnerName ? `wks with ${topPartnerName}` : 'partner streak'}</p>
+                  ? <img src={avatarUrl} alt={name} className="w-7 h-7 rounded-lg object-cover shrink-0" />
+                  : <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-black shrink-0" style={{ backgroundColor: bg }}>{initials}</div>;
+              })() : <span className="text-xl shrink-0">🤝</span>}
+              <div>
+                <p className="font-black text-xl text-[#171717] leading-none">{topStreak > 0 ? topStreak : '–'}</p>
+                <p className="text-xs text-stone-400 mt-0.5">{topPartnerName ? `wks with ${topPartnerName}` : 'partner streak'}</p>
+              </div>
             </button>
           </div>
         </div>
