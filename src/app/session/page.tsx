@@ -893,46 +893,42 @@ export default function SessionPage() {
               </p>
             ) : messages.map((m, i) => (
               <div key={i} className={`flex flex-col ${m.from === 'me' ? 'items-end' : 'items-start'}`}>
-                <span className={`text-sm px-3 py-1.5 rounded-xl max-w-[85%] ${
+                <div className={`text-sm px-3 py-1.5 rounded-xl max-w-[85%] ${
                   m.from === 'me'
                     ? 'bg-neutral-900 text-white'
                     : 'bg-stone-100 text-neutral-800'
                 }`}>
-                  {m.text}
-                </span>
-                {m.from === 'partner' && (
-                  <div className="mt-1 ml-1">
-                    {translations[i] ? (
-                      <p className="text-[11px] text-stone-400 max-w-[85%]">{translations[i]}</p>
-                    ) : (
-                      <button
-                        disabled={translatingIdx === i || translationsUsed >= MAX_TRANSLATIONS}
-                        onClick={async () => {
-                          if (!myNativeLang) return;
-                          setTranslatingIdx(i);
-                          try {
-                            const res = await fetch('/api/translate', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ text: m.text, targetLanguage: myNativeLang }),
-                            });
-                            const { translation } = await res.json();
-                            setTranslations(t => ({ ...t, [i]: translation }));
-                            setTranslationsUsed(n => n + 1);
-                          } catch { /* ignore */ } finally {
-                            setTranslatingIdx(null);
-                          }
-                        }}
-                        className="text-[11px] text-stone-400 hover:text-stone-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                      >
-                        {translatingIdx === i
-                          ? 'Translating…'
-                          : translationsUsed >= MAX_TRANSLATIONS
-                          ? 'No translations left'
-                          : `Translate → ${myNativeLang}`}
-                      </button>
-                    )}
-                  </div>
+                  <p>{m.text}</p>
+                  {m.from === 'partner' && translations[i] && (
+                    <>
+                      <div className="my-1.5 border-t border-stone-300" />
+                      <p className="text-stone-500">{translations[i]}</p>
+                    </>
+                  )}
+                </div>
+                {m.from === 'partner' && !translations[i] && (
+                  <button
+                    disabled={translatingIdx === i || translationsUsed >= MAX_TRANSLATIONS}
+                    onClick={async () => {
+                      if (!myNativeLang) return;
+                      setTranslatingIdx(i);
+                      try {
+                        const res = await fetch('/api/translate', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ text: m.text, targetLanguage: myNativeLang }),
+                        });
+                        const { translation } = await res.json();
+                        setTranslations(t => ({ ...t, [i]: translation }));
+                        setTranslationsUsed(n => n + 1);
+                      } catch { /* ignore */ } finally {
+                        setTranslatingIdx(null);
+                      }
+                    }}
+                    className="mt-1 ml-1 text-[11px] text-stone-500 underline underline-offset-2 hover:text-stone-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {translatingIdx === i ? 'Translating…' : translationsUsed >= MAX_TRANSLATIONS ? 'No translations left' : `Translate → ${myNativeLang}`}
+                  </button>
                 )}
               </div>
             ))}
