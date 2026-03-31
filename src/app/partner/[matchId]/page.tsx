@@ -48,8 +48,8 @@ function fmtDate(iso: string) {
   });
 }
 
-function ChatPanel({ matchId, myId, partnerName, onClose }: {
-  matchId: string; myId: string; partnerName: string; onClose: () => void;
+function ChatPanel({ matchId, myId, partnerName, partnerAvatarUrl, partnerLang, onClose }: {
+  matchId: string; myId: string; partnerName: string; partnerAvatarUrl?: string | null; partnerLang: string; onClose: () => void;
 }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState('');
@@ -96,13 +96,27 @@ function ChatPanel({ matchId, myId, partnerName, onClose }: {
     }
   };
 
+  const bg = LANG_AVATAR_COLOR[partnerLang] ?? '#3b82f6';
+  const initials = (() => {
+    const p = partnerName.trim().split(/\s+/);
+    return (p.length >= 2 ? p[0][0] + p[p.length - 1][0] : partnerName.trim().slice(0, 2)).toUpperCase();
+  })();
+
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 px-4 pb-4 sm:pb-0">
-      <div className="bg-white border border-stone-200 rounded-3xl w-full max-w-sm flex flex-col overflow-hidden" style={{ height: '70vh' }}>
+    <div className="fixed inset-0 z-50 flex justify-end">
+      <div className="absolute inset-0 bg-black/20" onClick={onClose} />
+      <div className="relative bg-white border-l border-stone-200 flex flex-col overflow-hidden w-full max-w-xs sm:max-w-sm h-full shadow-xl">
         <div className="flex items-center gap-3 px-4 py-3 border-b border-stone-100 shrink-0">
           <button onClick={onClose} className="text-stone-400 hover:text-neutral-700 transition-colors">
-            <X className="w-4 h-4" />
+            <ArrowLeft className="w-4 h-4" />
           </button>
+          {partnerAvatarUrl ? (
+            <img src={partnerAvatarUrl} alt={partnerName} className="w-8 h-8 rounded-full object-cover shrink-0" />
+          ) : (
+            <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ backgroundColor: bg }}>
+              {initials}
+            </div>
+          )}
           <p className="text-sm font-semibold text-neutral-900 flex-1">{partnerName}</p>
         </div>
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-2">
@@ -127,7 +141,7 @@ function ChatPanel({ matchId, myId, partnerName, onClose }: {
             value={draft}
             onChange={e => setDraft(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && send()}
-            placeholder="Send a message..."
+            placeholder="Message..."
             className="flex-1 text-sm px-3 py-2 border border-stone-200 rounded-xl focus:outline-none focus:border-neutral-400 bg-stone-50"
           />
           <button onClick={send} disabled={!draft.trim()} className="p-2.5 btn-primary text-white rounded-xl disabled:opacity-40">
@@ -296,6 +310,8 @@ export default function PartnerProfilePage() {
           matchId={matchId}
           myId={myId}
           partnerName={partner.name}
+          partnerAvatarUrl={partner.avatarUrl}
+          partnerLang={partner.nativeLang}
           onClose={() => setChatOpen(false)}
         />
       )}
