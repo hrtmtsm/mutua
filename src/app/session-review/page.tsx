@@ -19,30 +19,50 @@ function SessionReviewInner() {
   const [duration,    setDuration]    = useState(0);
   const [partnerName, setPartnerName] = useState('your partner');
   const [streak,      setStreak]      = useState(0);
+  const [matchId,     setMatchId]     = useState<string | null>(null);
+  const [userId,      setUserId]      = useState<string | null>(null);
+  const [partnerId,   setPartnerId]   = useState<string | null>(null);
+  const [loading,     setLoading]     = useState(false);
 
   useEffect(() => {
-    // Partner name from query param (history flow) or last session
     const qPartner = searchParams.get('partner');
     if (qPartner) {
       setPartnerName(qPartner);
     } else {
       const session = localStorage.getItem('mutua_last_session');
       if (session) {
-        const { duration: d, partnerName: n } = JSON.parse(session);
+        const { duration: d, partnerName: n, matchId: mid, partnerId: pid } = JSON.parse(session);
         setDuration(d ?? 0);
         setPartnerName(n ?? 'your partner');
+        setMatchId(mid ?? null);
+        setPartnerId(pid ?? null);
       }
     }
+    setUserId(localStorage.getItem('mutua_session_id'));
     const streakRaw = localStorage.getItem('mutua_streak');
     if (streakRaw) setStreak(JSON.parse(streakRaw).count ?? 0);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function handleRematch(goToSchedule: boolean) {
+    setLoading(true);
+    try {
+      if (matchId && userId && partnerId) {
+        await fetch('/api/rematch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ matchId, userId, partnerId }),
+        });
+      }
+    } catch { /* ignore — still navigate */ }
+    setLoading(false);
+    router.push(goToSchedule ? '/set-availability' : '/app');
+  }
 
   return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center px-6 py-10 max-w-sm mx-auto">
 
       <div className="w-full flex flex-col items-center text-center gap-6">
 
-        {/* Celebration — only shown after a real session */}
         {!fromHistory && (
           <div className="flex flex-col items-center gap-3">
             <span className="text-6xl">🔥</span>
@@ -58,22 +78,23 @@ function SessionReviewInner() {
           </div>
         )}
 
-        {/* Schedule confirmation */}
         <div className="w-full bg-stone-50 border border-stone-200 rounded-2xl px-5 py-4 text-left">
           <p className="text-sm font-semibold text-neutral-900 mb-1">Keep the momentum going</p>
           <p className="text-sm text-neutral-500 leading-relaxed">
-            We&rsquo;ll match you with {partnerName} again using your current schedule.
+            We&rsquo;ll match you with {partnerName} again once they confirm too.
           </p>
           <div className="flex gap-2 mt-4">
             <button
-              onClick={() => router.push('/app')}
-              className="flex-1 py-3 btn-primary text-white font-bold rounded-xl text-sm"
+              onClick={() => handleRematch(false)}
+              disabled={loading}
+              className="flex-1 py-3 btn-primary text-white font-bold rounded-xl text-sm disabled:opacity-50"
             >
               Sounds good
             </button>
             <button
-              onClick={() => router.push('/set-availability')}
-              className="flex-1 py-3 border border-stone-200 text-stone-500 font-medium rounded-xl text-sm hover:bg-stone-100 transition-colors"
+              onClick={() => handleRematch(true)}
+              disabled={loading}
+              className="flex-1 py-3 border border-stone-200 text-stone-500 font-medium rounded-xl text-sm hover:bg-stone-100 transition-colors disabled:opacity-50"
             >
               Update schedule
             </button>
