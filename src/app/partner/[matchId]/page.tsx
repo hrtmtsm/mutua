@@ -103,17 +103,17 @@ function ChatPanel({ matchId, myId, partnerName, partnerAvatarUrl, partnerLang, 
   })();
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
-      <div className="absolute inset-0 bg-black/20" onClick={onClose} />
-      <div className="relative bg-white border-l border-stone-200 flex flex-col overflow-hidden w-full max-w-xs sm:max-w-sm h-full shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-start justify-end pt-14 pr-4">
+      <div className="absolute inset-0" onClick={onClose} />
+      <div className="relative bg-white border border-stone-200 rounded-2xl flex flex-col overflow-hidden shadow-xl w-full max-w-xs sm:max-w-sm" style={{ height: '80vh' }}>
         <div className="flex items-center gap-3 px-4 py-3 border-b border-stone-100 shrink-0">
           <button onClick={onClose} className="text-stone-400 hover:text-neutral-700 transition-colors">
             <ArrowLeft className="w-4 h-4" />
           </button>
           {partnerAvatarUrl ? (
-            <img src={partnerAvatarUrl} alt={partnerName} className="w-8 h-8 rounded-full object-cover shrink-0" />
+            <img src={partnerAvatarUrl} alt={partnerName} className="w-9 h-9 rounded-xl object-cover shrink-0" />
           ) : (
-            <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ backgroundColor: bg }}>
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ backgroundColor: bg }}>
               {initials}
             </div>
           )}
