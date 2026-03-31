@@ -130,6 +130,7 @@ export default function PreSessionPage() {
         goal:               partner.goal,
         comm_style:         partner.comm_style,
         practice_frequency: partner.practice_frequency,
+        avatar_url:         partner.avatar_url ?? null,
       },
       score: 0, reasons: [], starters,
       startWithCamera:   cameraOn,
