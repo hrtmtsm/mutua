@@ -482,6 +482,8 @@ export default function SessionPage() {
     const pName = match?.partner.name ?? 'Your partner';
     const partnerId = match?.partner.session_id ?? '';
     const durationMins = Math.round(seconds / 60);
+    const stored = localStorage.getItem('mutua_match');
+    const matchId = stored ? (JSON.parse(stored) as { match_id?: string }).match_id : null;
     const sessionEntry = {
       partnerName: pName,
       partnerId,
@@ -494,8 +496,6 @@ export default function SessionPage() {
     localStorage.setItem('mutua_history', JSON.stringify(history.slice(0, 50)));
 
     // Archive the match in Supabase so the home card disappears
-    const stored = localStorage.getItem('mutua_match');
-    const matchId = stored ? (JSON.parse(stored) as { match_id?: string }).match_id : null;
     if (matchId && isConfigured) {
       supabase.from('matches').update({ scheduling_state: 'archived' }).eq('id', matchId).then(() => {});
     }
