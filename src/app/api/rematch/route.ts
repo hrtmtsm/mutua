@@ -51,6 +51,24 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'original match not found' }, { status: 404 });
   }
 
+  // Guard: don't create a new match if there's already an active one between these two users
+  const { data: existing } = await db
+    .from('matches')
+    .select('id')
+    .or(
+      `and(session_id_a.eq.${original.session_id_a},session_id_b.eq.${original.session_id_b}),` +
+      `and(session_id_a.eq.${original.session_id_b},session_id_b.eq.${original.session_id_a})`
+    )
+    .neq('id', matchId)
+    .neq('scheduling_state', 'archived')
+    .maybeSingle();
+
+  if (existing) {
+    // Already have an active match — return it instead of creating a duplicate
+    await db.from('rematch_intents').delete().eq('match_id', matchId);
+    return NextResponse.json({ matched: true, newMatchId: existing.id });
+  }
+
   // Create new match with same participants
   const { data: newMatch, error } = await db.from('matches').insert({
     session_id_a:       original.session_id_a,
@@ -72,6 +90,9 @@ export async function POST(req: Request) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  // Archive the old match so it no longer appears on the exchanges page
+  await db.from('matches').update({ scheduling_state: 'archived' }).eq('id', matchId);
 
   // Clean up intents so they can rematch again in future
   await db.from('rematch_intents').delete().eq('match_id', matchId);

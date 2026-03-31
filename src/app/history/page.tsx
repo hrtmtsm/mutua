@@ -651,8 +651,8 @@ export default function HistoryPage() {
             date:        l.ended_at,
           }));
           // Deduplicate by date+partnerId — prefer remote (has correct duration)
-          const seen = new Set(remoteEntries.map(e => `${e.partnerId}:${e.date.slice(0, 16)}`));
-          const localOnly = localParsed.filter(e => !seen.has(`${e.partnerId}:${e.date.slice(0, 16)}`));
+          const seen = new Set(remoteEntries.map(e => `${e.partnerId}:${e.date.slice(0, 10)}`));
+          const localOnly = localParsed.filter(e => !seen.has(`${e.partnerId}:${e.date.slice(0, 10)}`));
           merged = [...remoteEntries, ...localOnly].sort((a, b) => b.date.localeCompare(a.date));
         }
       }
