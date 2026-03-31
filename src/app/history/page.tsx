@@ -712,6 +712,12 @@ export default function HistoryPage() {
   const topStreak       = topPartner?.streak ?? 0;
   const hasStreak       = topStreak >= 2;
 
+  // All-time stats
+  const totalMinutes = sessions.reduce((sum, s) => sum + (s.duration ?? 0), 0);
+  const totalTimeLabel = totalMinutes >= 60
+    ? `${Math.floor(totalMinutes / 60)}h${totalMinutes % 60 > 0 ? ` ${totalMinutes % 60}m` : ''}`
+    : `${totalMinutes}m`;
+
   // This week's actual stats
   const weekStart = getWeekStart(new Date());
   const thisWeekEntries = sessions.filter(s => new Date(s.date) >= weekStart);
@@ -782,10 +788,21 @@ export default function HistoryPage() {
           </div>
         </div>
 
-        {/* ── 2. Practice rhythm ───────────────────────────────── */}
+        {/* ── 2. All-time stats ────────────────────────────────── */}
         <div className="space-y-2">
-          <p className="text-sm font-medium text-stone-500">Recent practice</p>
-          <RhythmChart sessions={sessions} targetLang={targetLang} liveProfiles={liveProfiles} />
+          <p className="text-sm font-medium text-stone-500">All time</p>
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { value: sessions.length.toString(), label: sessions.length === 1 ? 'session' : 'sessions' },
+              { value: totalTimeLabel,             label: 'practiced' },
+              { value: weeksRunning > 0 ? `${weeksRunning}` : '–', label: 'wk streak' },
+            ].map(({ value, label }) => (
+              <div key={label} className="bg-white border border-stone-200 rounded-2xl px-4 py-5 flex flex-col items-center text-center">
+                <p className="font-black text-2xl text-[#171717]">{value}</p>
+                <p className="text-xs text-stone-400 mt-1">{label}</p>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* ── 3. Your exchanges ────────────────────────────────── */}
