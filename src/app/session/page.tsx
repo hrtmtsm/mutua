@@ -480,10 +480,12 @@ export default function SessionPage() {
     }
     // Save lightweight session metadata for review screen + history
     const pName = match?.partner.name ?? 'Your partner';
+    const partnerId = match?.partner.session_id ?? '';
+    const durationMins = Math.round(seconds / 60);
     const sessionEntry = {
       partnerName: pName,
-      partnerId:   match?.partner.session_id ?? '',
-      duration:    seconds,
+      partnerId,
+      duration:    durationMins,
       date:        new Date().toISOString(),
     };
     localStorage.setItem('mutua_last_session', JSON.stringify(sessionEntry));
@@ -496,6 +498,17 @@ export default function SessionPage() {
     const matchId = stored ? (JSON.parse(stored) as { match_id?: string }).match_id : null;
     if (matchId && isConfigured) {
       supabase.from('matches').update({ scheduling_state: 'archived' }).eq('id', matchId).then(() => {});
+    }
+
+    // Persist session log to Supabase for cross-device history
+    if (isConfigured && myId) {
+      supabase.from('session_logs').insert({
+        user_id:       myId,
+        partner_id:    partnerId,
+        match_id:      matchId ?? null,
+        duration_secs: seconds,
+        ended_at:      new Date().toISOString(),
+      }).then(() => {});
     }
 
     localStorage.removeItem('mutua_match');
