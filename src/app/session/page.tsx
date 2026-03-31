@@ -804,17 +804,20 @@ export default function SessionPage() {
               className={`absolute inset-0 w-full h-full object-cover ${partnerCameraOn ? '' : 'hidden'}`}
             />
             {!partnerCameraOn && (
-              <div className="absolute inset-0">
-                {partner.avatar_url ? (
-                  <img src={partner.avatar_url} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center" style={{ backgroundColor: LANG_AVATAR_COLOR[partner.native_language] ?? '#2B8FFF' }}>
-                    {partnerSpeaking && <div className="absolute w-44 h-44 rounded-full bg-white/20 animate-speak-pulse" />}
-                    <div className={`relative w-28 h-28 rounded-full overflow-hidden bg-white/20 backdrop-blur-md ring-2 ring-white/40 flex items-center justify-center font-black text-white text-3xl select-none transition-transform duration-200 ${partnerSpeaking ? 'scale-110' : ''}`}>
-                      {(() => { const p = partnerName.trim().split(/\s+/); return (p.length >= 2 ? p[0][0] + p[p.length-1][0] : partnerName.trim().slice(0,2)).toUpperCase(); })()}
-                    </div>
-                  </div>
+              <div className="absolute inset-0 flex items-center justify-center overflow-hidden"
+                style={{ backgroundColor: LANG_AVATAR_COLOR[partner.native_language] ?? '#1e1e1e' }}>
+                {/* Blurred photo or color as background */}
+                {partner.avatar_url && (
+                  <img src={partner.avatar_url} alt="" aria-hidden className="absolute inset-0 w-full h-full object-cover"
+                    style={{ filter: 'blur(28px) saturate(1.5) brightness(0.8)', transform: 'scale(1.15)' }} />
                 )}
+                {partnerSpeaking && <div className="absolute w-44 h-44 rounded-full bg-white/20 animate-speak-pulse" />}
+                <div className={`relative w-28 h-28 rounded-full overflow-hidden bg-white/20 backdrop-blur-md ring-2 ring-white/40 flex items-center justify-center font-black text-white text-3xl select-none transition-transform duration-200 ${partnerSpeaking ? 'scale-110' : ''}`}>
+                  {partner.avatar_url
+                    ? <img src={partner.avatar_url} alt="" className="w-full h-full object-cover" />
+                    : (() => { const p = partnerName.trim().split(/\s+/); return (p.length >= 2 ? p[0][0] + p[p.length-1][0] : partnerName.trim().slice(0,2)).toUpperCase(); })()
+                  }
+                </div>
               </div>
             )}
             {/* Partner name bar */}
@@ -856,19 +859,18 @@ export default function SessionPage() {
               className={`absolute inset-0 w-full h-full object-cover ${cameraOn ? '' : 'hidden'}`}
             />
             {!cameraOn && (
-              <div className="absolute inset-0">
-                {myAvatarUrl ? (
-                  <img src={myAvatarUrl} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center"
-                    style={{ backgroundColor: LANG_AVATAR_COLOR[myNativeLang] ?? '#2B8FFF' }}>
-                    <div ref={selfHaloRef} className="absolute w-24 h-24 rounded-full bg-white/30"
-                      style={{ opacity: 0, transform: 'scale(1)', transformOrigin: 'center', willChange: 'transform, opacity' }} />
-                    <div className="relative w-20 h-20 rounded-full overflow-hidden ring-2 ring-white/40 bg-white/20 backdrop-blur-md flex items-center justify-center font-bold text-white text-xl select-none">
-                      <span>{myInitials || 'You'}</span>
-                    </div>
-                  </div>
+              <div className="absolute inset-0 flex items-center justify-center overflow-hidden"
+                style={{ backgroundColor: LANG_AVATAR_COLOR[myNativeLang] ?? '#1e1e1e' }}>
+                {/* Blurred photo or color as background */}
+                {myAvatarUrl && (
+                  <img src={myAvatarUrl} alt="" aria-hidden className="absolute inset-0 w-full h-full object-cover"
+                    style={{ filter: 'blur(28px) saturate(1.5) brightness(0.8)', transform: 'scale(1.15)' }} />
                 )}
+                <div ref={selfHaloRef} className="absolute w-24 h-24 rounded-full bg-white/30"
+                  style={{ opacity: 0, transform: 'scale(1)', transformOrigin: 'center', willChange: 'transform, opacity' }} />
+                <div className="relative w-20 h-20 rounded-full overflow-hidden ring-2 ring-white/40 bg-white/20 backdrop-blur-md flex items-center justify-center font-bold text-white text-xl select-none">
+                  {myAvatarUrl ? <img src={myAvatarUrl} alt="" className="w-full h-full object-cover" /> : <span>{myInitials || 'You'}</span>}
+                </div>
               </div>
             )}
             {/* "You" label */}
