@@ -190,7 +190,7 @@ export default function SessionPage() {
     if (typeof window === 'undefined') return undefined;
     try { const m = JSON.parse(localStorage.getItem('mutua_match') ?? '{}'); return m.audioDeviceId as string | undefined; } catch { return undefined; }
   });
-  const [showDevicePicker, setShowDevicePicker] = useState(false);
+  const [showDevicePicker, setShowDevicePicker] = useState<'mic' | 'camera' | null>(null);
   const [devices, setDevices] = useState<{ cameras: MediaDeviceInfo[]; mics: MediaDeviceInfo[] }>({ cameras: [], mics: [] });
   const [chatOpen,         setChatOpen]         = useState(false);
   const [unreadCount,      setUnreadCount]      = useState(0);
@@ -929,18 +929,33 @@ export default function SessionPage() {
 
       {/* ── Control bar (hidden on mobile when keyboard is open) ── */}
       <div className={`shrink-0 px-6 py-4 flex items-center justify-center gap-3 bg-white border-t border-neutral-200 z-10 ${keyboardOpen ? 'hidden' : ''}`}>
-        <button
-          onClick={() => setMuted(m => !m)}
-          className={`flex flex-col items-center gap-1.5 w-14 py-2.5 rounded-xl transition-all ${
-            muted ? 'bg-red-500 text-white' : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-700'
-          }`}
-        >
-          {muted
-            ? <MicOff className="w-5 h-5" />
-            : <Mic className="w-5 h-5" />
-          }
-          <span className="text-[11px] font-medium">{muted ? 'Unmute' : 'Mute'}</span>
-        </button>
+        {/* Mic button — Zoom-style with caret for mic picker */}
+        <div className="relative flex flex-col items-center gap-1.5">
+          {showDevicePicker === 'mic' && (
+            <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-56 bg-white border border-stone-200 rounded-xl shadow-xl z-50 overflow-hidden">
+              <p className="px-3 pt-2.5 pb-1 text-[10px] font-semibold text-stone-400 uppercase tracking-wider">Microphone</p>
+              {devices.mics.map(d => (
+                <button key={d.deviceId} onClick={() => { switchDevice('audioinput', d.deviceId); setShowDevicePicker(null); }}
+                  className="w-full text-left px-3 py-2 text-xs text-neutral-800 hover:bg-stone-50 truncate block"
+                >{d.label || 'Microphone'}</button>
+              ))}
+            </div>
+          )}
+          <div className={`flex items-stretch rounded-xl overflow-hidden transition-all ${muted ? 'bg-red-500 text-white' : 'bg-neutral-100 text-neutral-700'}`}>
+            <button onClick={() => setMuted(m => !m)} className="flex flex-col items-center gap-1 px-3 py-2.5 hover:opacity-80 transition-opacity">
+              {muted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+            </button>
+            <div className={`w-px self-stretch ${muted ? 'bg-red-400' : 'bg-neutral-200'}`} />
+            <button onClick={async () => {
+              const all = await navigator.mediaDevices.enumerateDevices();
+              setDevices(d => ({ ...d, mics: all.filter(x => x.kind === 'audioinput') }));
+              setShowDevicePicker(v => v === 'mic' ? null : 'mic');
+            }} className="px-1.5 py-2.5 hover:opacity-80 transition-opacity">
+              <ChevronUp className="w-3 h-3" />
+            </button>
+          </div>
+          <span className="text-[11px] font-medium text-neutral-700">{muted ? 'Unmute' : 'Mute'}</span>
+        </div>
 
         <button
           onClick={() => { setChatOpen(c => !c); setUnreadCount(0); }}
@@ -955,56 +970,32 @@ export default function SessionPage() {
           <span className="text-[11px] font-medium">Chat</span>
         </button>
 
-        <div className="relative flex flex-col items-center">
-          {showDevicePicker && (
+        {/* Camera button — Zoom-style with caret for camera picker */}
+        <div className="relative flex flex-col items-center gap-1.5">
+          {showDevicePicker === 'camera' && (
             <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-56 bg-white border border-stone-200 rounded-xl shadow-xl z-50 overflow-hidden">
-              {devices.cameras.length > 0 && (
-                <div>
-                  <p className="px-3 pt-2.5 pb-1 text-[10px] font-semibold text-stone-400 uppercase tracking-wider">Camera</p>
-                  {devices.cameras.map(d => (
-                    <button key={d.deviceId} onClick={() => { switchDevice('videoinput', d.deviceId); setShowDevicePicker(false); }}
-                      className="w-full text-left px-3 py-2 text-xs text-neutral-800 hover:bg-stone-50 truncate"
-                    >{d.label || 'Camera'}</button>
-                  ))}
-                </div>
-              )}
-              {devices.mics.length > 0 && (
-                <div className="border-t border-stone-100">
-                  <p className="px-3 pt-2.5 pb-1 text-[10px] font-semibold text-stone-400 uppercase tracking-wider">Microphone</p>
-                  {devices.mics.map(d => (
-                    <button key={d.deviceId} onClick={() => { switchDevice('audioinput', d.deviceId); setShowDevicePicker(false); }}
-                      className="w-full text-left px-3 py-2 text-xs text-neutral-800 hover:bg-stone-50 truncate"
-                    >{d.label || 'Microphone'}</button>
-                  ))}
-                </div>
-              )}
+              <p className="px-3 pt-2.5 pb-1 text-[10px] font-semibold text-stone-400 uppercase tracking-wider">Camera</p>
+              {devices.cameras.map(d => (
+                <button key={d.deviceId} onClick={() => { switchDevice('videoinput', d.deviceId); setShowDevicePicker(null); }}
+                  className="w-full text-left px-3 py-2 text-xs text-neutral-800 hover:bg-stone-50 truncate block"
+                >{d.label || 'Camera'}</button>
+              ))}
             </div>
           )}
-          <button
-            onClick={() => setCameraOn((c: boolean) => !c)}
-            onContextMenu={async e => {
-              e.preventDefault();
+          <div className={`flex items-stretch rounded-xl overflow-hidden transition-all ${cameraOn ? 'bg-[#2B8FFF] text-white' : 'bg-neutral-100 text-neutral-700'}`}>
+            <button onClick={() => setCameraOn((c: boolean) => !c)} className="flex flex-col items-center gap-1 px-3 py-2.5 hover:opacity-80 transition-opacity">
+              {cameraOn ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
+            </button>
+            <div className={`w-px self-stretch ${cameraOn ? 'bg-blue-400' : 'bg-neutral-200'}`} />
+            <button onClick={async () => {
               const all = await navigator.mediaDevices.enumerateDevices();
-              setDevices({ cameras: all.filter(d => d.kind === 'videoinput'), mics: all.filter(d => d.kind === 'audioinput') });
-              setShowDevicePicker(v => !v);
-            }}
-            className={`relative flex flex-col items-center gap-1.5 w-14 py-2.5 rounded-xl transition-all ${
-              cameraOn ? 'bg-[#2B8FFF] text-white' : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-700'
-            }`}
-          >
-            {cameraOn ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
-            <span className="text-[11px] font-medium">Camera</span>
-          </button>
-          <button
-            onClick={async () => {
-              const all = await navigator.mediaDevices.enumerateDevices();
-              setDevices({ cameras: all.filter(d => d.kind === 'videoinput'), mics: all.filter(d => d.kind === 'audioinput') });
-              setShowDevicePicker(v => !v);
-            }}
-            className="mt-0.5 text-stone-400 hover:text-neutral-700"
-          >
-            <ChevronUp className="w-3 h-3" />
-          </button>
+              setDevices(d => ({ ...d, cameras: all.filter(x => x.kind === 'videoinput') }));
+              setShowDevicePicker(v => v === 'camera' ? null : 'camera');
+            }} className="px-1.5 py-2.5 hover:opacity-80 transition-opacity">
+              <ChevronUp className="w-3 h-3" />
+            </button>
+          </div>
+          <span className="text-[11px] font-medium text-neutral-700">Camera</span>
         </div>
 
         <button
