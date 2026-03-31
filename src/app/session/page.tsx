@@ -928,7 +928,7 @@ export default function SessionPage() {
       </div>
 
       {/* ── Control bar (hidden on mobile when keyboard is open) ── */}
-      <div className={`shrink-0 px-3 py-3 flex items-center justify-center gap-2 bg-white border-t border-neutral-200 z-10 ${keyboardOpen ? 'hidden' : ''}`}>
+      <div className={`shrink-0 px-2 py-3 flex items-center justify-center gap-1.5 sm:gap-2 bg-white border-t border-neutral-200 z-10 ${keyboardOpen ? 'hidden' : ''}`}>
         {/* Mic button — split: [icon+label | ^picker] */}
         <div className="relative">
           {showDevicePicker === 'mic' && (
@@ -944,10 +944,10 @@ export default function SessionPage() {
           <div className={`flex items-center rounded-xl overflow-hidden transition-all ${muted ? 'bg-red-500 text-white' : 'bg-neutral-100 text-neutral-700'}`}>
             <button
               onClick={() => setMuted(m => !m)}
-              className="flex items-center gap-2 pl-3 pr-2 py-5 hover:opacity-90 transition-opacity"
+              className="flex items-center gap-1.5 pl-2.5 pr-1.5 py-5 hover:opacity-90 transition-opacity sm:pl-3 sm:pr-2 sm:gap-2"
             >
-              {muted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-              <span className="text-[11px] font-medium">{muted ? 'Unmute' : 'Mute'}</span>
+              {muted ? <MicOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Mic className="w-4 h-4 sm:w-5 sm:h-5" />}
+              <span className="text-[10px] sm:text-[11px] font-medium">{muted ? 'Unmute' : 'Mute'}</span>
             </button>
             <div className={`w-px self-stretch ${muted ? 'bg-red-400' : 'bg-neutral-300'}`} />
             <button
@@ -957,24 +957,24 @@ export default function SessionPage() {
                 setDevices(d => ({ ...d, mics: all.filter(x => x.kind === 'audioinput' && isReal(x)) }));
                 setShowDevicePicker(v => v === 'mic' ? null : 'mic');
               }}
-              className="px-2.5 py-5 hover:opacity-80 transition-opacity"
+              className="px-2 py-5 hover:opacity-80 transition-opacity sm:px-2.5"
             >
-              <ChevronUp className="w-3.5 h-3.5" />
+              <ChevronUp className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             </button>
           </div>
         </div>
 
         <button
           onClick={() => { setChatOpen(c => !c); setUnreadCount(0); }}
-          className={`relative flex items-center gap-2 px-3 py-5 rounded-xl transition-all ${
+          className={`relative flex items-center gap-1.5 px-2.5 py-5 rounded-xl transition-all sm:gap-2 sm:px-3 ${
             chatOpen ? 'bg-[#2B8FFF] text-white' : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-700'
           }`}
         >
-          <MessageSquare className="w-5 h-5" />
+          <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5" />
           {unreadCount > 0 && !chatOpen && (
             <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500" />
           )}
-          <span className="text-[11px] font-medium">Chat</span>
+          <span className="text-[10px] sm:text-[11px] font-medium">Chat</span>
         </button>
 
         {/* Camera button — split: [icon+label | ^picker] */}
@@ -992,32 +992,33 @@ export default function SessionPage() {
           <div className={`flex items-center rounded-xl overflow-hidden transition-all ${cameraOn ? 'bg-[#2B8FFF] text-white' : 'bg-neutral-100 text-neutral-700'}`}>
             <button
               onClick={() => setCameraOn((c: boolean) => !c)}
-              className="flex items-center gap-2 pl-3 pr-2 py-5 hover:opacity-90 transition-opacity"
+              className="flex items-center gap-1.5 pl-2.5 pr-1.5 py-5 hover:opacity-90 transition-opacity sm:pl-3 sm:pr-2 sm:gap-2"
             >
-              {cameraOn ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
-              <span className="text-[11px] font-medium">Camera</span>
+              {cameraOn ? <Video className="w-4 h-4 sm:w-5 sm:h-5" /> : <VideoOff className="w-4 h-4 sm:w-5 sm:h-5" />}
+              <span className="text-[10px] sm:text-[11px] font-medium">Camera</span>
             </button>
             <div className={`w-px self-stretch ${cameraOn ? 'bg-blue-400' : 'bg-neutral-300'}`} />
             <button
               onClick={async () => {
                 const all = await navigator.mediaDevices.enumerateDevices();
-                const isReal = (d: MediaDeviceInfo) => !!d.label && !d.label.toLowerCase().includes('virtual') && !d.label.toLowerCase().startsWith('default');
+                const SKIP = /triple|dual|wide|telephoto|ultra/i;
+                const isReal = (d: MediaDeviceInfo) => !!d.label && !d.label.toLowerCase().includes('virtual') && !d.label.toLowerCase().startsWith('default') && !SKIP.test(d.label);
                 setDevices(d => ({ ...d, cameras: all.filter(x => x.kind === 'videoinput' && isReal(x)) }));
                 setShowDevicePicker(v => v === 'camera' ? null : 'camera');
               }}
-              className="px-2.5 py-5 hover:opacity-80 transition-opacity"
+              className="px-2 py-5 hover:opacity-80 transition-opacity sm:px-2.5"
             >
-              <ChevronUp className="w-3.5 h-3.5" />
+              <ChevronUp className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             </button>
           </div>
         </div>
 
         <button
           onClick={() => setShowEndConfirm(true)}
-          className="flex items-center gap-2 px-3 py-5 rounded-xl bg-red-500 hover:bg-red-600 text-white transition-all"
+          className="flex items-center gap-1.5 px-2.5 py-5 rounded-xl bg-red-500 hover:bg-red-600 text-white transition-all sm:gap-2 sm:px-3"
         >
-          <PhoneOff className="w-5 h-5" />
-          <span className="text-[11px] font-medium">End</span>
+          <PhoneOff className="w-4 h-4 sm:w-5 sm:h-5" />
+          <span className="text-[10px] sm:text-[11px] font-medium">End</span>
         </button>
       </div>
 
