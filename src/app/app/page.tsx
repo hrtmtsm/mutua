@@ -37,7 +37,7 @@ function Avatar({ name, lang, avatarUrl, size = 'md' }: { name: string; lang: st
   const [imgFailed, setImgFailed] = useState(false);
   if (avatarUrl && !imgFailed) {
     return (
-      <div className={`${cls} rounded-2xl overflow-hidden shrink-0`}>
+      <div className={`${cls} rounded-full overflow-hidden shrink-0`}>
         <img src={avatarUrl} alt={name} className="w-full h-full object-cover" onError={() => setImgFailed(true)} />
       </div>
     );
@@ -45,7 +45,7 @@ function Avatar({ name, lang, avatarUrl, size = 'md' }: { name: string; lang: st
   return (
     <div
       style={{ backgroundColor: bg }}
-      className={`${cls} rounded-2xl flex items-center justify-center font-black text-white shrink-0`}
+      className={`${cls} rounded-full flex items-center justify-center font-black text-white shrink-0`}
     >
       {(() => { const p = name.trim().split(/\s+/); return (p.length >= 2 ? p[0][0] + p[p.length - 1][0] : name.trim().slice(0, 2)).toUpperCase(); })()}
     </div>
