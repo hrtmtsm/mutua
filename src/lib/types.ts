@@ -68,6 +68,7 @@ export interface SavedPartner {
   practice_frequency?: Frequency;
   saved_at:            string;
   match_id?:           string;
+  avatar_url?:         string | null;
 }
 
 export interface MatchResult {
