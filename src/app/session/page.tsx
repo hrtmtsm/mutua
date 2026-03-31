@@ -805,7 +805,7 @@ export default function SessionPage() {
             />
             {!partnerCameraOn && (
               <div className="absolute inset-0 flex items-center justify-center overflow-hidden"
-                style={{ backgroundColor: LANG_AVATAR_COLOR[partner.native_language] ?? '#1e1e1e' }}>
+                style={{ backgroundColor: partner.avatar_url ? '#1a1a1a' : (LANG_AVATAR_COLOR[partner.native_language] ?? '#1e1e1e') }}>
                 {/* Blurred photo or color as background */}
                 {partner.avatar_url && (
                   <img src={partner.avatar_url} alt="" aria-hidden className="absolute inset-0 w-full h-full object-cover"
@@ -860,7 +860,7 @@ export default function SessionPage() {
             />
             {!cameraOn && (
               <div className="absolute inset-0 flex items-center justify-center overflow-hidden"
-                style={{ backgroundColor: LANG_AVATAR_COLOR[myNativeLang] ?? '#1e1e1e' }}>
+                style={{ backgroundColor: myAvatarUrl ? '#1a1a1a' : (LANG_AVATAR_COLOR[myNativeLang] ?? '#1e1e1e') }}>
                 {/* Blurred photo or color as background */}
                 {myAvatarUrl && (
                   <img src={myAvatarUrl} alt="" aria-hidden className="absolute inset-0 w-full h-full object-cover"
