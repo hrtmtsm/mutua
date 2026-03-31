@@ -674,18 +674,21 @@ export default function TopNav() {
             <X className="w-4 h-4" />
           </button>
           {feedbackSent ? (
-            <div className="py-4 text-center space-y-2">
-              <p className="font-semibold text-neutral-900">Thanks for the feedback</p>
-              <p className="text-sm text-stone-400">We read everything.</p>
-              <button onClick={() => setShowFeedback(false)} className="mt-3 px-5 py-2.5 btn-primary text-white text-sm font-semibold rounded-xl">Done</button>
+            <div className="py-6 text-center space-y-2">
+              <p className="text-3xl">💙</p>
+              <p className="font-bold text-neutral-900 text-lg">You're the best</p>
+              <p className="text-sm text-stone-400 leading-relaxed">We read every single message.<br/>This really helps us improve.</p>
+              <button onClick={() => setShowFeedback(false)} className="mt-4 px-6 py-2.5 btn-primary text-white text-sm font-semibold rounded-xl">Close</button>
             </div>
           ) : (
             <>
-              <p className="font-semibold text-neutral-900 mb-1">Send feedback</p>
-              <p className="text-sm text-stone-400 mb-3">What's working, what's not, or anything else.</p>
+              <div className="mb-4">
+                <p className="font-bold text-neutral-900 text-lg mb-1">We love feedback 💬</p>
+                <p className="text-sm text-stone-400 leading-relaxed">Seriously — every message gets read. Tell us what&rsquo;s working, what&rsquo;s broken, or what you wish existed.</p>
+              </div>
               <textarea value={feedbackText} onChange={e => setFeedbackText(e.target.value)}
-                placeholder="Your thoughts..." rows={4}
-                className="w-full border border-stone-200 rounded-xl px-3 py-2.5 text-sm text-neutral-800 placeholder:text-stone-300 focus:outline-none focus:border-neutral-400 resize-none" />
+                placeholder="What's on your mind?" rows={4}
+                className="w-full border border-stone-200 rounded-xl px-3 py-2.5 text-sm text-neutral-800 placeholder:text-stone-300 focus:outline-none focus:border-[#2B8FFF] resize-none" />
               <button
                 disabled={!feedbackText.trim() || sendingFeedback}
                 onClick={async () => {
@@ -704,7 +707,7 @@ export default function TopNav() {
                 }}
                 className="mt-3 w-full py-3 btn-primary text-white font-semibold text-sm rounded-xl disabled:opacity-40"
               >
-                {sendingFeedback ? 'Sending…' : 'Send'}
+                {sendingFeedback ? 'Sending…' : 'Send it →'}
               </button>
             </>
           )}
