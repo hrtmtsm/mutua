@@ -153,7 +153,20 @@ export default function OnboardingPage() {
       return;
     }
 
-    const sessionId = crypto.randomUUID();
+    // Reuse stub session_id if admin pre-created a profile for this email
+    // (from run-matching), so pre-created matches are immediately visible
+    let sessionId: string;
+    try {
+      const res = await fetch('/api/resolve-session', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ email: trimmedEmail }),
+      });
+      const data = await res.json();
+      sessionId = data.sessionId ?? crypto.randomUUID();
+    } catch {
+      sessionId = crypto.randomUUID();
+    }
     localStorage.setItem('mutua_session_id', sessionId);
 
     const profile: UserProfile = {
