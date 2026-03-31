@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { supabase, getMessages, sendMessage, type Message } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { LANG_FLAGS, LANG_AVATAR_COLOR } from '@/lib/constants';
 import AppShell from '@/components/AppShell';
-import { ArrowLeft, MessageCircle, Send, X, Calendar } from 'lucide-react';
+import { ArrowLeft, MessageCircle, Calendar } from 'lucide-react';
 
 interface PartnerData {
   name: string;
@@ -48,123 +48,15 @@ function fmtDate(iso: string) {
   });
 }
 
-function ChatPanel({ matchId, myId, partnerName, partnerAvatarUrl, partnerLang, onClose }: {
-  matchId: string; myId: string; partnerName: string; partnerAvatarUrl?: string | null; partnerLang: string; onClose: () => void;
-}) {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [draft, setDraft] = useState('');
-  const bottomRef = useRef<HTMLDivElement>(null);
-  const inputRef  = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    getMessages(matchId).then(setMessages);
-    const channel = supabase
-      .channel(`partner-chat:${matchId}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
-        const msg = payload.new as Message;
-        if (msg.match_id === matchId) {
-          setMessages(prev => {
-            // Skip if already added optimistically
-            if (prev.some(m => m.id === msg.id)) return prev;
-            return [...prev.filter(m => !m.id.startsWith('opt-')), msg];
-          });
-        }
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [matchId]);
-
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
-  useEffect(() => { setTimeout(() => inputRef.current?.focus(), 50); }, []);
-
-  const send = async () => {
-    const text = draft.trim();
-    if (!text || !myId) return;
-    setDraft('');
-    const optimistic: Message = {
-      id: `opt-${Date.now()}`,
-      match_id: matchId,
-      sender_id: myId,
-      text,
-      created_at: new Date().toISOString(),
-    };
-    setMessages(prev => [...prev, optimistic]);
-    try {
-      await sendMessage(matchId, myId, text);
-    } catch {
-      setMessages(prev => prev.filter(m => m.id !== optimistic.id));
-    }
-  };
-
-  const bg = LANG_AVATAR_COLOR[partnerLang] ?? '#3b82f6';
-  const initials = (() => {
-    const p = partnerName.trim().split(/\s+/);
-    return (p.length >= 2 ? p[0][0] + p[p.length - 1][0] : partnerName.trim().slice(0, 2)).toUpperCase();
-  })();
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-start justify-end pt-14 pr-4">
-      <div className="absolute inset-0" onClick={onClose} />
-      <div className="relative bg-white border border-stone-200 rounded-2xl flex flex-col overflow-hidden shadow-xl w-full max-w-xs sm:max-w-sm" style={{ height: '80vh' }}>
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-stone-100 shrink-0">
-          <button onClick={onClose} className="text-stone-400 hover:text-neutral-700 transition-colors">
-            <ArrowLeft className="w-4 h-4" />
-          </button>
-          {partnerAvatarUrl ? (
-            <img src={partnerAvatarUrl} alt={partnerName} className="w-9 h-9 rounded-xl object-cover shrink-0" />
-          ) : (
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ backgroundColor: bg }}>
-              {initials}
-            </div>
-          )}
-          <p className="text-sm font-semibold text-neutral-900 flex-1">{partnerName}</p>
-        </div>
-        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-2">
-          {messages.length === 0 ? (
-            <p className="text-xs text-stone-400 text-center mt-6">No messages yet. Say hello!</p>
-          ) : messages.map(m => {
-            const isMe = m.sender_id === myId;
-            return (
-              <div key={m.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                <span className={`px-3 py-2 rounded-2xl text-sm max-w-[75%] leading-relaxed ${
-                  isMe ? 'bg-neutral-900 text-white rounded-br-sm' : 'bg-stone-100 text-neutral-500 rounded-bl-sm'
-                }`}>{m.text}</span>
-              </div>
-            );
-          })}
-          <div ref={bottomRef} />
-        </div>
-        <div className="px-4 py-3 border-t border-stone-100 flex gap-2 items-center shrink-0">
-          <input
-            ref={inputRef}
-            type="text"
-            value={draft}
-            onChange={e => setDraft(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && send()}
-            placeholder="Message..."
-            className="flex-1 text-sm px-3 py-2 border border-stone-200 rounded-xl focus:outline-none focus:border-neutral-400 bg-stone-50"
-          />
-          <button onClick={send} disabled={!draft.trim()} className="p-2.5 btn-primary text-white rounded-xl disabled:opacity-40">
-            <Send className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function PartnerProfilePage() {
   const { matchId } = useParams<{ matchId: string }>();
   const router = useRouter();
 
-  const [partner, setPartner]   = useState<PartnerData | null>(null);
-  const [myId, setMyId]         = useState('');
-  const [chatOpen, setChatOpen] = useState(false);
-  const [loading, setLoading]   = useState(true);
+  const [partner, setPartner] = useState<PartnerData | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const sid = localStorage.getItem('mutua_session_id') ?? '';
-    setMyId(sid);
 
     async function load() {
       const { data: match } = await supabase
@@ -185,8 +77,6 @@ export default function PartnerProfilePage() {
         .maybeSingle();
 
       const baseName = isA ? (match.name_b ?? 'Partner') : (match.name_a ?? 'Partner');
-
-      // Construct avatar URL directly from storage path — more reliable than DB column
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
       const storageAvatarUrl = `${supabaseUrl}/storage/v1/object/public/avatars/${partnerSessionId}.jpg`;
 
@@ -240,7 +130,7 @@ export default function PartnerProfilePage() {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <button
-            onClick={() => setChatOpen(true)}
+            onClick={() => window.dispatchEvent(new CustomEvent('mutua:open-chat'))}
             className="flex items-center gap-1.5 px-4 py-2 bg-stone-100 hover:bg-stone-200 transition-colors rounded-full text-sm font-semibold text-neutral-700"
           >
             <MessageCircle className="w-4 h-4" />
@@ -304,17 +194,6 @@ export default function PartnerProfilePage() {
 
         </div>
       </main>
-
-      {chatOpen && (
-        <ChatPanel
-          matchId={matchId}
-          myId={myId}
-          partnerName={partner.name}
-          partnerAvatarUrl={partner.avatarUrl}
-          partnerLang={partner.nativeLang}
-          onClose={() => setChatOpen(false)}
-        />
-      )}
     </AppShell>
   );
 }
