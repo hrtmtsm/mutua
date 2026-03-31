@@ -200,7 +200,7 @@ export default function SessionPage() {
   const [translations,     setTranslations]     = useState<Record<number, string>>({});
   const [translatingIdx,   setTranslatingIdx]   = useState<number | null>(null);
   const [translationsUsed, setTranslationsUsed] = useState(0);
-  const MAX_TRANSLATIONS = 5;
+  const MAX_TRANSLATIONS = 3;
   const [checklistStep,        setChecklistStep]        = useState(0);
   const [checklistCelebrating, setChecklistCelebrating] = useState(false);
   const [checklistDone,        setChecklistDone]        = useState(false);
