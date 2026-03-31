@@ -40,11 +40,23 @@ export default function PreSessionPage() {
   const [audioDevices,    setAudioDevices]    = useState<MediaDeviceInfo[]>([]);
   const [audioDeviceId,   setAudioDeviceId]   = useState('');
   const [partnerOnline,   setPartnerOnline]   = useState(false);
+  const [myAvatarUrl,     setMyAvatarUrl]     = useState<string | null>(null);
+  const [myInitials,      setMyInitials]      = useState('');
 
   useEffect(() => {
     const stored = localStorage.getItem('mutua_current_partner');
     if (!stored) { router.replace('/'); return; }
     setPartner(JSON.parse(stored));
+
+    // Load own profile for self-view placeholder
+    const profile = localStorage.getItem('mutua_profile');
+    if (profile) {
+      const p = JSON.parse(profile);
+      if (p.avatar_url) setMyAvatarUrl(p.avatar_url);
+      const name: string = p.name ?? '';
+      const parts = name.trim().split(/\s+/);
+      setMyInitials((parts.length >= 2 ? parts[0][0] + parts[parts.length - 1][0] : name.trim().slice(0, 2)).toUpperCase());
+    }
   }, [router]);
 
   // Enumerate audio input devices (requires a permission grant first)
@@ -149,8 +161,11 @@ export default function PreSessionPage() {
             {/* Avatar placeholder when camera off */}
             {!cameraOn && (
               <div className="absolute inset-0 flex items-center justify-center" style={{ zIndex: 1 }}>
-                <div className="w-16 h-16 rounded-2xl bg-neutral-700 flex items-center justify-center text-white font-black text-xl">
-                  {partner.name.trim().slice(0, 2).toUpperCase()}
+                <div className="w-16 h-16 rounded-2xl overflow-hidden bg-neutral-700 flex items-center justify-center text-white font-black text-xl">
+                  {myAvatarUrl
+                    ? <img src={myAvatarUrl} alt="" className="w-full h-full object-cover" />
+                    : myInitials || 'You'
+                  }
                 </div>
               </div>
             )}
