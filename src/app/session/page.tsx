@@ -890,7 +890,7 @@ export default function SessionPage() {
 
         {/* ── Mobile prompt card — below video area, not overlapping ── */}
         {!chatOpen && (
-          <div className="md:hidden shrink-0 px-3 py-2 bg-[#2B8FFF]">
+          <div className="md:hidden shrink-0 px-3 py-2 bg-white">
             {promptCard}
           </div>
         )}
