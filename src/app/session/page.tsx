@@ -929,7 +929,7 @@ export default function SessionPage() {
 
       {/* ── Control bar (hidden on mobile when keyboard is open) ── */}
       <div className={`shrink-0 px-6 py-4 flex items-center justify-center gap-3 bg-white border-t border-neutral-200 z-10 ${keyboardOpen ? 'hidden' : ''}`}>
-        {/* Mic button — Zoom-style with caret for mic picker */}
+        {/* Mic button with corner caret for mic picker */}
         <div className="relative flex flex-col items-center gap-1.5">
           {showDevicePicker === 'mic' && (
             <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-56 bg-white border border-stone-200 rounded-xl shadow-xl z-50 overflow-hidden">
@@ -941,20 +941,24 @@ export default function SessionPage() {
               ))}
             </div>
           )}
-          <div className={`flex items-stretch rounded-xl overflow-hidden transition-all ${muted ? 'bg-red-500 text-white' : 'bg-neutral-100 text-neutral-700'}`}>
-            <button onClick={() => setMuted(m => !m)} className="flex flex-col items-center gap-1 px-3 py-2.5 hover:opacity-80 transition-opacity">
-              {muted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-            </button>
-            <div className={`w-px self-stretch ${muted ? 'bg-red-400' : 'bg-neutral-200'}`} />
-            <button onClick={async () => {
-              const all = await navigator.mediaDevices.enumerateDevices();
-              setDevices(d => ({ ...d, mics: all.filter(x => x.kind === 'audioinput') }));
-              setShowDevicePicker(v => v === 'mic' ? null : 'mic');
-            }} className="px-1.5 py-2.5 hover:opacity-80 transition-opacity">
-              <ChevronUp className="w-3 h-3" />
-            </button>
-          </div>
-          <span className="text-[11px] font-medium text-neutral-700">{muted ? 'Unmute' : 'Mute'}</span>
+          <button
+            onClick={() => setMuted(m => !m)}
+            className={`relative flex flex-col items-center gap-1.5 w-14 py-2.5 rounded-xl transition-all ${muted ? 'bg-red-500 text-white' : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-700'}`}
+          >
+            {muted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+            <span className="text-[11px] font-medium">{muted ? 'Unmute' : 'Mute'}</span>
+            <span
+              onClick={async e => {
+                e.stopPropagation();
+                const all = await navigator.mediaDevices.enumerateDevices();
+                setDevices(d => ({ ...d, mics: all.filter(x => x.kind === 'audioinput') }));
+                setShowDevicePicker(v => v === 'mic' ? null : 'mic');
+              }}
+              className="absolute top-1 right-1 p-0.5 rounded opacity-60 hover:opacity-100"
+            >
+              <ChevronUp className="w-2.5 h-2.5" />
+            </span>
+          </button>
         </div>
 
         <button
@@ -970,7 +974,7 @@ export default function SessionPage() {
           <span className="text-[11px] font-medium">Chat</span>
         </button>
 
-        {/* Camera button — Zoom-style with caret for camera picker */}
+        {/* Camera button with corner caret for camera picker */}
         <div className="relative flex flex-col items-center gap-1.5">
           {showDevicePicker === 'camera' && (
             <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-56 bg-white border border-stone-200 rounded-xl shadow-xl z-50 overflow-hidden">
@@ -982,20 +986,24 @@ export default function SessionPage() {
               ))}
             </div>
           )}
-          <div className={`flex items-stretch rounded-xl overflow-hidden transition-all ${cameraOn ? 'bg-[#2B8FFF] text-white' : 'bg-neutral-100 text-neutral-700'}`}>
-            <button onClick={() => setCameraOn((c: boolean) => !c)} className="flex flex-col items-center gap-1 px-3 py-2.5 hover:opacity-80 transition-opacity">
-              {cameraOn ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
-            </button>
-            <div className={`w-px self-stretch ${cameraOn ? 'bg-blue-400' : 'bg-neutral-200'}`} />
-            <button onClick={async () => {
-              const all = await navigator.mediaDevices.enumerateDevices();
-              setDevices(d => ({ ...d, cameras: all.filter(x => x.kind === 'videoinput') }));
-              setShowDevicePicker(v => v === 'camera' ? null : 'camera');
-            }} className="px-1.5 py-2.5 hover:opacity-80 transition-opacity">
-              <ChevronUp className="w-3 h-3" />
-            </button>
-          </div>
-          <span className="text-[11px] font-medium text-neutral-700">Camera</span>
+          <button
+            onClick={() => setCameraOn((c: boolean) => !c)}
+            className={`relative flex flex-col items-center gap-1.5 w-14 py-2.5 rounded-xl transition-all ${cameraOn ? 'bg-[#2B8FFF] text-white' : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-700'}`}
+          >
+            {cameraOn ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
+            <span className="text-[11px] font-medium">Camera</span>
+            <span
+              onClick={async e => {
+                e.stopPropagation();
+                const all = await navigator.mediaDevices.enumerateDevices();
+                setDevices(d => ({ ...d, cameras: all.filter(x => x.kind === 'videoinput') }));
+                setShowDevicePicker(v => v === 'camera' ? null : 'camera');
+              }}
+              className="absolute top-1 right-1 p-0.5 rounded opacity-60 hover:opacity-100"
+            >
+              <ChevronUp className="w-2.5 h-2.5" />
+            </span>
+          </button>
         </div>
 
         <button
