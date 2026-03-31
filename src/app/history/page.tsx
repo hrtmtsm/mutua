@@ -792,17 +792,39 @@ export default function HistoryPage() {
         <div className="space-y-2">
           <p className="text-sm font-medium text-stone-500">All time</p>
           <div className="grid grid-cols-2 gap-3">
-            {[
-              { value: sessions.length.toString(), label: sessions.length === 1 ? 'session' : 'sessions' },
-              { value: totalTimeLabel,             label: 'practiced' },
-              { value: weeksRunning > 0 ? `${weeksRunning}` : '–', label: 'wk streak' },
-              { value: topStreak > 0 ? `${topStreak}` : '–',       label: topPartnerName ? `wks with ${topPartnerName}` : 'partner streak' },
-            ].map(({ value, label }) => (
-              <div key={label} className="bg-white border border-stone-200 rounded-2xl px-4 py-5 flex flex-col items-center text-center">
-                <p className="font-black text-2xl text-[#171717]">{value}</p>
-                <p className="text-xs text-stone-400 mt-1">{label}</p>
-              </div>
-            ))}
+            {/* Sessions */}
+            <div className="bg-white border border-stone-200 rounded-2xl px-4 py-5 flex flex-col items-center text-center">
+              <span className="text-2xl mb-1">🗣️</span>
+              <p className="font-black text-2xl text-[#171717]">{sessions.length}</p>
+              <p className="text-xs text-stone-400 mt-1">{sessions.length === 1 ? 'session' : 'sessions'}</p>
+            </div>
+            {/* Time */}
+            <div className="bg-white border border-stone-200 rounded-2xl px-4 py-5 flex flex-col items-center text-center">
+              <span className="text-2xl mb-1">⏱️</span>
+              <p className="font-black text-2xl text-[#171717]">{totalTimeLabel}</p>
+              <p className="text-xs text-stone-400 mt-1">practiced</p>
+            </div>
+            {/* Week streak */}
+            <div className="bg-white border border-stone-200 rounded-2xl px-4 py-5 flex flex-col items-center text-center">
+              <span className="text-2xl mb-1">🔥</span>
+              <p className="font-black text-2xl text-[#171717]">{weeksRunning > 0 ? weeksRunning : '–'}</p>
+              <p className="text-xs text-stone-400 mt-1">wk streak</p>
+            </div>
+            {/* Partner streak */}
+            <div className="bg-white border border-stone-200 rounded-2xl px-4 py-5 flex flex-col items-center text-center">
+              {topPartner ? (() => {
+                const live = liveProfiles[topPartner.partnerId];
+                const avatarUrl = live?.avatarUrl ?? null;
+                const name = live?.name || topPartner.partnerName;
+                const initials = name.trim().slice(0, 2).toUpperCase();
+                const bg = LANG_AVATAR_COLOR[live?.nativeLang ?? ''] ?? '#3b82f6';
+                return avatarUrl
+                  ? <img src={avatarUrl} alt={name} className="w-8 h-8 rounded-xl object-cover mb-1" />
+                  : <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white text-xs font-black mb-1" style={{ backgroundColor: bg }}>{initials}</div>;
+              })() : <span className="text-2xl mb-1">🤝</span>}
+              <p className="font-black text-2xl text-[#171717]">{topStreak > 0 ? topStreak : '–'}</p>
+              <p className="text-xs text-stone-400 mt-1">{topPartnerName ? `wks with ${topPartnerName}` : 'partner streak'}</p>
+            </div>
           </div>
         </div>
 
