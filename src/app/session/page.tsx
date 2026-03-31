@@ -488,7 +488,7 @@ export default function SessionPage() {
       duration:    durationMins,
       date:        new Date().toISOString(),
     };
-    localStorage.setItem('mutua_last_session', JSON.stringify(sessionEntry));
+    localStorage.setItem('mutua_last_session', JSON.stringify({ ...sessionEntry, duration: seconds }));
     const history = JSON.parse(localStorage.getItem('mutua_history') ?? '[]');
     history.unshift(sessionEntry);
     localStorage.setItem('mutua_history', JSON.stringify(history.slice(0, 50)));
