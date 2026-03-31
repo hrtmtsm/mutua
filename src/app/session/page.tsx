@@ -886,7 +886,7 @@ export default function SessionPage() {
           </div>
 
           {/* Messages — scrollable */}
-          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2 min-h-0">
+          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 min-h-0">
             {messages.length === 0 ? (
               <p className="text-xs text-neutral-400 text-center mt-4 leading-relaxed">
                 Type while you talk — notes, words,<br />anything that helps.
