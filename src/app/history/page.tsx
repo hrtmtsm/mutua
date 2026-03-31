@@ -712,13 +712,24 @@ export default function HistoryPage() {
   const topStreak       = topPartner?.streak ?? 0;
   const hasStreak       = topStreak >= 2;
 
+  // This week's actual stats
+  const weekStart = getWeekStart(new Date());
+  const thisWeekEntries = sessions.filter(s => new Date(s.date) >= weekStart);
+  const thisWeekMinutes = thisWeekEntries.reduce((sum, s) => sum + (s.duration ?? 0), 0);
+  const thisWeekPartners = [...new Set(thisWeekEntries.map(s =>
+    (s.partnerId && liveProfiles[s.partnerId]?.name) || s.partnerName
+  ).filter(Boolean))];
+
   // Weekly check-in copy
   let weekHeadline: string;
   let weekSubline: string | null = null;
   let weekCta: string | null     = null;
 
   if (thisWeekDone) {
-    weekHeadline = 'You practiced this week';
+    const sessionWord = thisWeekSessions === 1 ? 'session' : 'sessions';
+    const minPart = thisWeekMinutes > 0 ? ` · ${thisWeekMinutes}m` : '';
+    const partnerPart = thisWeekPartners.length > 0 ? ` with ${thisWeekPartners.join(' & ')}` : '';
+    weekHeadline = `${thisWeekSessions} ${sessionWord}${minPart}${partnerPart} this week`;
     if (hasStreak && topPartnerName) {
       weekSubline = `🔥 ${weeksRunning > 1 ? `${weeksRunning} weeks` : 'Going'} in a row with ${topPartnerName}`;
     }
