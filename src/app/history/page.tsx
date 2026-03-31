@@ -626,35 +626,58 @@ export default function HistoryPage() {
   useEffect(() => {
     const raw     = localStorage.getItem('mutua_history');
     const profile = localStorage.getItem('mutua_profile');
-    const parsed: SessionEntry[] = raw ? JSON.parse(raw) : [];
+    const localParsed: SessionEntry[] = raw ? JSON.parse(raw) : [];
     const prof = profile ? JSON.parse(profile) : {};
     const freq = prof.practice_frequency ?? '';
+    const mySid = localStorage.getItem('mutua_session_id') ?? '';
 
-    setSessions(parsed);
-    const grouped = groupByPartner(parsed);
-    setPartners(grouped);
-    setRhythm(computeRhythm(parsed, freq));
     setTargetLang(prof.target_language ?? '');
     setMyLang(prof.native_language ?? '');
 
-    // Fetch live name + avatar for each partner from Supabase
-    const ids = grouped.map(p => p.partnerId).filter(Boolean);
-    if (ids.length === 0) return;
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const mySid = localStorage.getItem('mutua_session_id') ?? '';
+    // Load from Supabase session_logs (cross-device) and merge with localStorage
+    const loadSessions = async () => {
+      let merged = [...localParsed];
+      if (mySid) {
+        const { data: logs } = await supabase
+          .from('session_logs')
+          .select('partner_id, duration_secs, ended_at')
+          .eq('user_id', mySid)
+          .order('ended_at', { ascending: false });
+        if (logs && logs.length > 0) {
+          const remoteEntries: SessionEntry[] = logs.map(l => ({
+            partnerName: '',   // filled in later from live profiles
+            partnerId:   l.partner_id,
+            duration:    Math.round(l.duration_secs / 60),
+            date:        l.ended_at,
+          }));
+          // Deduplicate by date+partnerId — prefer remote (has correct duration)
+          const seen = new Set(remoteEntries.map(e => `${e.partnerId}:${e.date.slice(0, 16)}`));
+          const localOnly = localParsed.filter(e => !seen.has(`${e.partnerId}:${e.date.slice(0, 16)}`));
+          merged = [...remoteEntries, ...localOnly].sort((a, b) => b.date.localeCompare(a.date));
+        }
+      }
 
-    // Fetch partner profiles + their match IDs in parallel
-    Promise.all([
-      supabase.from('profiles').select('session_id, name, avatar_url, native_language').in('session_id', ids),
-      supabase.from('matches').select('id, session_id_a, session_id_b')
-        .or(ids.map(id => `session_id_a.eq.${id},session_id_b.eq.${id}`).join(',')),
-    ]).then(([{ data: profiles }, { data: matches }]) => {
+      setSessions(merged);
+      const grouped = groupByPartner(merged);
+      setPartners(grouped);
+      setRhythm(computeRhythm(merged, freq));
+
+      const ids = grouped.map(p => p.partnerId).filter(Boolean);
+      if (ids.length === 0) return;
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+
+      // Fetch partner profiles + their match IDs in parallel
+      const [{ data: profiles }, { data: matches }] = await Promise.all([
+        supabase.from('profiles').select('session_id, name, avatar_url, native_language').in('session_id', ids),
+        supabase.from('matches').select('id, session_id_a, session_id_b')
+          .or(ids.map(id => `session_id_a.eq.${id},session_id_b.eq.${id}`).join(',')),
+      ]);
       if (!profiles) return;
       // Build partnerId → matchId lookup
       const matchMap: Record<string, string> = {};
       for (const m of (matches ?? [])) {
-        const partnerId = m.session_id_a === mySid ? m.session_id_b : m.session_id_a;
-        if (!matchMap[partnerId]) matchMap[partnerId] = m.id;
+        const pid = m.session_id_a === mySid ? m.session_id_b : m.session_id_a;
+        if (!matchMap[pid]) matchMap[pid] = m.id;
       }
       const map: Record<string, { name: string; avatarUrl: string | null; nativeLang: string; matchId: string | null }> = {};
       for (const row of profiles) {
@@ -668,7 +691,9 @@ export default function HistoryPage() {
         };
       }
       setLiveProfiles(map);
-    });
+    };
+
+    loadSessions();
   }, []);
 
   if (!rhythm) return null;
