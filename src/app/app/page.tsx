@@ -33,7 +33,7 @@ interface PartnerCard {
 
 function Avatar({ name, lang, avatarUrl, size = 'md' }: { name: string; lang: string; avatarUrl?: string | null; size?: 'sm' | 'md' | 'lg' }) {
   const bg  = LANG_AVATAR_COLOR[lang] ?? '#3b82f6';
-  const cls = size === 'lg' ? 'w-16 h-16 text-xl' : size === 'sm' ? 'w-10 h-10 text-sm' : 'w-12 h-12 text-base';
+  const cls = size === 'lg' ? 'w-20 h-20 text-2xl' : size === 'sm' ? 'w-10 h-10 text-sm' : 'w-12 h-12 text-base';
   const [imgFailed, setImgFailed] = useState(false);
   if (avatarUrl && !imgFailed) {
     return (
