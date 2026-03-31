@@ -636,8 +636,12 @@ export default function SessionPage() {
             ))}
           </div>
         ) : (
-          <div className="bg-white/60 border border-stone-200 border-dashed rounded-2xl px-6 py-10 text-center">
-            <p className="text-sm text-stone-400">No partners yet — we'll email you when we find a match.</p>
+          <div className="bg-white border border-stone-200 rounded-2xl px-6 py-10 text-center space-y-2">
+            <p className="text-sm font-semibold text-neutral-700">Looking for your match</p>
+            <p className="text-sm text-stone-400 leading-relaxed">
+              We're searching for a compatible language partner.<br />
+              We'll email you as soon as we find one.
+            </p>
           </div>
         )}
 

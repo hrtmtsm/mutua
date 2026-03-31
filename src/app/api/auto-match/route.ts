@@ -8,6 +8,7 @@ const MAX_MATCHES = 5;
 interface Profile {
   session_id:         string;
   email:              string;
+  name?:              string;
   native_language:    string;
   learning_language:  string;
   goal:               string;
@@ -23,6 +24,11 @@ function score(a: Profile, b: Profile): number {
       a.practice_frequency === b.practice_frequency) s += 10;
   return Math.min(s, 99);
 }
+
+// Emails are only sent when this env var is explicitly set to 'true'
+const EMAILS_ENABLED = process.env.SEND_MATCH_EMAILS === 'true';
+
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://trymutua.com';
 
 // ── Handler ───────────────────────────────────────────────────────────────────
 
@@ -117,6 +123,8 @@ export async function POST(request: Request) {
     const { error: insertErr } = await admin.from('matches').insert({
       session_id_a:       me.session_id,
       session_id_b:       partner.session_id,
+      name_a:             me.name        ?? me.email?.split('@')[0]        ?? null,
+      name_b:             partner.name   ?? partner.email?.split('@')[0]   ?? null,
       email_a:            me.email,
       email_b:            partner.email,
       native_language_a:  me.native_language,
@@ -135,6 +143,33 @@ export async function POST(request: Request) {
     }
 
     created.push({ emailA: me.email, emailB: partner.email, score: matchScore });
+
+    // Notify both users by email — gated behind SEND_MATCH_EMAILS=true
+    if (EMAILS_ENABLED) {
+      const baseUrl = APP_URL.replace(/\/$/, '');
+      await Promise.allSettled([
+        // Notify the existing partner that a new match found them
+        fetch(`${baseUrl}/api/send-match-email`, {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({
+            email:          partner.email,
+            nativeLanguage: partner.native_language,
+            targetLanguage: partner.learning_language,
+          }),
+        }),
+        // Notify the new user that their match was found
+        fetch(`${baseUrl}/api/send-match-email`, {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({
+            email:          me.email,
+            nativeLanguage: me.native_language,
+            targetLanguage: me.learning_language,
+          }),
+        }),
+      ]);
+    }
 
     // Update in-memory counts so subsequent iterations respect the cap
     matchCount.set(me.email,      (matchCount.get(me.email)      ?? 0) + 1);

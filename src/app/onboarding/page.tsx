@@ -99,7 +99,7 @@ const SUBTITLES = [
   'We use this to find a partner with the same purpose.',
   'We match you with someone who prefers the same format.',
   'We match you with someone who has the same commitment level.',
-  'You\'re almost there. Create an account to see your matches.',
+  'Your partner will see your name. Choose something you\'re comfortable with.',
 ];
 
 export default function OnboardingPage() {
@@ -120,6 +120,7 @@ export default function OnboardingPage() {
   const [goal,               setGoal]              = useState<Goal | null>(null);
   const [commStyle,          setCommStyle]         = useState<CommStyle | null>(null);
   const [practiceFrequency,  setPracticeFrequency] = useState<Frequency | null>(null);
+  const [name,               setName]              = useState('');
   const [email,              setEmail]             = useState('');
   const [password,           setPassword]          = useState('');
   const [showPassword,       setShowPassword]      = useState(false);
@@ -130,7 +131,7 @@ export default function OnboardingPage() {
     (step === 3 && goal !== null) ||
     (step === 4 && commStyle !== null) ||
     (step === 5 && practiceFrequency !== null) ||
-    (step === 6 && /\S+@\S+\.\S+/.test(email) && password.length >= 8);
+    (step === 6 && name.trim().length >= 1 && /\S+@\S+\.\S+/.test(email) && password.length >= 8);
 
   const handleNext = async () => {
     if (step < 6) { setStep(s => s + 1); return; }
@@ -158,7 +159,7 @@ export default function OnboardingPage() {
     const profile: UserProfile = {
       session_id:         sessionId,
       email:              trimmedEmail,
-      name:               trimmedEmail.split('@')[0],
+      name:               name.trim(),
       native_language:    native!,
       learning_language:  learning!,
       goal:               goal!,
@@ -167,7 +168,14 @@ export default function OnboardingPage() {
     };
     localStorage.setItem('mutua_profile', JSON.stringify(profile));
 
-    try { await saveProfile(profile); } catch (err) { console.error('saveProfile error:', err); }
+    // Save profile first — auto-match depends on it existing in DB
+    let profileSaved = false;
+    try {
+      await saveProfile(profile);
+      profileSaved = true;
+    } catch (err) {
+      console.error('saveProfile error:', err);
+    }
 
     // Keep waitlist entry as a backup record
     try {
@@ -181,14 +189,16 @@ export default function OnboardingPage() {
       });
     } catch (err) { console.error('saveToWaitlist error:', err); }
 
-    // Auto-match against existing profiles (no email sent)
-    try {
-      await fetch('/api/auto-match', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ session_id: sessionId }),
-      });
-    } catch (err) { console.error('auto-match error:', err); }
+    // Only run auto-match if the profile was saved to DB successfully
+    if (profileSaved) {
+      try {
+        await fetch('/api/auto-match', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ session_id: sessionId }),
+        });
+      } catch (err) { console.error('auto-match error:', err); }
+    }
 
     // Store auth user id if available
     if (authData.user) {
@@ -269,9 +279,17 @@ export default function OnboardingPage() {
             </div>
           )}
 
-          {/* Q6 — Email + Password */}
+          {/* Q6 — Name + Email + Password */}
           {step === 6 && (
             <div className="space-y-3">
+              <input
+                type="text"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                placeholder="Your name"
+                autoFocus
+                className="w-full px-4 py-3 border border-stone-200 rounded-xl text-sm text-neutral-900 placeholder:text-stone-400 focus:outline-none focus:border-[#2B8FFF]"
+              />
               <input
                 type="email"
                 value={email}
