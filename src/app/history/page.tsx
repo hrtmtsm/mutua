@@ -791,11 +791,12 @@ export default function HistoryPage() {
         {/* ── 2. All-time stats ────────────────────────────────── */}
         <div className="space-y-2">
           <p className="text-sm font-medium text-stone-500">All time</p>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             {[
               { value: sessions.length.toString(), label: sessions.length === 1 ? 'session' : 'sessions' },
               { value: totalTimeLabel,             label: 'practiced' },
               { value: weeksRunning > 0 ? `${weeksRunning}` : '–', label: 'wk streak' },
+              { value: topStreak > 0 ? `${topStreak}` : '–',       label: topPartnerName ? `wks with ${topPartnerName}` : 'partner streak' },
             ].map(({ value, label }) => (
               <div key={label} className="bg-white border border-stone-200 rounded-2xl px-4 py-5 flex flex-col items-center text-center">
                 <p className="font-black text-2xl text-[#171717]">{value}</p>
