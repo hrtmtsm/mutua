@@ -809,7 +809,7 @@ export default function SessionPage() {
                 {/* Blurred photo or color as background */}
                 {partner.avatar_url && (
                   <img src={partner.avatar_url} alt="" aria-hidden className="absolute inset-0 w-full h-full object-cover"
-                    style={{ filter: 'blur(28px) saturate(1.5) brightness(0.8)', transform: 'scale(1.15)' }} />
+                    style={{ filter: 'blur(40px) saturate(2) brightness(0.75)', transform: 'scale(2.5)' }} />
                 )}
                 {partnerSpeaking && <div className="absolute w-44 h-44 rounded-full bg-white/20 animate-speak-pulse" />}
                 <div className={`relative w-28 h-28 rounded-full overflow-hidden bg-white/20 backdrop-blur-md ring-2 ring-white/40 flex items-center justify-center font-black text-white text-3xl select-none transition-transform duration-200 ${partnerSpeaking ? 'scale-110' : ''}`}>
@@ -864,7 +864,7 @@ export default function SessionPage() {
                 {/* Blurred photo or color as background */}
                 {myAvatarUrl && (
                   <img src={myAvatarUrl} alt="" aria-hidden className="absolute inset-0 w-full h-full object-cover"
-                    style={{ filter: 'blur(28px) saturate(1.5) brightness(0.8)', transform: 'scale(1.15)' }} />
+                    style={{ filter: 'blur(40px) saturate(2) brightness(0.75)', transform: 'scale(2.5)' }} />
                 )}
                 <div ref={selfHaloRef} className="absolute w-24 h-24 rounded-full bg-white/30"
                   style={{ opacity: 0, transform: 'scale(1)', transformOrigin: 'center', willChange: 'transform, opacity' }} />
