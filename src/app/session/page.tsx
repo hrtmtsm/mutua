@@ -16,6 +16,7 @@ import {
   recordShownPrompt,
 } from '@/lib/promptsDb';
 import { isConfigured, supabase } from '@/lib/supabase';
+import { track } from '@/lib/analytics';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -368,6 +369,7 @@ export default function SessionPage() {
     if (el && partnerStream) {
       el.srcObject = partnerStream;
       el.play().catch(() => {}); // Bypass autoplay restrictions
+      track('session_joined', { partner_name: match?.partner.name ?? '' });
     }
   }, [partnerStream, partnerCameraOn]);
 
@@ -510,6 +512,14 @@ export default function SessionPage() {
         ended_at:      new Date().toISOString(),
       }).then(() => {});
     }
+
+    track('session_completed', {
+      duration_secs:  seconds,
+      duration_mins:  durationMins,
+      partner_name:   pName,
+      partner_id:     partnerId,
+      match_id:       matchId,
+    });
 
     localStorage.removeItem('mutua_match');
     router.push('/session-review');

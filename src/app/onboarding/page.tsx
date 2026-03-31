@@ -8,6 +8,7 @@ import {
 } from '@/lib/types';
 import { GOAL_DETAILS, COMM_STYLE_DETAILS, FREQUENCY_DETAILS, LANG_FLAGS } from '@/lib/constants';
 import { supabase, saveProfile, saveToWaitlist } from '@/lib/supabase';
+import { track } from '@/lib/analytics';
 
 // ---- sub-components --------------------------------------------------------
 
@@ -134,7 +135,18 @@ export default function OnboardingPage() {
     (step === 6 && name.trim().length >= 1 && /\S+@\S+\.\S+/.test(email) && password.length >= 8);
 
   const handleNext = async () => {
-    if (step < 6) { setStep(s => s + 1); return; }
+    if (step < 6) {
+      track('onboarding_step_completed', {
+        step,
+        ...(step === 1 && { native_language: native }),
+        ...(step === 2 && { learning_language: learning }),
+        ...(step === 3 && { goal }),
+        ...(step === 4 && { comm_style: commStyle }),
+        ...(step === 5 && { practice_frequency: practiceFrequency }),
+      });
+      setStep(s => s + 1);
+      return;
+    }
 
     setSaving(true);
     setAuthError('');
@@ -212,6 +224,14 @@ export default function OnboardingPage() {
         });
       } catch (err) { console.error('auto-match error:', err); }
     }
+
+    track('onboarding_completed', {
+      native_language:    native,
+      learning_language:  learning,
+      goal,
+      comm_style:         commStyle,
+      practice_frequency: practiceFrequency,
+    });
 
     // Store auth user id if available
     if (authData.user) {

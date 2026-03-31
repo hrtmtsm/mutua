@@ -2,6 +2,7 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { track } from '@/lib/analytics';
 
 function formatDuration(s: number) {
   const m = Math.floor(s / 60);
@@ -44,6 +45,7 @@ function SessionReviewInner() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleRematch(goToSchedule: boolean) {
+    track('rematch_requested', { partner_name: partnerName, go_to_schedule: goToSchedule });
     setLoading(true);
     try {
       if (matchId && userId && partnerId) {

@@ -469,6 +469,7 @@ export default function SessionPage() {
       if (matches.length === 0) return false;
       const cards = await Promise.all(matches.map(m => buildCard(m, sid)));
       setPartners(cards);
+      track('match_card_viewed', { match_count: cards.length, partner_names: cards.map(c => c.name) });
       return true;
     } catch (err) {
       console.error('loadMatch error:', err);
@@ -535,6 +536,9 @@ export default function SessionPage() {
         } catch { /* ignore */ }
       }
 
+      const isReturning = !!localStorage.getItem('mutua_profile');
+      if (isReturning) track('returning_user_opened');
+
       const found = await loadMatch(sid);
       if (!found) loadFromLocalStorage();
 
@@ -570,6 +574,7 @@ export default function SessionPage() {
   }, [anyComputing, sessionId, loadMatch]);
 
   const handleBookExchange = (partner: PartnerCard) => {
+    track('schedule_clicked', { partner_name: partner.name, match_id: partner.matchId });
     localStorage.setItem('mutua_scheduling_partner', partner.name);
     const params = new URLSearchParams();
     if (partner.matchId)         params.set('matchId', partner.matchId);
@@ -578,6 +583,7 @@ export default function SessionPage() {
   };
 
   const handleReschedule = (partner: PartnerCard) => {
+    track('reschedule_clicked', { partner_name: partner.name, match_id: partner.matchId });
     localStorage.setItem('mutua_scheduling_partner', partner.name);
     const params = new URLSearchParams();
     if (partner.matchId)         params.set('matchId', partner.matchId);
@@ -586,6 +592,7 @@ export default function SessionPage() {
   };
 
   const handleJoin = (partner: PartnerCard) => {
+    track('session_join_clicked', { partner_name: partner.name, match_id: partner.matchId });
     const savedPartner: SavedPartner = {
       partner_id:          partner.id,
       name:                partner.name,
