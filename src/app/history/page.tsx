@@ -810,8 +810,11 @@ export default function HistoryPage() {
               <p className="font-black text-2xl text-[#171717]">{weeksRunning > 0 ? weeksRunning : '–'}</p>
               <p className="text-xs text-stone-400 mt-1">wk streak</p>
             </div>
-            {/* Partner streak */}
-            <div className="bg-white border border-stone-200 rounded-2xl px-4 py-5 flex flex-col items-center text-center">
+            {/* Partner streak — tappable → /partners */}
+            <button
+              onClick={() => router.push('/partners')}
+              className="bg-white border border-stone-200 rounded-2xl px-4 py-5 flex flex-col items-center text-center hover:bg-stone-50 transition-colors"
+            >
               {topPartner ? (() => {
                 const live = liveProfiles[topPartner.partnerId];
                 const avatarUrl = live?.avatarUrl ?? null;
@@ -824,7 +827,7 @@ export default function HistoryPage() {
               })() : <span className="text-2xl mb-1">🤝</span>}
               <p className="font-black text-2xl text-[#171717]">{topStreak > 0 ? topStreak : '–'}</p>
               <p className="text-xs text-stone-400 mt-1">{topPartnerName ? `wks with ${topPartnerName}` : 'partner streak'}</p>
-            </div>
+            </button>
           </div>
         </div>
 
