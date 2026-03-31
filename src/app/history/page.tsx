@@ -722,9 +722,11 @@ export default function HistoryPage() {
   const weekStart = getWeekStart(new Date());
   const thisWeekEntries = sessions.filter(s => new Date(s.date) >= weekStart);
   const thisWeekMinutes = thisWeekEntries.reduce((sum, s) => sum + (s.duration ?? 0), 0);
-  const thisWeekPartners = [...new Set(thisWeekEntries.map(s =>
-    (s.partnerId && liveProfiles[s.partnerId]?.name) || s.partnerName
-  ).filter(Boolean))];
+  // Unique partners this week, preserving order of first appearance
+  const thisWeekPartnerIds = [...new Set(thisWeekEntries.map(s => s.partnerId).filter(Boolean))];
+  const thisWeekPartners = thisWeekPartnerIds.map(id =>
+    liveProfiles[id]?.name || thisWeekEntries.find(s => s.partnerId === id)?.partnerName || ''
+  ).filter(Boolean);
 
   // Weekly check-in copy
   let weekHeadline: string;
@@ -766,13 +768,45 @@ export default function HistoryPage() {
         {/* ── 1. This week ─────────────────────────────────────── */}
         <div className="space-y-2">
           <p className="text-sm font-medium text-stone-500">This week</p>
-          <div className="bg-white border border-stone-200 rounded-2xl px-7 py-6">
-            <p className="font-semibold text-[#171717] text-base leading-snug">
-              {weekHeadline}
-            </p>
-            {weekSubline && (
-              <p className="text-sm text-stone-500 mt-1">{weekSubline}</p>
-            )}
+          <div className="bg-white border border-stone-200 rounded-2xl px-5 py-5">
+            <div className="flex items-center gap-4">
+              {/* Partner avatar stack — shown when there are this-week partners */}
+              {thisWeekPartnerIds.length > 0 && (() => {
+                const shown = thisWeekPartnerIds.slice(0, 3);
+                const extra = thisWeekPartnerIds.length - shown.length;
+                return (
+                  <div className="flex shrink-0" style={{ marginRight: (shown.length - 1) * 8 }}>
+                    {shown.map((id, i) => {
+                      const live     = liveProfiles[id];
+                      const name     = live?.name || thisWeekEntries.find(s => s.partnerId === id)?.partnerName || '?';
+                      const bg       = LANG_AVATAR_COLOR[live?.nativeLang ?? ''] ?? '#3b82f6';
+                      const initials = name.trim().slice(0, 2).toUpperCase();
+                      return (
+                        <div key={id} className="w-9 h-9 rounded-xl border-2 border-white overflow-hidden shrink-0" style={{ marginLeft: i > 0 ? -12 : 0, zIndex: shown.length - i }}>
+                          {live?.avatarUrl
+                            ? <img src={live.avatarUrl} alt={name} className="w-full h-full object-cover" />
+                            : <div className="w-full h-full flex items-center justify-center text-white text-xs font-black" style={{ backgroundColor: bg }}>{initials}</div>
+                          }
+                        </div>
+                      );
+                    })}
+                    {extra > 0 && (
+                      <div className="w-9 h-9 rounded-xl border-2 border-white bg-stone-200 flex items-center justify-center text-xs font-bold text-stone-500 shrink-0" style={{ marginLeft: -12 }}>
+                        +{extra}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-[#171717] text-base leading-snug">
+                  {weekHeadline}
+                </p>
+                {weekSubline && (
+                  <p className="text-sm text-stone-500 mt-1">{weekSubline}</p>
+                )}
+              </div>
+            </div>
             {weekCta && (
               <button
                 onClick={() => {
