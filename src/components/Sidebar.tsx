@@ -70,7 +70,7 @@ function useNavState() {
 // ── Thread list ───────────────────────────────────────────────────────────────
 
 function MessagesList({
-  matchId, partnerName, messages, myId, onOpen, hasUnreadMsg, avatarBg,
+  matchId, partnerName, messages, myId, onOpen, hasUnreadMsg, avatarBg, avatarUrl,
 }: {
   matchId: string | null;
   partnerName: string;
@@ -79,6 +79,7 @@ function MessagesList({
   onOpen: () => void;
   hasUnreadMsg: boolean;
   avatarBg: string;
+  avatarUrl?: string | null;
 }) {
   if (!matchId || messages.length === 0) {
     return (
@@ -101,9 +102,10 @@ function MessagesList({
         onClick={onOpen}
         className="w-full flex items-center gap-3 px-4 py-3 hover:bg-stone-50 transition-colors text-left"
       >
-        <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: avatarBg }}>
-          <span className="text-xs font-black text-white">{initials}</span>
-        </div>
+        {avatarUrl
+          ? <img src={avatarUrl} alt={partnerName} className="w-9 h-9 rounded-xl object-cover shrink-0" />
+          : <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: avatarBg }}><span className="text-xs font-black text-white">{initials}</span></div>
+        }
         <div className="flex-1 min-w-0">
           <p className={`text-sm leading-tight ${hasUnreadMsg ? 'font-bold text-neutral-900' : 'font-semibold text-neutral-900'}`}>{partnerName}</p>
           <p className={`text-xs truncate mt-0.5 ${hasUnreadMsg ? 'text-neutral-700 font-medium' : 'text-stone-400'}`}>
@@ -121,7 +123,7 @@ function MessagesList({
 // ── Chat detail ───────────────────────────────────────────────────────────────
 
 function MessageChat({
-  matchId, partnerName, messages: serverMessages, myId, onBack, avatarBg,
+  matchId, partnerName, messages: serverMessages, myId, onBack, avatarBg, avatarUrl,
 }: {
   matchId: string;
   partnerName: string;
@@ -129,6 +131,7 @@ function MessageChat({
   myId: string;
   onBack: () => void;
   avatarBg: string;
+  avatarUrl?: string | null;
 }) {
   const [draft, setDraft] = useState('');
   const [error, setError] = useState('');
@@ -196,9 +199,10 @@ function MessageChat({
         <button onClick={onBack} className="text-stone-400 hover:text-neutral-700 transition-colors">
           <ArrowLeft className="w-4 h-4" />
         </button>
-        <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: avatarBg }}>
-          <span className="text-[10px] font-black text-white">{initials}</span>
-        </div>
+        {avatarUrl
+          ? <img src={avatarUrl} alt={partnerName} className="w-7 h-7 rounded-lg object-cover shrink-0" />
+          : <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: avatarBg }}><span className="text-[10px] font-black text-white">{initials}</span></div>
+        }
         <p className="text-sm font-semibold text-neutral-900">{partnerName}</p>
       </div>
 
@@ -295,6 +299,7 @@ export default function TopNav() {
   const [messages, setMessages]             = useState<Message[]>([]);
   const [scheduleState, setScheduleState]   = useState<string | null>(null);
   const [partnerAvatarBg, setPartnerAvatarBg] = useState('#171717');
+  const [partnerAvatarUrl, setPartnerAvatarUrl] = useState<string | null>(null);
   const currentSchedStateRef                = useRef<string | null>(null);
 
   // Always-on: watch for scheduling updates + new messages → set unread dot
@@ -414,6 +419,9 @@ export default function TopNav() {
       setPartnerName(isA ? (match.name_b ?? 'Partner') : (match.name_a ?? 'Partner'));
       const partnerLang = isA ? (match.native_language_b ?? '') : (match.native_language_a ?? '');
       setPartnerAvatarBg(LANG_AVATAR_COLOR[partnerLang] ?? '#171717');
+      const partnerSessionId = isA ? match.session_id_b : match.session_id_a;
+      const { data: pProfile } = await supabase.from('profiles').select('avatar_url').eq('session_id', partnerSessionId).maybeSingle();
+      setPartnerAvatarUrl(pProfile?.avatar_url ?? null);
       const msgs = await getMessages(match.id);
       setMessages(msgs);
 
@@ -531,6 +539,7 @@ export default function TopNav() {
                   myId={myId}
                   onBack={() => setMsgView('list')}
                   avatarBg={partnerAvatarBg}
+                  avatarUrl={partnerAvatarUrl}
                 />
               ) : inboxTab === 'notifications' ? (
                 <div className="px-4 py-4 space-y-2">
@@ -584,6 +593,7 @@ export default function TopNav() {
                   messages={messages}
                   myId={myId}
                   avatarBg={partnerAvatarBg}
+                  avatarUrl={partnerAvatarUrl}
                   hasUnreadMsg={!!localStorage.getItem('mutua_unread_message')}
                   onOpen={() => {
                     setMsgView('chat');
