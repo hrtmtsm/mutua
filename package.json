@@ -15,6 +15,7 @@
     "geist": "^1.7.0",
     "lucide-react": "^0.577.0",
     "next": "14.2.21",
+    "openai": "^6.33.0",
     "posthog-js": "^1.363.5",
     "react": "^18.3.1",
     "react-country-flag": "^3.1.0",

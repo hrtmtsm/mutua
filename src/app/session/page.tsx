@@ -197,6 +197,10 @@ export default function SessionPage() {
   const [promptIdx,        setPromptIdx]        = useState(0);
   const [message,          setMessage]          = useState('');
   const [messages,         setMessages]         = useState<{ text: string; from: 'me' | 'partner' }[]>([]);
+  const [translations,     setTranslations]     = useState<Record<number, string>>({});
+  const [translatingIdx,   setTranslatingIdx]   = useState<number | null>(null);
+  const [translationsUsed, setTranslationsUsed] = useState(0);
+  const MAX_TRANSLATIONS = 3;
   const [checklistStep,        setChecklistStep]        = useState(0);
   const [checklistCelebrating, setChecklistCelebrating] = useState(false);
   const [checklistDone,        setChecklistDone]        = useState(false);
@@ -888,7 +892,7 @@ export default function SessionPage() {
                 Type while you talk — notes, words,<br />anything that helps.
               </p>
             ) : messages.map((m, i) => (
-              <div key={i} className={`flex ${m.from === 'me' ? 'justify-end' : 'justify-start'}`}>
+              <div key={i} className={`flex flex-col ${m.from === 'me' ? 'items-end' : 'items-start'}`}>
                 <span className={`text-sm px-3 py-1.5 rounded-xl max-w-[85%] ${
                   m.from === 'me'
                     ? 'bg-neutral-900 text-white'
@@ -896,6 +900,40 @@ export default function SessionPage() {
                 }`}>
                   {m.text}
                 </span>
+                {m.from === 'partner' && (
+                  <div className="mt-1 ml-1">
+                    {translations[i] ? (
+                      <p className="text-[11px] text-stone-400 max-w-[85%]">{translations[i]}</p>
+                    ) : (
+                      <button
+                        disabled={translatingIdx === i || translationsUsed >= MAX_TRANSLATIONS}
+                        onClick={async () => {
+                          if (!myNativeLang) return;
+                          setTranslatingIdx(i);
+                          try {
+                            const res = await fetch('/api/translate', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ text: m.text, targetLanguage: myNativeLang }),
+                            });
+                            const { translation } = await res.json();
+                            setTranslations(t => ({ ...t, [i]: translation }));
+                            setTranslationsUsed(n => n + 1);
+                          } catch { /* ignore */ } finally {
+                            setTranslatingIdx(null);
+                          }
+                        }}
+                        className="text-[11px] text-stone-400 hover:text-stone-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {translatingIdx === i
+                          ? 'Translating…'
+                          : translationsUsed >= MAX_TRANSLATIONS
+                          ? 'No translations left'
+                          : `Translate → ${myNativeLang}`}
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
             <div ref={messagesEndRef} />
