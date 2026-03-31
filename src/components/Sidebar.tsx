@@ -420,8 +420,9 @@ export default function TopNav() {
       const partnerLang = isA ? (match.native_language_b ?? '') : (match.native_language_a ?? '');
       setPartnerAvatarBg(LANG_AVATAR_COLOR[partnerLang] ?? '#171717');
       const partnerSessionId = isA ? match.session_id_b : match.session_id_a;
-      const { data: pProfile } = await supabase.from('profiles').select('avatar_url').eq('session_id', partnerSessionId).maybeSingle();
+      const { data: pProfile } = await supabase.from('profiles').select('avatar_url, name').eq('session_id', partnerSessionId).maybeSingle();
       setPartnerAvatarUrl(pProfile?.avatar_url ?? null);
+      if (pProfile?.name) setPartnerName(pProfile.name);
       const msgs = await getMessages(match.id);
       setMessages(msgs);
 
