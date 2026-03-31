@@ -288,5 +288,38 @@ export function useWebRTC({ myId, partnerId, muted, cameraOn, audioDeviceId, onC
     if (myId && partnerId) send('media', { muted, cameraOn });
   }, [muted, cameraOn, myId, partnerId, send]);
 
-  return { rtcState, localStream, partnerStream, partnerMuted, partnerCameraOn: partnerCamOn, send };
+  // ── switch camera or mic mid-session ───────────────────────────────────────
+
+  const switchDevice = useCallback(async (kind: 'videoinput' | 'audioinput', deviceId: string) => {
+    const stream = localStreamRef.current;
+    if (!stream) return;
+    try {
+      const constraints = kind === 'videoinput'
+        ? { video: { deviceId: { exact: deviceId } } }
+        : { audio: { deviceId: { exact: deviceId } } };
+      const newStream = await navigator.mediaDevices.getUserMedia(constraints);
+      const newTrack  = kind === 'videoinput'
+        ? newStream.getVideoTracks()[0]
+        : newStream.getAudioTracks()[0];
+      if (!newTrack) return;
+
+      // Replace track in peer connection
+      const pc = pcRef.current;
+      if (pc) {
+        const sender = pc.getSenders().find(s => s.track?.kind === newTrack.kind);
+        if (sender) await sender.replaceTrack(newTrack);
+      }
+
+      // Swap track in local stream
+      const old = kind === 'videoinput' ? stream.getVideoTracks() : stream.getAudioTracks();
+      old.forEach(t => { stream.removeTrack(t); t.stop(); });
+      newTrack.enabled = kind === 'videoinput' ? cameraOnRef.current : !mutedRef.current;
+      stream.addTrack(newTrack);
+      setLocalStream(new MediaStream(stream.getTracks()));
+    } catch (e) {
+      console.error('[rtc] switchDevice failed:', e);
+    }
+  }, []);
+
+  return { rtcState, localStream, partnerStream, partnerMuted, partnerCameraOn: partnerCamOn, send, switchDevice };
 }

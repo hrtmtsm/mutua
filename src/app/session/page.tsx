@@ -190,6 +190,8 @@ export default function SessionPage() {
     if (typeof window === 'undefined') return undefined;
     try { const m = JSON.parse(localStorage.getItem('mutua_match') ?? '{}'); return m.audioDeviceId as string | undefined; } catch { return undefined; }
   });
+  const [showDevicePicker, setShowDevicePicker] = useState(false);
+  const [devices, setDevices] = useState<{ cameras: MediaDeviceInfo[]; mics: MediaDeviceInfo[] }>({ cameras: [], mics: [] });
   const [chatOpen,         setChatOpen]         = useState(false);
   const [unreadCount,      setUnreadCount]      = useState(0);
   const [promptIdx,        setPromptIdx]        = useState(0);
@@ -316,7 +318,7 @@ export default function SessionPage() {
   }, [myId, match?.partner.session_id]);
 
   // ── WebRTC ─────────────────────────────────────────────────────────────────
-  const { rtcState, localStream, partnerStream, partnerMuted, partnerCameraOn, send: rtcSend } = useWebRTC({
+  const { rtcState, localStream, partnerStream, partnerMuted, partnerCameraOn, send: rtcSend, switchDevice } = useWebRTC({
     myId,
     partnerId: match?.partner.session_id ?? '',
     muted,
@@ -953,18 +955,57 @@ export default function SessionPage() {
           <span className="text-[11px] font-medium">Chat</span>
         </button>
 
-        <button
-          onClick={() => setCameraOn((c: boolean) => !c)}
-          className={`flex flex-col items-center gap-1.5 w-14 py-2.5 rounded-xl transition-all ${
-            cameraOn ? 'bg-[#2B8FFF] text-white' : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-700'
-          }`}
-        >
-          {cameraOn
-            ? <Video className="w-5 h-5" />
-            : <VideoOff className="w-5 h-5" />
-          }
-          <span className="text-[11px] font-medium">Camera</span>
-        </button>
+        <div className="relative flex flex-col items-center">
+          {showDevicePicker && (
+            <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-56 bg-white border border-stone-200 rounded-xl shadow-xl z-50 overflow-hidden">
+              {devices.cameras.length > 0 && (
+                <div>
+                  <p className="px-3 pt-2.5 pb-1 text-[10px] font-semibold text-stone-400 uppercase tracking-wider">Camera</p>
+                  {devices.cameras.map(d => (
+                    <button key={d.deviceId} onClick={() => { switchDevice('videoinput', d.deviceId); setShowDevicePicker(false); }}
+                      className="w-full text-left px-3 py-2 text-xs text-neutral-800 hover:bg-stone-50 truncate"
+                    >{d.label || 'Camera'}</button>
+                  ))}
+                </div>
+              )}
+              {devices.mics.length > 0 && (
+                <div className="border-t border-stone-100">
+                  <p className="px-3 pt-2.5 pb-1 text-[10px] font-semibold text-stone-400 uppercase tracking-wider">Microphone</p>
+                  {devices.mics.map(d => (
+                    <button key={d.deviceId} onClick={() => { switchDevice('audioinput', d.deviceId); setShowDevicePicker(false); }}
+                      className="w-full text-left px-3 py-2 text-xs text-neutral-800 hover:bg-stone-50 truncate"
+                    >{d.label || 'Microphone'}</button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+          <button
+            onClick={() => setCameraOn((c: boolean) => !c)}
+            onContextMenu={async e => {
+              e.preventDefault();
+              const all = await navigator.mediaDevices.enumerateDevices();
+              setDevices({ cameras: all.filter(d => d.kind === 'videoinput'), mics: all.filter(d => d.kind === 'audioinput') });
+              setShowDevicePicker(v => !v);
+            }}
+            className={`relative flex flex-col items-center gap-1.5 w-14 py-2.5 rounded-xl transition-all ${
+              cameraOn ? 'bg-[#2B8FFF] text-white' : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-700'
+            }`}
+          >
+            {cameraOn ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
+            <span className="text-[11px] font-medium">Camera</span>
+          </button>
+          <button
+            onClick={async () => {
+              const all = await navigator.mediaDevices.enumerateDevices();
+              setDevices({ cameras: all.filter(d => d.kind === 'videoinput'), mics: all.filter(d => d.kind === 'audioinput') });
+              setShowDevicePicker(v => !v);
+            }}
+            className="mt-0.5 text-stone-400 hover:text-neutral-700"
+          >
+            <ChevronUp className="w-3 h-3" />
+          </button>
+        </div>
 
         <button
           onClick={() => setShowEndConfirm(true)}
