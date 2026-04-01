@@ -65,7 +65,7 @@ function partnerFromMatch(m: Match, sessionId: string): PartnerCard {
   return {
     matchId:         m.id,
     id:              isA ? m.session_id_b : m.session_id_a,
-    name:            isA ? (m.name_b ?? 'Your partner') : (m.name_a ?? 'Your partner'),
+    name:            isA ? (m.name_b ?? m.email_b?.split('@')[0] ?? 'Your partner') : (m.name_a ?? m.email_a?.split('@')[0] ?? 'Your partner'),
     nativeLang:      isA ? m.native_language_b : m.native_language_a,
     learningLang:    isA ? m.native_language_a : m.native_language_b,
     goal:            m.goal       ?? '',
