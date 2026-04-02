@@ -22,7 +22,7 @@ export async function POST(req: Request) {
 
   const { error } = await admin()
     .from('profiles')
-    .upsert(profile, { onConflict: 'session_id' });
+    .upsert({ availability: 'Flexible', ...profile }, { onConflict: 'session_id' });
 
   if (error) {
     console.error('save-profile error:', error.message);
