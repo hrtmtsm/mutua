@@ -16,6 +16,16 @@ interface Profile {
   practice_frequency?: string;
 }
 
+interface WaitlistEntry {
+  id:                  string;
+  email:               string;
+  native_language:     string;
+  target_language:     string;
+  goal:                string;
+  communication_style: string;
+  practice_frequency?: string;
+}
+
 function score(a: Profile, b: Profile): number {
   let s = 60;
   if (a.goal      === b.goal)      s += 15;
@@ -175,6 +185,107 @@ export async function POST(request: Request) {
     matchCount.set(me.email,      (matchCount.get(me.email)      ?? 0) + 1);
     matchCount.set(partner.email, (matchCount.get(partner.email) ?? 0) + 1);
     alreadyPaired.add([me.email, partner.email].sort().join('|'));
+  }
+
+  // ── 5. Check waitlist for compatible users without profiles yet ─────────────
+  const slotsRemaining = MAX_MATCHES - (matchCount.get(me.email) ?? 0);
+  if (slotsRemaining > 0) {
+    const { data: waitlistEntries } = await admin
+      .from('waitlist_matches')
+      .select('*')
+      .eq('native_language', me.learning_language)
+      .eq('target_language', me.native_language)
+      .order('created_at', { ascending: true });
+
+    const waitlistCandidates = ((waitlistEntries ?? []) as WaitlistEntry[]).filter(w => {
+      if (w.email === me.email) return false;
+      const pairKey = [me.email, w.email].sort().join('|');
+      return !alreadyPaired.has(pairKey);
+    });
+
+    // Score waitlist entries using same criteria
+    const scoredWaitlist = waitlistCandidates.map(w => {
+      let s = 60;
+      if (me.goal        === w.goal)                s += 15;
+      if (me.comm_style  === w.communication_style) s += 20;
+      if (me.practice_frequency && w.practice_frequency &&
+          me.practice_frequency === w.practice_frequency) s += 10;
+      return { entry: w, score: Math.min(s, 99) };
+    }).sort((a, b) => b.score - a.score).slice(0, slotsRemaining);
+
+    for (const { entry: w, score: matchScore } of scoredWaitlist) {
+      // Create or reuse stub profile for the waitlist user
+      let partnerSessionId: string;
+      try {
+        const { data: existingProfile } = await admin
+          .from('profiles').select('session_id').eq('email', w.email)
+          .order('created_at', { ascending: true }).limit(1).maybeSingle();
+
+        if (existingProfile) {
+          partnerSessionId = existingProfile.session_id;
+        } else {
+          partnerSessionId = crypto.randomUUID();
+          const { error: profileErr } = await admin.from('profiles').insert({
+            session_id:         partnerSessionId,
+            email:              w.email,
+            native_language:    w.native_language,
+            learning_language:  w.target_language,
+            goal:               w.goal,
+            comm_style:         w.communication_style,
+            practice_frequency: w.practice_frequency ?? 'Once a week',
+            availability:       'Flexible',
+          });
+          if (profileErr) continue;
+        }
+      } catch { continue; }
+
+      const reasons: string[] = [
+        `Native ${me.native_language} speaker — exactly the language ${w.email} wants to practice`,
+        `Learning ${me.learning_language} — ${w.email}'s native language`,
+      ];
+      if (me.goal       === w.goal)                reasons.push(`Same goal: ${me.goal}`);
+      if (me.comm_style === w.communication_style) reasons.push(`Both prefer ${me.comm_style.toLowerCase()}`);
+
+      const { error: insertErr } = await admin.from('matches').insert({
+        session_id_a:       me.session_id,
+        session_id_b:       partnerSessionId,
+        name_a:             me.name ?? me.email?.split('@')[0] ?? null,
+        name_b:             w.email.split('@')[0],
+        email_a:            me.email,
+        email_b:            w.email,
+        native_language_a:  me.native_language,
+        native_language_b:  w.native_language,
+        goal:               me.goal,
+        comm_style:         me.comm_style,
+        practice_frequency: me.practice_frequency ?? null,
+        score:              matchScore,
+        reasons,
+        scheduling_state:   'pending_both',
+        email_sent_at:      null,
+      });
+
+      if (insertErr) continue;
+
+      created.push({ emailA: me.email, emailB: w.email, score: matchScore });
+      alreadyPaired.add([me.email, w.email].sort().join('|'));
+
+      // Email both immediately
+      if (EMAILS_ENABLED) {
+        const baseUrl = APP_URL.replace(/\/$/, '');
+        await Promise.allSettled([
+          fetch(`${baseUrl}/api/send-match-email`, {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ email: w.email, nativeLanguage: w.native_language, targetLanguage: w.target_language }),
+          }),
+          fetch(`${baseUrl}/api/send-match-email`, {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ email: me.email, nativeLanguage: me.native_language, targetLanguage: me.learning_language }),
+          }),
+        ]);
+      }
+    }
   }
 
   return NextResponse.json({ created, errors });
