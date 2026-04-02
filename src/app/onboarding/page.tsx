@@ -194,9 +194,16 @@ export default function OnboardingPage() {
     localStorage.setItem('mutua_profile', JSON.stringify(profile));
 
     // Save profile first — auto-match depends on it existing in DB
+    // Uses server-side API route with admin key to ensure stub profiles
+    // created by run-matching can always be updated with the real name.
     let profileSaved = false;
     try {
-      await saveProfile(profile);
+      const res = await fetch('/api/save-profile', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(profile),
+      });
+      if (!res.ok) throw new Error(await res.text());
       profileSaved = true;
     } catch (err) {
       console.error('saveProfile error:', err);
