@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import TopNav from '@/components/Sidebar';
 import { CheckCircle2 } from 'lucide-react';
+import { track } from '@/lib/analytics';
 
 export default function SessionConfirmedPage() {
   const router = useRouter();
@@ -16,8 +17,10 @@ export default function SessionConfirmedPage() {
 
     if (!partner || !time) { router.replace('/match-result'); return; }
 
-    setPartnerName(JSON.parse(partner).name ?? 'Your partner');
+    const parsed = JSON.parse(partner);
+    setPartnerName(parsed.name ?? 'Your partner');
     setScheduledTime(time);
+    track('session_scheduled', { partner_name: parsed.name ?? '', scheduled_time: time });
   }, [router]);
 
   if (!scheduledTime) return null;
