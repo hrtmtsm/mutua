@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import {
   LANGUAGES, GOALS, COMM_STYLES, FREQUENCY,
   type Language, type Goal, type CommStyle, type Frequency, type UserProfile,
@@ -105,12 +105,15 @@ const SUBTITLES = [
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   useEffect(() => {
     if (localStorage.getItem('mutua_profile')) {
       router.replace('/app');
+      return;
     }
+    const params = new URLSearchParams(window.location.search);
+    const prefill = params.get('email');
+    if (prefill) setEmail(prefill);
   }, [router]);
 
   const [step,    setStep]    = useState(1);
@@ -123,7 +126,7 @@ export default function OnboardingPage() {
   const [commStyle,          setCommStyle]         = useState<CommStyle | null>(null);
   const [practiceFrequency,  setPracticeFrequency] = useState<Frequency | null>(null);
   const [name,               setName]              = useState('');
-  const [email,              setEmail]             = useState(() => searchParams.get('email') ?? '');
+  const [email,              setEmail]             = useState('');
   const [password,           setPassword]          = useState('');
   const [showPassword,       setShowPassword]      = useState(false);
 
