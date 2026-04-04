@@ -185,16 +185,16 @@ export async function POST(request: Request) {
           <td style="padding:40px 40px 32px;">
             <p style="margin:0 0 8px;font-size:15px;color:#666666;">${greeting}</p>
             <p style="margin:0 0 16px;font-size:26px;font-weight:800;color:#111111;line-height:1.2;">
-              ${partnerName} has picked<br/>their availability.
+              ${partnerName} wants to<br/>practice with you.
             </p>
             <p style="margin:0 0 24px;font-size:15px;color:#666666;line-height:1.6;">
-              Your <strong style="color:#111;">${pendingNative} ↔ ${pendingTarget}</strong> exchange partner is ready to go. All that's left is for you to pick your available times — it takes less than a minute.
+              They've already set their schedule for your <strong style="color:#111;">${pendingNative} ↔ ${pendingTarget}</strong> exchange. Set yours back so we can find a time that works for both of you.
             </p>
             <table cellpadding="0" cellspacing="0">
               <tr>
                 <td style="background:linear-gradient(160deg,#60bdff 0%,#2B8FFF 40%,#1060d8 100%);border-radius:12px;box-shadow:0 4px 14px rgba(43,143,255,0.35)">
                   <a href="${ctaUrl}" style="display:inline-block;padding:16px 32px;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;letter-spacing:-0.2px;">
-                    Pick my times →
+                    Set my schedule →
                   </a>
                 </td>
               </tr>
@@ -218,7 +218,7 @@ export async function POST(request: Request) {
           resend.emails.send({
             from:    'Mutua <hello@trymutua.com>',
             to:      pendingEmail,
-            subject: `${partnerName} has picked their availability — your turn`,
+            subject: `${partnerName} wants to practice with you — set your schedule`,
             html:    nudgeHtml,
           }).catch(err => console.error('[set-availability] nudge email failed:', err));
         }
