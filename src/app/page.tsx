@@ -1,3 +1,7 @@
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import AuthRedirectHandler from '@/components/AuthRedirectHandler';
@@ -23,6 +27,15 @@ const HOW_IT_WORKS = [
 ];
 
 export default function LandingPage() {
+  const router = useRouter();
+  const [email, setEmail] = useState('');
+
+  const handleStart = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = email.trim();
+    router.push(trimmed ? `/onboarding?email=${encodeURIComponent(trimmed)}` : '/onboarding');
+  };
+
   return (
     <main className="min-h-screen flex flex-col overflow-x-hidden">
       <AuthRedirectHandler />
@@ -77,12 +90,21 @@ export default function LandingPage() {
             <p className="text-white/80 text-lg md:text-xl max-w-sm mx-auto mb-8 mt-6 leading-relaxed">
               Stop searching. Start speaking.
             </p>
-            <Link
-              href="/onboarding"
-              className="inline-block px-8 py-4 btn-primary text-white font-bold text-base rounded-xl shadow-lg"
-            >
-              Get started
-            </Link>
+            <form onSubmit={handleStart} className="flex gap-2 max-w-sm mx-auto w-full">
+              <input
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="your@email.com"
+                className="flex-1 px-4 py-3 rounded-xl text-sm text-neutral-900 placeholder:text-stone-400 bg-white/90 backdrop-blur border border-white/60 focus:outline-none focus:border-[#2B8FFF] shadow"
+              />
+              <button
+                type="submit"
+                className="px-5 py-3 btn-primary text-white font-bold text-sm rounded-xl shadow-lg whitespace-nowrap"
+              >
+                Get started →
+              </button>
+            </form>
           </div>
         </section>
 
