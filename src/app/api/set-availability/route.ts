@@ -185,10 +185,10 @@ export async function POST(request: Request) {
           <td style="padding:40px 40px 32px;">
             <p style="margin:0 0 8px;font-size:15px;color:#666666;">${greeting}</p>
             <p style="margin:0 0 16px;font-size:26px;font-weight:800;color:#111111;line-height:1.2;">
-              ${partnerName} wants to<br/>practice with you 🙌
+              ${partnerName} wants to<br/>practice with you 🔥
             </p>
             <p style="margin:0 0 24px;font-size:15px;color:#666666;line-height:1.6;">
-              They've already set their schedule for your <strong style="color:#111;">${pendingNative} ↔ ${pendingTarget}</strong> exchange. Set yours back so we can find a time that works for both of you ⏰
+              They've already set their schedule for your <strong style="color:#111;">${pendingNative} ↔ ${pendingTarget}</strong> exchange. Set yours back so we can find a time that works for both of you.
             </p>
             <table cellpadding="0" cellspacing="0">
               <tr>
