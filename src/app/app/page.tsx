@@ -35,19 +35,18 @@ function Avatar({ name, lang, avatarUrl, size = 'md' }: { name: string; lang: st
   const bg  = LANG_AVATAR_COLOR[lang] ?? '#3b82f6';
   const cls = size === 'lg' ? 'w-20 h-20 text-2xl' : size === 'sm' ? 'w-10 h-10 text-sm' : 'w-12 h-12 text-base';
   const [imgFailed, setImgFailed] = useState(false);
-  if (avatarUrl && !imgFailed) {
-    return (
-      <div className={`${cls} rounded-full overflow-hidden shrink-0`}>
-        <img src={avatarUrl} alt={name} className="w-full h-full object-cover" onError={() => setImgFailed(true)} />
-      </div>
-    );
-  }
+  const initials = (() => { const p = name.trim().split(/\s+/); return (p.length >= 2 ? p[0][0] + p[p.length - 1][0] : name.trim().slice(0, 2)).toUpperCase(); })();
   return (
-    <div
-      style={{ backgroundColor: bg }}
-      className={`${cls} rounded-full flex items-center justify-center font-black text-white shrink-0`}
-    >
-      {(() => { const p = name.trim().split(/\s+/); return (p.length >= 2 ? p[0][0] + p[p.length - 1][0] : name.trim().slice(0, 2)).toUpperCase(); })()}
+    <div style={{ backgroundColor: bg }} className={`${cls} rounded-full flex items-center justify-center font-black text-white shrink-0 overflow-hidden relative`}>
+      <span className="select-none">{initials}</span>
+      {avatarUrl && !imgFailed && (
+        <img
+          src={avatarUrl}
+          alt={name}
+          className="absolute inset-0 w-full h-full object-cover"
+          onError={() => setImgFailed(true)}
+        />
+      )}
     </div>
   );
 }
@@ -178,7 +177,7 @@ function SchedulingCard({
 
         {/* Identity block */}
         <div className="px-7 pt-4 pb-0 flex items-center gap-4">
-          <div className="relative shrink-0 flex items-center" style={{ width: 104, height: 64 }}>
+          <div className="relative shrink-0 flex items-center" style={{ width: 128, height: 88 }}>
             <div className="absolute left-0" style={{ transform: 'rotate(-6deg)', zIndex: 1 }}>
               <Avatar name={myName ?? 'Me'} lang={partner.learningLang} avatarUrl={myAvatarUrl} size="lg" />
             </div>
