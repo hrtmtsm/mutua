@@ -124,6 +124,13 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── FOOTER ────────────────────────────────────────────────────────────── */}
+      <footer className="px-6 py-8 border-t border-stone-100 text-center">
+        <p className="text-xs text-stone-400">
+          Questions? <a href="mailto:hello@trymutua.com" className="text-stone-500 hover:text-neutral-900 transition-colors">hello@trymutua.com</a>
+        </p>
+      </footer>
+
     </main>
   );
 }
