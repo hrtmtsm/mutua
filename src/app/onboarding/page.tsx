@@ -109,11 +109,7 @@ export default function OnboardingPage() {
   useEffect(() => {
     if (localStorage.getItem('mutua_profile')) {
       router.replace('/app');
-      return;
     }
-    const params = new URLSearchParams(window.location.search);
-    const prefill = params.get('email');
-    if (prefill) setEmail(prefill);
   }, [router]);
 
   const [step,    setStep]    = useState(1);
