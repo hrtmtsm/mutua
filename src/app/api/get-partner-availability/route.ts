@@ -61,11 +61,54 @@ export async function GET(request: Request) {
     .order('day_of_week', { ascending: true })
     .order('start_minute', { ascending: true });
 
-  const slots = (data ?? []).map(r => ({
-    day_of_week:  r.day_of_week,
-    start_minute: r.start_minute,
-  }));
-  const timezone = data?.[0]?.timezone ?? null;
+  const partnerTimezone = data?.[0]?.timezone ?? null;
 
-  return NextResponse.json({ slots, timezone });
+  // Get the viewer's timezone so we can convert partner slots into the viewer's local time.
+  // Without this, the picker compares raw start_minute values across different timezones
+  // and shows false green "overlap" (e.g. Taipei 19:30 ≠ Nairobi 19:30 in UTC).
+  const { data: myAvail } = await db
+    .from('user_availability')
+    .select('timezone')
+    .eq('user_id', user.id)
+    .limit(1)
+    .maybeSingle();
+  const viewerTimezone = myAvail?.timezone ?? null;
+
+  let slots: { day_of_week: number; start_minute: number }[];
+
+  if (partnerTimezone && viewerTimezone && partnerTimezone !== viewerTimezone) {
+    // Convert partner slots from their timezone → UTC → viewer's timezone
+    const ref = new Date();
+
+    const getOffsetMinutes = (tz: string): number => {
+      try {
+        const utcStr   = ref.toLocaleString('en-US', { timeZone: 'UTC',   hour12: false, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+        const localStr = ref.toLocaleString('en-US', { timeZone: tz,      hour12: false, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+        return (new Date(localStr).getTime() - new Date(utcStr).getTime()) / 60000;
+      } catch { return 0; }
+    };
+
+    const partnerOffset = getOffsetMinutes(partnerTimezone);
+    const viewerOffset  = getOffsetMinutes(viewerTimezone);
+
+    slots = (data ?? []).map(r => {
+      const utcMinute    = r.start_minute - partnerOffset;
+      const viewerMinute = utcMinute      + viewerOffset;
+
+      let finalMinute = viewerMinute;
+      let finalDay    = r.day_of_week;
+
+      if (finalMinute < 0)    { finalMinute += 1440; finalDay = (finalDay - 1 + 7) % 7; }
+      if (finalMinute >= 1440){ finalMinute -= 1440; finalDay = (finalDay + 1) % 7; }
+
+      return { day_of_week: finalDay, start_minute: finalMinute };
+    });
+  } else {
+    slots = (data ?? []).map(r => ({
+      day_of_week:  r.day_of_week,
+      start_minute: r.start_minute,
+    }));
+  }
+
+  return NextResponse.json({ slots, timezone: partnerTimezone });
 }
