@@ -145,7 +145,7 @@ function SetAvailabilityInner() {
                   onChange={e => { setTimezone(e.target.value); setShowTzSelect(false); }}
                   className="border border-stone-200 rounded-lg px-2 py-1 bg-white text-neutral-700 focus:outline-none text-xs"
                 >
-                  {Intl.supportedValuesOf('timeZone').map(tz => (
+                  {((() => { try { return (Intl as any).supportedValuesOf('timeZone') as string[]; } catch { return ['Pacific/Honolulu','America/Los_Angeles','America/Chicago','America/New_York','America/Sao_Paulo','Europe/London','Europe/Paris','Europe/Berlin','Africa/Cairo','Africa/Nairobi','Asia/Dubai','Asia/Karachi','Asia/Kolkata','Asia/Bangkok','Asia/Shanghai','Asia/Tokyo','Asia/Seoul','Australia/Sydney','Pacific/Auckland']; } })()).map((tz: string) => (
                     <option key={tz} value={tz}>{tz}</option>
                   ))}
                 </select>

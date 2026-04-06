@@ -4,6 +4,22 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
+// Intl.supportedValuesOf is ES2022 and not available on older Android browsers.
+const ALL_TIMEZONES: string[] = (() => {
+  try {
+    return (Intl as any).supportedValuesOf('timeZone') as string[];
+  } catch {
+    return [
+      'Pacific/Honolulu','America/Anchorage','America/Los_Angeles','America/Denver',
+      'America/Chicago','America/New_York','America/Sao_Paulo','Atlantic/Azores',
+      'Europe/London','Europe/Paris','Europe/Berlin','Europe/Helsinki',
+      'Africa/Cairo','Africa/Nairobi','Asia/Dubai','Asia/Karachi',
+      'Asia/Kolkata','Asia/Dhaka','Asia/Bangkok','Asia/Shanghai',
+      'Asia/Tokyo','Asia/Seoul','Australia/Sydney','Pacific/Auckland',
+    ];
+  }
+})();
+
 // spec: day_of_week 0=Mon … 6=Sun
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -126,7 +142,7 @@ export default function AvailabilityPicker({ initial = [], timezone: tzProp, onC
               onChange={e => { setTimezone(e.target.value); setTzConfirmed(true); }}
               className="text-xs border border-sky-200 rounded-lg px-2 py-1 bg-white text-neutral-700 focus:outline-none"
             >
-              {Intl.supportedValuesOf('timeZone').map(tz => (
+              {ALL_TIMEZONES.map(tz => (
                 <option key={tz} value={tz}>{tz}</option>
               ))}
             </select>
