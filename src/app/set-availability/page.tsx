@@ -31,8 +31,10 @@ function SetAvailabilityInner() {
     if (direct) { setPartnerName(direct); return; }
     const raw = localStorage.getItem('mutua_current_partner');
     if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed.name) setPartnerName(parsed.name);
+      try {
+        const parsed = JSON.parse(raw);
+        if (parsed.name) setPartnerName(parsed.name);
+      } catch { /* ignore malformed data */ }
     }
   }, []);
 
