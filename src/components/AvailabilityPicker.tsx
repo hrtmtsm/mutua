@@ -126,21 +126,21 @@ export default function AvailabilityPicker({ initial = [], timezone: tzProp, onC
     >
       {/* Timezone notice — only rendered if parent hasn't taken over */}
       {!hideTimezoneNotice && !tzConfirmed && (
-        <div className="mb-4 flex items-center justify-between gap-4 px-4 py-3 bg-sky-50 border border-sky-100 rounded-xl text-sm">
+        <div className="mb-4 flex flex-col gap-2 px-4 py-3 bg-sky-50 border border-sky-100 rounded-xl text-sm">
           <span className="text-neutral-700">
             Using your device timezone: <strong>{timezone}</strong>
           </span>
-          <div className="flex gap-2 shrink-0">
+          <div className="flex gap-2">
             <button
               onClick={() => setTzConfirmed(true)}
-              className="px-3 py-1.5 text-xs font-semibold text-[#2B8FFF] hover:underline"
+              className="px-3 py-1.5 text-xs font-semibold text-[#2B8FFF] hover:underline shrink-0"
             >
               Looks good
             </button>
             <select
               value={timezone}
               onChange={e => { setTimezone(e.target.value); setTzConfirmed(true); }}
-              className="text-xs border border-sky-200 rounded-lg px-2 py-1 bg-white text-neutral-700 focus:outline-none"
+              className="text-xs border border-sky-200 rounded-lg px-2 py-1 bg-white text-neutral-700 focus:outline-none min-w-0 flex-1"
             >
               {ALL_TIMEZONES.map(tz => (
                 <option key={tz} value={tz}>{tz}</option>
