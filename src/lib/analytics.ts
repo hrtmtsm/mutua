@@ -7,7 +7,7 @@ let initialised = false;
 
 export function initAnalytics() {
   if (typeof window === 'undefined' || initialised) return;
-  if (window.location.hostname !== 'trymutua.com') return;
+  if (!window.location.hostname.endsWith('trymutua.com')) return;
   posthog.init(TOKEN, {
     api_host:           HOST,
     capture_pageview:   false, // we'll capture manually
