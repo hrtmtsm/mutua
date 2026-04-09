@@ -177,12 +177,12 @@ function SchedulingCard({
 
         {/* Identity block */}
         <div className="px-7 pt-4 pb-0 flex items-center gap-4">
-          <div className="relative shrink-0 flex items-center" style={{ width: 128, height: 88 }}>
+          <div className="relative shrink-0 flex items-center" style={{ width: 80, height: 56 }}>
             <div className="absolute left-0" style={{ transform: 'rotate(-6deg)', zIndex: 1 }}>
-              <Avatar name={myName ?? 'Me'} lang={partner.learningLang} avatarUrl={myAvatarUrl} size="lg" />
+              <Avatar name={myName ?? 'Me'} lang={partner.learningLang} avatarUrl={myAvatarUrl} size="md" />
             </div>
             <div className="absolute right-0" style={{ transform: 'rotate(6deg)', zIndex: 2 }}>
-              <Avatar name={partner.name} lang={partner.nativeLang} avatarUrl={partner.avatarUrl} size="lg" />
+              <Avatar name={partner.name} lang={partner.nativeLang} avatarUrl={partner.avatarUrl} size="md" />
             </div>
           </div>
           <div className="flex-1 min-w-0">
