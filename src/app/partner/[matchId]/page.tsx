@@ -76,7 +76,9 @@ export default function PartnerProfilePage() {
         .eq('session_id', partnerSessionId)
         .maybeSingle();
 
-      const baseName = isA ? (match.name_b ?? 'Partner') : (match.name_a ?? 'Partner');
+      const baseName = isA
+        ? (match.name_b ?? match.email_b?.split('@')[0] ?? 'Partner')
+        : (match.name_a ?? match.email_a?.split('@')[0] ?? 'Partner');
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
       const storageAvatarUrl = `${supabaseUrl}/storage/v1/object/public/avatars/${partnerSessionId}.jpg`;
 
