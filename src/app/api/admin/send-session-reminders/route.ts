@@ -35,7 +35,7 @@ interface SessionRow {
   };
 }
 
-function formatSessionTime(iso: string): string {
+function formatSessionTime(iso: string, timeZone = 'UTC'): string {
   return new Date(iso).toLocaleString('en-US', {
     weekday: 'long',
     month:   'long',
@@ -43,8 +43,26 @@ function formatSessionTime(iso: string): string {
     hour:    'numeric',
     minute:  '2-digit',
     timeZoneName: 'short',
-    timeZone: 'UTC',
+    timeZone,
   });
+}
+
+async function getUserTimezone(admin: any, email: string): Promise<string> {
+  try {
+    const { data: userData } = await admin.auth.admin.listUsers({ perPage: 1000 });
+    const user = userData?.users?.find((u: any) => u.email === email);
+    if (!user?.id) return 'UTC';
+    const userId = user.id;
+    const { data } = await admin
+      .from('user_availability')
+      .select('timezone')
+      .eq('user_id', userId)
+      .limit(1)
+      .maybeSingle();
+    return (data as any)?.timezone ?? 'UTC';
+  } catch {
+    return 'UTC';
+  }
 }
 
 function emailHtml(
@@ -164,13 +182,17 @@ export async function POST(request: Request) {
   const failed: { sessionId: string; email: string; error: string }[]   = [];
 
   for (const session of rows) {
-    const m             = session.matches;
-    const scheduledTime = formatSessionTime(session.starts_at);
+    const m = session.matches;
 
-    const [linkA, linkB] = await Promise.all([
+    const [linkA, linkB, tzA, tzB] = await Promise.all([
       getMagicLink(admin, m.email_a),
       getMagicLink(admin, m.email_b),
+      getUserTimezone(admin, m.email_a),
+      getUserTimezone(admin, m.email_b),
     ]);
+
+    const scheduledTimeA = formatSessionTime(session.starts_at, tzA);
+    const scheduledTimeB = formatSessionTime(session.starts_at, tzB);
 
     const [resA, resB] = await Promise.allSettled([
       resend.emails.send({
@@ -180,7 +202,7 @@ export async function POST(request: Request) {
         html:    emailHtml(
           m.name_a ? `Hi ${m.name_a},` : 'Hi there,',
           m.name_b ?? m.email_b.split('@')[0],
-          scheduledTime,
+          scheduledTimeA,
           m.native_language_a,
           m.native_language_b,
           linkA,
@@ -193,7 +215,7 @@ export async function POST(request: Request) {
         html:    emailHtml(
           m.name_b ? `Hi ${m.name_b},` : 'Hi there,',
           m.name_a ?? m.email_a.split('@')[0],
-          scheduledTime,
+          scheduledTimeB,
           m.native_language_b,
           m.native_language_a,
           linkB,
