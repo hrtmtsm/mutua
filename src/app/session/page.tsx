@@ -809,20 +809,13 @@ export default function SessionPage() {
           <div className={`relative flex-1 overflow-hidden ${partnerStream ? '' : 'flex items-center justify-center bg-neutral-900'}`} onClick={() => partnerVideoRef.current?.play()}>
             {!partnerStream && (
               <div className="flex flex-col items-center gap-3 text-center px-6">
-                <div className="w-16 h-16 rounded-full flex items-center justify-center font-black text-white text-xl select-none"
-                  style={{ backgroundColor: LANG_AVATAR_COLOR[partner.native_language] ?? '#2B8FFF' }}>
-                  {(() => { const p = partnerName.trim().split(/\s+/); return (p.length >= 2 ? p[0][0] + p[p.length-1][0] : partnerName.trim().slice(0,2)).toUpperCase(); })()}
-                </div>
-                <div>
-                  <p className="text-white font-semibold text-sm">{partnerName}</p>
-                  <p className="text-white/50 text-xs mt-1">
-                    {rtcState === 'failed' ? 'Connection failed' : 'Connecting…'}
-                  </p>
-                </div>
+                <p className="text-white/50 text-sm">
+                  {rtcState === 'failed' ? 'Connection failed' : 'Waiting for partner…'}
+                </p>
                 {rtcState === 'failed' && (
                   <button
                     onClick={e => { e.stopPropagation(); window.location.reload(); }}
-                    className="mt-1 px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-xs font-semibold rounded-xl transition-colors"
+                    className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-xs font-semibold rounded-xl transition-colors"
                   >
                     Reconnect
                   </button>
