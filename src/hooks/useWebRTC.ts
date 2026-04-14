@@ -127,12 +127,23 @@ export function useWebRTC({ myId, partnerId, muted, cameraOn, audioDeviceId, onC
 
   // ── message handler ────────────────────────────────────────────────────────
 
+  const resetPC = useCallback(() => {
+    pcRef.current?.close();
+    pcRef.current = null;
+    remoteSetRef.current = false;
+    iceBuf.current = [];
+  }, []);
+
   const handleMessage = useCallback(async (event: string, payload: any) => {
     if (event === 'ready') {
       partnerReady.current = true;
       if (isCaller) {
         if (readyTimer.current) { clearInterval(readyTimer.current); readyTimer.current = null; }
-        if (!pcRef.current) {
+        const state = pcRef.current?.connectionState;
+        // Re-negotiate if no connection, or if the existing one failed/dropped (e.g. partner reloaded)
+        const needsRestart = !pcRef.current || state === 'failed' || state === 'closed' || state === 'disconnected';
+        if (needsRestart) {
+          resetPC();
           const pc = buildPC();
           addTracks(pc);
           const offer = await pc.createOffer();
@@ -147,7 +158,10 @@ export function useWebRTC({ myId, partnerId, muted, cameraOn, audioDeviceId, onC
     }
 
     if (event === 'offer' && !isCaller) {
-      if (pcRef.current) return; // guard against duplicate offers
+      const state = pcRef.current?.connectionState;
+      const isStale = !pcRef.current || state === 'failed' || state === 'closed' || state === 'disconnected';
+      if (!isStale) return; // guard against duplicate offers on a live connection
+      resetPC();
       const pc = buildPC();
       addTracks(pc);
       await pc.setRemoteDescription(new RTCSessionDescription(payload.sdp));
@@ -192,7 +206,7 @@ export function useWebRTC({ myId, partnerId, muted, cameraOn, audioDeviceId, onC
       onChat?.(payload.text as string);
       return;
     }
-  }, [isCaller, buildPC, addTracks, send, flushIce, onChecklist, onChat]);
+  }, [isCaller, buildPC, addTracks, send, flushIce, resetPC, onChecklist, onChat]);
 
   // ── main effect: media + signaling ─────────────────────────────────────────
   // IMPORTANT: We start signaling only AFTER getUserMedia resolves so that
