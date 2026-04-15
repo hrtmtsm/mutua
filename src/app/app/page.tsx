@@ -7,6 +7,7 @@ import { LANG_FLAGS, LANG_AVATAR_COLOR, INTEREST_CATEGORIES, INTEREST_MIGRATION 
 import type { SavedPartner } from '@/lib/types';
 import { track } from '@/lib/analytics';
 import AppShell from '@/components/AppShell';
+import Link from 'next/link';
 import { ArrowLeftRight } from 'lucide-react';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -128,71 +129,32 @@ function SchedulingCard({
     (s === 'pending_a' && !partner.iAmA) ||
     (s === 'pending_b' && partner.iAmA);
 
-  // ── Scheduled state: focused card ─────────────────────────────────────────
+  // ── Scheduled state: compact partner card linking to Exchanges ───────────────
   if (s === 'scheduled' && partner.scheduledAt) {
-    const sessionDate  = new Date(partner.scheduledAt);
-    const dateLine     = sessionDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-    const timeLine     = sessionDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-    const msUntil      = sessionDate.getTime() - now;
+    const sessionDate   = new Date(partner.scheduledAt);
     const sessionPassed = now - sessionDate.getTime() > 60 * 60 * 1000;
     const isLive        = isJoinable(partner.scheduledAt, now);
-    const isSoon        = !isLive && msUntil > 0 && msUntil <= 60 * 60 * 1000;
-
-    // Status pill config
-    const statusPill = sessionPassed
+    const statusPill    = sessionPassed
       ? { label: 'Missed :(', cls: 'bg-stone-100 text-stone-400' }
       : isLive
       ? { label: '● Live now', cls: 'bg-emerald-50 text-emerald-600' }
-      : isSoon
-      ? { label: '● Starting soon', cls: 'bg-amber-50 text-amber-600' }
-      : { label: 'Upcoming', cls: 'bg-stone-100 text-stone-500' };
-
-    const markMissed = () => {
-      const entry = {
-        partnerName: partner.name,
-        partnerId:   partner.id,
-        duration:    0,
-        date:        partner.scheduledAt,
-        missed:      true,
-      };
-      const raw = localStorage.getItem('mutua_history');
-      const history = raw ? JSON.parse(raw) : [];
-      // Avoid duplicate missed entries for the same scheduled time
-      const alreadyLogged = history.some((e: any) => e.partnerId === partner.id && e.date === partner.scheduledAt);
-      if (!alreadyLogged) {
-        history.unshift(entry);
-        localStorage.setItem('mutua_history', JSON.stringify(history));
-      }
-      router.push('/history');
-    };
+      : { label: 'Upcoming', cls: 'bg-blue-50 text-blue-600' };
 
     return (
       <div className="overflow-hidden bg-white rounded-2xl border border-stone-200">
-        {/* Status pill strip */}
-        <div className="px-7 pt-5 pb-0">
-          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${statusPill.cls}`}>
-            {statusPill.label}
-          </span>
-        </div>
-
         {/* Identity block */}
-        <div className="px-7 pt-4 pb-0 flex items-center gap-4">
-          <div className="relative shrink-0 flex items-center" style={{ width: 80, height: 56 }}>
-            <div className="absolute left-0" style={{ transform: 'rotate(-6deg)', zIndex: 1 }}>
-              <Avatar name={myName ?? 'Me'} lang={partner.learningLang} avatarUrl={myAvatarUrl} size="md" />
-            </div>
-            <div className="absolute right-0" style={{ transform: 'rotate(6deg)', zIndex: 2 }}>
-              <Avatar name={partner.name} lang={partner.nativeLang} avatarUrl={partner.avatarUrl} size="md" />
-            </div>
-          </div>
-          <div className="flex-1 min-w-0">
+        <div className="px-7 pt-6 pb-0 flex items-start gap-4">
+          <button onClick={onViewProfile} className="shrink-0">
+            <Avatar name={partner.name} lang={partner.nativeLang} avatarUrl={partner.avatarUrl} size="lg" />
+          </button>
+          <button onClick={onViewProfile} className="flex-1 min-w-0 text-left">
             <p className="font-serif font-bold text-[#171717] text-2xl leading-tight truncate">{partner.name}</p>
             <div className="flex items-center gap-1.5 mt-1 text-sm text-stone-400">
               <span>{nativeFlag} {partner.nativeLang}</span>
               <ArrowLeftRight size={11} className="shrink-0" />
               <span>{learningFlag} {partner.learningLang}</span>
             </div>
-          </div>
+          </button>
           <div className="relative shrink-0">
             <button onClick={() => setShowOverflow(v => !v)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100 transition-colors text-stone-300">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
@@ -205,93 +167,26 @@ function SchedulingCard({
                 <div className="absolute right-0 top-9 z-50 bg-white rounded-xl shadow-lg border border-stone-100 py-1 w-44 text-sm">
                   <button onClick={() => { setShowOverflow(false); onViewProfile(); }} className="w-full px-4 py-2.5 text-left text-neutral-700 hover:bg-stone-50">View profile</button>
                   <button onClick={() => { setShowOverflow(false); window.dispatchEvent(new Event('mutua:open-chat')); }} className="w-full px-4 py-2.5 text-left text-neutral-700 hover:bg-stone-50">Say hi 👋</button>
-                  <button onClick={() => { setShowOverflow(false); onReschedule(); }} className="w-full px-4 py-2.5 text-left text-neutral-700 hover:bg-stone-50">Reschedule</button>
                 </div>
               </>
             )}
           </div>
         </div>
 
-        {/* Context block — session date */}
-        <div className="px-7 mt-6">
-          <p className="text-xs font-medium text-stone-400 mb-1.5">
-            {sessionPassed ? 'Session passed' : 'Next session'}
-          </p>
-          <p className="font-serif font-bold text-[#171717] text-2xl leading-snug">{dateLine}, {timeLine}</p>
-        </div>
-
-        {/* Action block */}
-        <div className="px-7 mt-6 pb-7">
-          <div className="flex gap-2">
-          {sessionPassed ? (
-            <>
-              <button
-                onClick={() => window.dispatchEvent(new Event('mutua:open-chat'))}
-                className="px-4 py-3 border border-stone-200 bg-white text-sm text-neutral-500 font-medium rounded-xl hover:bg-stone-50 transition-colors"
-              >
-                Say hi 👋
-              </button>
-              <button
-                onClick={onReschedule}
-                className="px-5 py-3 btn-primary text-white text-sm rounded-xl"
-              >
-                Reschedule →
-              </button>
-            </>
-          ) : (
-            <>
-              <button
-                onClick={() => window.dispatchEvent(new Event('mutua:open-chat'))}
-                className="px-4 py-3 border border-stone-200 bg-white text-sm text-neutral-500 font-medium rounded-xl hover:bg-stone-50 transition-colors"
-              >
-                Say hi 👋
-              </button>
-              <button
-                onClick={() => isJoinable(partner.scheduledAt!, now) ? onJoin() : setShowNotYet(true)}
-                className="px-5 py-3 btn-primary text-white text-sm rounded-xl"
-              >
-                Start exchange →
-              </button>
-            </>
-          )}
+        {/* Session status row */}
+        <div className="px-7 mt-5 pb-6 flex items-center justify-between">
+          <div>
+            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${statusPill.cls}`}>
+              {statusPill.label}
+            </span>
+            <p className="text-xs text-stone-400 mt-1.5">
+              {sessionDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}, {sessionDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+            </p>
           </div>
+          <Link href="/exchanges" className="px-4 py-2.5 btn-primary text-white text-sm font-semibold rounded-xl">
+            {isLive ? 'Join now →' : 'View →'}
+          </Link>
         </div>
-
-        {showNotYet && (() => {
-          const sessionMs = new Date(partner.scheduledAt!).getTime();
-          const isPast = Date.now() - sessionMs > 60 * 60 * 1000;
-          return (
-            <div className="fixed inset-0 bg-black/40 flex items-center justify-center px-6 z-50">
-              <div className="bg-white rounded-2xl p-7 max-w-sm w-full space-y-4 shadow-xl">
-                <div>
-                  <p className="font-semibold text-neutral-900 text-base">
-                    {isPast ? 'Session has passed' : 'Session not started yet'}
-                  </p>
-                  <p className="text-sm text-stone-500 mt-1 leading-relaxed">
-                    {isPast
-                      ? <>Your session with <span className="font-medium text-neutral-700">{partner.name}</span> on <span className="font-medium text-neutral-700">{fmtScheduledAt(partner.scheduledAt!)}</span> has ended. You can reschedule a new time.</>
-                      : <>Your session with <span className="font-medium text-neutral-700">{partner.name}</span> begins on <span className="font-medium text-neutral-700">{fmtScheduledAt(partner.scheduledAt!)}</span>. Come back then to join.</>
-                    }
-                  </p>
-                </div>
-                {isPast ? (
-                  <div className="flex gap-2">
-                    <button onClick={() => setShowNotYet(false)} className="flex-1 py-3 bg-stone-100 hover:bg-stone-200 transition-colors text-neutral-700 font-semibold text-sm rounded-xl">
-                      Dismiss
-                    </button>
-                    <button onClick={() => { setShowNotYet(false); onReschedule(); }} className="flex-1 py-3 btn-primary text-white font-semibold text-sm rounded-xl">
-                      Reschedule →
-                    </button>
-                  </div>
-                ) : (
-                  <button onClick={() => setShowNotYet(false)} className="w-full py-3 bg-stone-100 hover:bg-stone-200 transition-colors text-neutral-700 font-semibold text-sm rounded-xl">
-                    Got it
-                  </button>
-                )}
-              </div>
-            </div>
-          );
-        })()}
       </div>
     );
   }
@@ -616,7 +511,7 @@ export default function SessionPage() {
 
         {/* Context header */}
         <div>
-          <h1 className="font-serif font-semibold text-2xl text-[#171717]">Your exchanges</h1>
+          <h1 className="font-serif font-semibold text-2xl text-[#171717]">Your partners</h1>
           {!loading && partners.length === 0 && (
             <p className="text-sm text-stone-400 mt-1">No partners yet — we'll reach out when we find your match.</p>
           )}
