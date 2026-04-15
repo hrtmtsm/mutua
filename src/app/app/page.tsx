@@ -135,7 +135,7 @@ function SchedulingCard({
     <div className="overflow-hidden bg-white rounded-2xl border border-stone-200">
 
       {/* Identity block */}
-      <div className="px-7 pt-6 pb-0 flex items-start gap-4">
+      <div className="px-7 pt-6 pb-0 flex items-center gap-4">
         <button onClick={onViewProfile} className="shrink-0">
           <Avatar name={partner.name} lang={partner.nativeLang} avatarUrl={partner.avatarUrl} size="lg" />
         </button>
