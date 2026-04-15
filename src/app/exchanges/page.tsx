@@ -27,7 +27,7 @@ function Avatar({ name, lang, avatarUrl }: { name: string; lang: string; avatarU
   const [imgFailed, setImgFailed] = useState(false);
   const initials = (() => { const p = name.trim().split(/\s+/); return (p.length >= 2 ? p[0][0] + p[p.length - 1][0] : name.trim().slice(0, 2)).toUpperCase(); })();
   return (
-    <div style={{ backgroundColor: bg }} className="w-12 h-12 rounded-full flex items-center justify-center font-black text-white shrink-0 overflow-hidden relative">
+    <div style={{ backgroundColor: bg }} className="w-20 h-20 rounded-full flex items-center justify-center font-black text-white text-2xl shrink-0 overflow-hidden relative">
       <span className="select-none">{initials}</span>
       {avatarUrl && !imgFailed && (
         <img src={avatarUrl} alt={name} className="absolute inset-0 w-full h-full object-cover" onError={() => setImgFailed(true)} />
@@ -90,12 +90,9 @@ function TicketCard({
             <span>{learningFlag} {exchange.learningLang}</span>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
           <Avatar name={exchange.name} lang={exchange.nativeLang} avatarUrl={exchange.avatarUrl} />
-          <div>
-            <p className="font-serif font-bold text-[#171717] text-xl leading-tight">{exchange.name}</p>
-            <p className="text-xs text-stone-400 mt-0.5">Language partner</p>
-          </div>
+          <p className="font-serif font-bold text-[#171717] text-2xl leading-tight">{exchange.name}</p>
         </div>
       </div>
 
