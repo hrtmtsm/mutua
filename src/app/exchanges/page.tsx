@@ -153,7 +153,12 @@ export default function ExchangesPage() {
 
   const loadExchanges = useCallback(async (sid: string) => {
     const matches = await getMatchesBySessionId(sid);
-    const scheduled = matches.filter(m => m.scheduling_state === 'scheduled' && m.scheduled_at);
+    const now = Date.now();
+    const scheduled = matches.filter(m =>
+      m.scheduling_state === 'scheduled' &&
+      m.scheduled_at &&
+      now - new Date(m.scheduled_at).getTime() <= 60 * 60 * 1000 // not more than 1h past
+    );
 
     const cards: ExchangeCard[] = await Promise.all(
       scheduled.map(async (m: Match) => {
