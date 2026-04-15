@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase, getMatchesBySessionId, type Match, type SchedulingState } from '@/lib/supabase';
 import { LANG_FLAGS, LANG_AVATAR_COLOR } from '@/lib/constants';
@@ -45,12 +45,15 @@ function TicketCard({
   exchange,
   onJoin,
   onReschedule,
+  onViewProfile,
 }: {
   exchange: ExchangeCard;
   onJoin: () => void;
   onReschedule: () => void;
+  onViewProfile: () => void;
 }) {
   const [now, setNow] = useState(Date.now());
+  const [showOverflow, setShowOverflow] = useState(false);
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 60_000);
     return () => clearInterval(t);
@@ -85,13 +88,30 @@ function TicketCard({
         </span>
         <div className="flex items-center gap-4">
           <Avatar name={exchange.name} lang={exchange.nativeLang} avatarUrl={exchange.avatarUrl} />
-          <div>
+          <div className="flex-1 min-w-0">
             <p className="font-serif font-bold text-[#171717] text-2xl leading-tight">{exchange.name}</p>
-            <div className="flex items-center gap-1.5 mt-1 text-sm text-stone-400">
+            <div className="flex items-center gap-1.5 mt-1 text-sm text-stone-400 flex-nowrap whitespace-nowrap">
               <span>{nativeFlag} {exchange.nativeLang}</span>
               <span className="text-stone-300">↔</span>
               <span>{learningFlag} {exchange.learningLang}</span>
             </div>
+          </div>
+          <div className="relative shrink-0">
+            <button onClick={() => setShowOverflow(v => !v)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100 transition-colors text-stone-300">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <circle cx="8" cy="3" r="1.4"/><circle cx="8" cy="8" r="1.4"/><circle cx="8" cy="13" r="1.4"/>
+              </svg>
+            </button>
+            {showOverflow && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowOverflow(false)} />
+                <div className="absolute right-0 top-9 z-50 bg-white rounded-xl shadow-lg border border-stone-100 py-1 w-44 text-sm">
+                  <button onClick={() => { setShowOverflow(false); onViewProfile(); }} className="w-full px-4 py-2.5 text-left text-neutral-700 hover:bg-stone-50">View profile</button>
+                  <button onClick={() => { setShowOverflow(false); window.dispatchEvent(new Event('mutua:open-chat')); }} className="w-full px-4 py-2.5 text-left text-neutral-700 hover:bg-stone-50">Say hi 👋</button>
+                  <button onClick={() => { setShowOverflow(false); onReschedule(); }} className="w-full px-4 py-2.5 text-left text-neutral-700 hover:bg-stone-50">Reschedule</button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -242,6 +262,7 @@ export default function ExchangesPage() {
                 exchange={ex}
                 onJoin={() => handleJoin(ex)}
                 onReschedule={() => handleReschedule(ex)}
+                onViewProfile={() => router.push(`/partner/${ex.matchId}`)}
               />
             ))}
           </div>
