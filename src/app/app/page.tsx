@@ -7,7 +7,6 @@ import { LANG_FLAGS, LANG_AVATAR_COLOR, INTEREST_CATEGORIES, INTEREST_MIGRATION 
 import type { SavedPartner } from '@/lib/types';
 import { track } from '@/lib/analytics';
 import AppShell from '@/components/AppShell';
-import Link from 'next/link';
 import { ArrowLeftRight } from 'lucide-react';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -129,67 +128,6 @@ function SchedulingCard({
     (s === 'pending_a' && !partner.iAmA) ||
     (s === 'pending_b' && partner.iAmA);
 
-  // ── Scheduled state: compact upcoming badge, or fall through to reschedule if missed ──
-  if (s === 'scheduled' && partner.scheduledAt) {
-    const sessionDate   = new Date(partner.scheduledAt);
-    const sessionPassed = now - sessionDate.getTime() > 60 * 60 * 1000;
-    const isLive        = isJoinable(partner.scheduledAt, now);
-
-    // Missed sessions: don't show on Partners tab at all
-    if (sessionPassed) return null;
-
-    // Upcoming: compact badge linking to Exchanges
-    const statusPill = isLive
-      ? { label: '● Live now', cls: 'bg-emerald-50 text-emerald-600' }
-      : { label: 'Upcoming', cls: 'bg-blue-50 text-blue-600' };
-
-    return (
-      <div className="overflow-hidden bg-white rounded-2xl border border-stone-200">
-        <div className="px-7 pt-6 pb-0 flex items-start gap-4">
-          <button onClick={onViewProfile} className="shrink-0">
-            <Avatar name={partner.name} lang={partner.nativeLang} avatarUrl={partner.avatarUrl} size="lg" />
-          </button>
-          <button onClick={onViewProfile} className="flex-1 min-w-0 text-left">
-            <p className="font-serif font-bold text-[#171717] text-2xl leading-tight truncate">{partner.name}</p>
-            <div className="flex items-center gap-1.5 mt-1 text-sm text-stone-400">
-              <span>{nativeFlag} {partner.nativeLang}</span>
-              <ArrowLeftRight size={11} className="shrink-0" />
-              <span>{learningFlag} {partner.learningLang}</span>
-            </div>
-          </button>
-          <div className="relative shrink-0">
-            <button onClick={() => setShowOverflow(v => !v)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100 transition-colors text-stone-300">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                <circle cx="8" cy="3" r="1.4"/><circle cx="8" cy="8" r="1.4"/><circle cx="8" cy="13" r="1.4"/>
-              </svg>
-            </button>
-            {showOverflow && (
-              <>
-                <div className="fixed inset-0 z-40" onClick={() => setShowOverflow(false)} />
-                <div className="absolute right-0 top-9 z-50 bg-white rounded-xl shadow-lg border border-stone-100 py-1 w-44 text-sm">
-                  <button onClick={() => { setShowOverflow(false); onViewProfile(); }} className="w-full px-4 py-2.5 text-left text-neutral-700 hover:bg-stone-50">View profile</button>
-                  <button onClick={() => { setShowOverflow(false); window.dispatchEvent(new Event('mutua:open-chat')); }} className="w-full px-4 py-2.5 text-left text-neutral-700 hover:bg-stone-50">Say hi 👋</button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-        <div className="px-7 mt-5 pb-6 flex items-center justify-between">
-          <div>
-            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${statusPill.cls}`}>
-              {statusPill.label}
-            </span>
-            <p className="text-xs text-stone-400 mt-1.5">
-              {sessionDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}, {sessionDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
-            </p>
-          </div>
-          <Link href="/exchanges" className="px-4 py-2.5 btn-primary text-white text-sm font-semibold rounded-xl">
-            {isLive ? 'Join now →' : 'See exchange →'}
-          </Link>
-        </div>
-      </div>
-    );
-  }
 
   // ── All other states: full card ────────────────────────────────────────────
   const pills = [partner.goal, partner.commStyle, partner.frequency, ...partner.sharedInterests].filter(Boolean).slice(0, 4);
@@ -515,13 +453,8 @@ export default function SessionPage() {
         {loading ? (
           <p className="text-sm text-stone-400">Loading...</p>
         ) : (() => {
-          // Filter out missed sessions — they only live in Progress
-          const visible = partners.filter(p => {
-            if (p.schedulingState === 'scheduled' && p.scheduledAt) {
-              return Date.now() - new Date(p.scheduledAt).getTime() <= 60 * 60 * 1000;
-            }
-            return true;
-          });
+          // Scheduled sessions live in Exchanges; missed/past ones in Progress
+          const visible = partners.filter(p => p.schedulingState !== 'scheduled');
 
           if (visible.length === 0) {
             return (
