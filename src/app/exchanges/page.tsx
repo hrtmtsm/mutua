@@ -80,19 +80,19 @@ function TicketCard({
     <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden">
       {/* Ticket header band */}
       <div className="px-6 pt-5 pb-4 border-b border-dashed border-stone-200">
-        <div className="flex items-center justify-between mb-3">
-          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${statusPill.cls}`}>
-            {statusPill.label}
-          </span>
-          <div className="flex items-center gap-1.5 text-xs text-stone-400">
-            <span>{nativeFlag} {exchange.nativeLang}</span>
-            <span className="text-stone-300">↔</span>
-            <span>{learningFlag} {exchange.learningLang}</span>
-          </div>
-        </div>
+        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold mb-3 ${statusPill.cls}`}>
+          {statusPill.label}
+        </span>
         <div className="flex items-center gap-4">
           <Avatar name={exchange.name} lang={exchange.nativeLang} avatarUrl={exchange.avatarUrl} />
-          <p className="font-serif font-bold text-[#171717] text-2xl leading-tight">{exchange.name}</p>
+          <div>
+            <p className="font-serif font-bold text-[#171717] text-2xl leading-tight">{exchange.name}</p>
+            <div className="flex items-center gap-1.5 mt-1 text-sm text-stone-400">
+              <span>{nativeFlag} {exchange.nativeLang}</span>
+              <span className="text-stone-300">↔</span>
+              <span>{learningFlag} {exchange.learningLang}</span>
+            </div>
+          </div>
         </div>
       </div>
 
