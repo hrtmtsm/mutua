@@ -33,6 +33,7 @@ function useNavState() {
   const [avatarUrl, setAvatarUrl] = useState('');
   const [sessionId, setSessionId] = useState('');
   const [hasUnread, setHasUnreadState] = useState(false);
+  const [hasRematchBadge, setHasRematchBadge] = useState(false);
 
   const refreshProfile = () => {
     const raw = localStorage.getItem('mutua_profile');
@@ -63,8 +64,38 @@ function useNavState() {
     return () => window.removeEventListener('mutua:profile-updated', refreshProfile);
   }, []);
 
+  // Poll for pending rematch intents from partner; clear badge on history page
+  useEffect(() => {
+    if (pathname === '/history') { setHasRematchBadge(false); return; }
+    const sid = localStorage.getItem('mutua_session_id');
+    if (!sid) return;
+
+    const check = async () => {
+      const { data: myMatches } = await supabase
+        .from('matches')
+        .select('id')
+        .or(`session_id_a.eq.${sid},session_id_b.eq.${sid}`)
+        .neq('scheduling_state', 'archived');
+
+      const ids = (myMatches ?? []).map((m: any) => m.id);
+      if (ids.length === 0) { setHasRematchBadge(false); return; }
+
+      const { data: intents } = await supabase
+        .from('rematch_intents')
+        .select('id')
+        .in('match_id', ids)
+        .neq('user_id', sid);
+
+      setHasRematchBadge((intents ?? []).length > 0);
+    };
+
+    check();
+    const t = setInterval(check, 15_000);
+    return () => clearInterval(t);
+  }, [pathname]);
+
   const setHasUnread = (v: boolean) => setHasUnreadState(v);
-  return { pathname, initials, name, avatarBg, avatarUrl, sessionId, hasUnread, setHasUnread };
+  return { pathname, initials, name, avatarBg, avatarUrl, sessionId, hasUnread, setHasUnread, hasRematchBadge };
 }
 
 // ── Thread list ───────────────────────────────────────────────────────────────
@@ -254,7 +285,7 @@ function MessageChat({
 // ── Top nav ───────────────────────────────────────────────────────────────────
 
 export default function TopNav() {
-  const { pathname, initials, name, avatarBg, avatarUrl, hasUnread, setHasUnread } = useNavState();
+  const { pathname, initials, name, avatarBg, avatarUrl, hasUnread, setHasUnread, hasRematchBadge } = useNavState();
   const [inboxOpen, setInboxOpen] = useState(false);
   const [inboxTab, setInboxTab]   = useState<'notifications' | 'messages'>('notifications');
   const [msgView, setMsgView]     = useState<'list' | 'chat'>('list');
@@ -464,15 +495,21 @@ export default function TopNav() {
         <nav className="hidden md:flex items-center gap-1 flex-1 ml-8">
           {DESKTOP_NAV.map(({ href, label, icon: Icon, match }) => {
             const active = match.some(p => pathname === p || pathname.startsWith(p + '/'));
+            const showDot = href === '/history' && hasRematchBadge;
             return (
               <Link
                 key={href}
                 href={href}
-                className={`flex items-center gap-2 px-4 py-1.5 text-sm font-semibold transition-colors rounded-full ${
+                className={`relative flex items-center gap-2 px-4 py-1.5 text-sm font-semibold transition-colors rounded-full ${
                   active ? 'text-neutral-900' : 'text-stone-400 hover:text-neutral-700'
                 }`}
               >
-                <Icon className="w-4 h-4" strokeWidth={active ? 2.5 : 1.8} />
+                <span className="relative">
+                  <Icon className="w-4 h-4" strokeWidth={active ? 2.5 : 1.8} />
+                  {showDot && (
+                    <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-rose-500 rounded-full" />
+                  )}
+                </span>
                 {label}
               </Link>
             );
@@ -719,12 +756,13 @@ export default function TopNav() {
 }
 
 export function BottomNav() {
-  const { pathname } = useNavState();
+  const { pathname, hasRematchBadge } = useNavState();
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-20 bg-white border-t border-stone-200/60 flex items-center">
       {BOTTOM_NAV.map(({ href, label, icon: Icon, match }) => {
         const active = match.some(p => pathname === p || pathname.startsWith(p + '/'));
+        const showDot = href === '/history' && hasRematchBadge;
         return (
           <Link
             key={href}
@@ -733,7 +771,12 @@ export function BottomNav() {
               active ? 'text-neutral-900' : 'text-stone-400'
             }`}
           >
-            <Icon className="w-5 h-5" strokeWidth={active ? 2.5 : 1.8} />
+            <span className="relative">
+              <Icon className="w-5 h-5" strokeWidth={active ? 2.5 : 1.8} />
+              {showDot && (
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-rose-500 rounded-full" />
+              )}
+            </span>
             <span className="text-[10px] font-semibold">{label}</span>
           </Link>
         );

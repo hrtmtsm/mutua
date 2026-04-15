@@ -8,6 +8,63 @@
 
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { Resend } from 'resend';
+
+const resend  = new Resend(process.env.RESEND_API_KEY);
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://trymutua.com';
+
+async function sendRematchEmail(toEmail: string, requesterName: string, toName: string, historyUrl: string) {
+  await resend.emails.send({
+    from:    'Mutua <hello@trymutua.com>',
+    to:      toEmail,
+    subject: `${requesterName} wants to practice with you again`,
+    html: `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"/></head>
+<body style="margin:0;padding:0;background:#f5f4f0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f4f0;padding:40px 16px;">
+    <tr><td align="center">
+      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.06);">
+        <tr>
+          <td style="background:#1a6fb5;padding:40px 40px 32px;">
+            <p style="margin:0;font-size:26px;font-weight:900;color:#ffffff;">Mutua</p>
+            <p style="margin:8px 0 0;font-size:14px;color:rgba(255,255,255,0.85);">Your language exchange community</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:40px 40px 32px;">
+            <p style="margin:0 0 8px;font-size:15px;color:#666666;">Hi ${toName},</p>
+            <p style="margin:0 0 16px;font-size:26px;font-weight:800;color:#111111;line-height:1.2;">
+              ${requesterName} wants to practice with you again 🙌
+            </p>
+            <p style="margin:0 0 32px;font-size:15px;color:#666666;line-height:1.6;">
+              Head to your history to schedule another session.
+            </p>
+            <table cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="background:linear-gradient(160deg,#60bdff 0%,#2B8FFF 40%,#1060d8 100%);border-radius:12px;">
+                  <a href="${historyUrl}" style="display:inline-block;padding:16px 32px;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;">
+                    Schedule again →
+                  </a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:24px 40px;border-top:1px solid #f0f0f0;">
+            <p style="margin:0;font-size:12px;color:#aaaaaa;">
+              <a href="https://trymutua.com" style="color:#aaaaaa;">trymutua.com</a>
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`,
+  });
+}
 
 function admin() {
   return createClient(
@@ -36,7 +93,23 @@ export async function POST(req: Request) {
     .maybeSingle();
 
   if (!partnerIntent) {
-    // Partner hasn't responded yet — just wait
+    // Partner hasn't responded yet — notify them
+    const { data: match } = await db
+      .from('matches')
+      .select('name_a, name_b, email_a, email_b, session_id_a')
+      .eq('id', matchId)
+      .maybeSingle();
+
+    if (match) {
+      const isA = match.session_id_a === userId;
+      const requesterName = isA ? match.name_a : match.name_b;
+      const partnerEmail  = isA ? match.email_b : match.email_a;
+      const partnerName   = isA ? match.name_b  : match.name_a;
+      try {
+        await sendRematchEmail(partnerEmail, requesterName, partnerName, `${APP_URL}/history`);
+      } catch { /* non-fatal */ }
+    }
+
     return NextResponse.json({ matched: false });
   }
 
