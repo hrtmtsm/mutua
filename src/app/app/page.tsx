@@ -135,57 +135,8 @@ function SchedulingCard({
     const sessionPassed = now - sessionDate.getTime() > 60 * 60 * 1000;
     const isLive        = isJoinable(partner.scheduledAt, now);
 
-    // Missed sessions: show partner profile card with reschedule action (no missed indicator)
-    if (sessionPassed) {
-      const pills = [partner.goal, partner.commStyle, partner.frequency, ...partner.sharedInterests].filter(Boolean).slice(0, 4);
-      return (
-        <div className="overflow-hidden bg-white rounded-2xl border border-stone-200">
-          <div className="px-7 pt-6 pb-0 flex items-start gap-4">
-            <button onClick={onViewProfile} className="shrink-0">
-              <Avatar name={partner.name} lang={partner.nativeLang} avatarUrl={partner.avatarUrl} size="lg" />
-            </button>
-            <button onClick={onViewProfile} className="flex-1 min-w-0 text-left">
-              <p className="font-serif font-bold text-[#171717] text-2xl leading-tight truncate">{partner.name}</p>
-              <div className="flex items-center gap-1.5 mt-1 text-sm text-stone-400">
-                <span>{nativeFlag} {partner.nativeLang}</span>
-                <ArrowLeftRight size={11} className="shrink-0" />
-                <span>{learningFlag} {partner.learningLang}</span>
-              </div>
-            </button>
-            <div className="relative shrink-0">
-              <button onClick={() => setShowOverflow(v => !v)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100 transition-colors text-stone-300">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                  <circle cx="8" cy="3" r="1.4"/><circle cx="8" cy="8" r="1.4"/><circle cx="8" cy="13" r="1.4"/>
-                </svg>
-              </button>
-              {showOverflow && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setShowOverflow(false)} />
-                  <div className="absolute right-0 top-9 z-50 bg-white rounded-xl shadow-lg border border-stone-100 py-1 w-44 text-sm">
-                    <button onClick={() => { setShowOverflow(false); onViewProfile(); }} className="w-full px-4 py-2.5 text-left text-neutral-700 hover:bg-stone-50">View profile</button>
-                    <button onClick={() => { setShowOverflow(false); window.dispatchEvent(new Event('mutua:open-chat')); }} className="w-full px-4 py-2.5 text-left text-neutral-700 hover:bg-stone-50">Say hi 👋</button>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-          {partner.bio && <div className="px-7 mt-4"><p className="text-sm text-neutral-700 leading-relaxed">{partner.bio}</p></div>}
-          {pills.length > 0 && (
-            <div className="px-7 mt-4">
-              <p className="text-xs text-stone-400 font-medium mb-2">In common</p>
-              <div className="flex flex-wrap gap-1.5">
-                {pills.map((v, i) => <span key={i} className="px-3 py-1 bg-stone-100 text-sm font-medium text-stone-600 rounded-full">{v}</span>)}
-              </div>
-            </div>
-          )}
-          <div className="px-7 mt-6 pb-7">
-            <button onClick={onReschedule} className="px-5 py-3 btn-primary text-white text-sm font-semibold rounded-xl">
-              Reschedule →
-            </button>
-          </div>
-        </div>
-      );
-    }
+    // Missed sessions: don't show on Partners tab at all
+    if (sessionPassed) return null;
 
     // Upcoming: compact badge linking to Exchanges
     const statusPill = isLive
