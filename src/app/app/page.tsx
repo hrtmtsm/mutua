@@ -617,11 +617,9 @@ export default function SessionPage() {
         {/* Context header */}
         <div>
           <h1 className="font-serif font-semibold text-2xl text-[#171717]">Your exchanges</h1>
-          <p className="text-sm text-stone-400 mt-1">
-            {loading ? '' : partners.length > 0
-              ? `You have ${partners.length} active language ${partners.length === 1 ? 'partner' : 'partners'}.`
-              : 'No partners yet — we\'ll reach out when we find your match.'}
-          </p>
+          {!loading && partners.length === 0 && (
+            <p className="text-sm text-stone-400 mt-1">No partners yet — we'll reach out when we find your match.</p>
+          )}
         </div>
 
         {loading ? (
