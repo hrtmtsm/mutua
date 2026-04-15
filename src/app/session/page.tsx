@@ -212,6 +212,7 @@ export default function SessionPage() {
   const [difficulty,           setDifficulty]           = useState(1);
 
   const [myId]            = useState(() => typeof window !== 'undefined' ? localStorage.getItem('mutua_session_id') ?? '' : '');
+  const [matchId]         = useState(() => { try { return JSON.parse(localStorage.getItem('mutua_match') ?? '{}').match_id ?? ''; } catch { return ''; } });
   const [showWalkthrough, setShowWalkthrough] = useState(() => typeof window !== 'undefined' ? !localStorage.getItem('mutua_seen_walkthrough') : false);
   const [myAvatarUrl,     setMyAvatarUrl]     = useState<string | null>(null);
   const [myInitials,      setMyInitials]      = useState('');
@@ -304,9 +305,9 @@ export default function SessionPage() {
   useEffect(() => {
     if (!isConfigured || !myId || !match?.partner.session_id) return;
     const partnerId = match.partner.session_id;
-    const channelName = `rtc:${[myId, partnerId].sort().join(':')}`;
+    const channelName = `rtc:${matchId}:${[myId, partnerId].sort().join(':')}`;
     const ping = () => supabase.from('signaling').insert({
-      channel: channelName, from_id: myId, to_id: partnerId, event: 'presence', payload: {},
+      channel: channelName, from_id: myId, to_id: partnerId, event: 'presence', payload: { match_id: matchId },
     }).then(() => {});
     ping();
     const t = setInterval(ping, 15_000);
@@ -326,6 +327,7 @@ export default function SessionPage() {
   const { rtcState, localStream, partnerStream, partnerMuted, partnerCameraOn, send: rtcSend, switchDevice } = useWebRTC({
     myId,
     partnerId: match?.partner.session_id ?? '',
+    matchId,
     muted,
     cameraOn,
     audioDeviceId,

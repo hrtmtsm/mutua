@@ -76,19 +76,25 @@ export default function PreSessionPage() {
     if (!isConfigured || !partner) return;
     const myId      = localStorage.getItem('mutua_session_id') ?? '';
     const partnerId = partner.partner_id;
+    const matchId   = (() => { try { return JSON.parse(localStorage.getItem('mutua_match') ?? '{}').match_id ?? ''; } catch { return ''; } })();
     if (!myId || !partnerId) return;
 
     const check = async () => {
       const since = new Date(Date.now() - 30_000).toISOString();
       const { data } = await supabase
         .from('signaling')
-        .select('id')
+        .select('id, payload')
         .eq('event', 'presence')
         .eq('from_id', partnerId)
         .eq('to_id', myId)
         .gt('created_at', since)
-        .limit(1);
-      setPartnerOnline((data ?? []).length > 0);
+        .limit(10);
+      // Filter by matchId if available so stale presence from old sessions is ignored
+      const rows = data ?? [];
+      const online = matchId
+        ? rows.some((r: any) => r.payload?.match_id === matchId)
+        : rows.length > 0;
+      setPartnerOnline(online);
     };
 
     check();

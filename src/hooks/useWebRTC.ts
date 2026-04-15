@@ -13,6 +13,7 @@ export type RTCState = 'idle' | 'connecting' | 'connected' | 'disconnected' | 'f
 interface Options {
   myId:           string;
   partnerId:      string;
+  matchId:        string;
   muted:          boolean;
   cameraOn:       boolean;
   audioDeviceId?: string;
@@ -43,7 +44,7 @@ async function dbDelete(ids: string[]) {
   await supabase.from('signaling').delete().in('id', ids);
 }
 
-export function useWebRTC({ myId, partnerId, muted, cameraOn, audioDeviceId, onChecklist, onChat }: Options) {
+export function useWebRTC({ myId, partnerId, matchId, muted, cameraOn, audioDeviceId, onChecklist, onChat }: Options) {
   const [rtcState,       setRtcState]       = useState<RTCState>('idle');
   const [localStream,    setLocalStream]    = useState<MediaStream | null>(null);
   const [partnerStream,  setPartnerStream]  = useState<MediaStream | null>(null);
@@ -63,7 +64,7 @@ export function useWebRTC({ myId, partnerId, muted, cameraOn, audioDeviceId, onC
   const cameraOnRef    = useRef(cameraOn);
 
   const isCaller    = myId < partnerId;
-  const channelName = `rtc:${[myId, partnerId].sort().join(':')}`;
+  const channelName = `rtc:${matchId}:${[myId, partnerId].sort().join(':')}`;
 
   // ── helpers ────────────────────────────────────────────────────────────────
 
