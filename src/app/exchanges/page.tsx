@@ -135,7 +135,7 @@ function TicketCard({
               </button>
               <button
                 onClick={onReschedule}
-                className="flex-1 py-3 btn-primary text-white text-sm font-semibold rounded-xl"
+                className="px-5 py-3 btn-primary text-white text-sm font-semibold rounded-xl"
               >
                 Reschedule →
               </button>
@@ -150,7 +150,7 @@ function TicketCard({
               </button>
               <button
                 onClick={onJoin}
-                className="flex-1 py-3 btn-primary text-white text-sm font-semibold rounded-xl"
+                className="px-5 py-3 btn-primary text-white text-sm font-semibold rounded-xl"
               >
                 {isLive ? 'Join now →' : 'Start exchange →'}
               </button>
