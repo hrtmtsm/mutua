@@ -510,39 +510,48 @@ export default function SessionPage() {
       <main className="flex-1 px-6 py-10 max-w-3xl mx-auto w-full space-y-6">
 
         {/* Context header */}
-        <div>
-          <h1 className="font-serif font-semibold text-2xl text-[#171717]">Your partners</h1>
-          {!loading && partners.length === 0 && (
-            <p className="text-sm text-stone-400 mt-1">No partners yet — we'll reach out when we find your match.</p>
-          )}
-        </div>
+        <h1 className="font-serif font-semibold text-2xl text-[#171717]">Your partners</h1>
 
         {loading ? (
           <p className="text-sm text-stone-400">Loading...</p>
-        ) : partners.length > 0 ? (
-          <div className="space-y-6">
-            {partners.map(partner => (
-              <SchedulingCard
-                key={partner.matchId || partner.id}
-                partner={partner}
-                onReschedule={() => handleReschedule(partner)}
-                onJoin={() => handleJoin(partner)}
-                onBookExchange={() => handleBookExchange(partner)}
-                onViewProfile={() => router.push(`/partner/${partner.matchId}`)}
-                myName={myName}
-                myAvatarUrl={myAvatarUrl}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="bg-white border border-stone-200 rounded-2xl px-6 py-10 text-center space-y-2">
-            <p className="text-sm font-semibold text-neutral-700">Looking for your match</p>
-            <p className="text-sm text-stone-400 leading-relaxed">
-              We're searching for a compatible language partner.<br />
-              We'll email you as soon as we find one.
-            </p>
-          </div>
-        )}
+        ) : (() => {
+          // Filter out missed sessions — they only live in Progress
+          const visible = partners.filter(p => {
+            if (p.schedulingState === 'scheduled' && p.scheduledAt) {
+              return Date.now() - new Date(p.scheduledAt).getTime() <= 60 * 60 * 1000;
+            }
+            return true;
+          });
+
+          if (visible.length === 0) {
+            return (
+              <div className="bg-white border border-stone-200 rounded-2xl px-6 py-10 text-center space-y-2">
+                <p className="text-sm font-semibold text-neutral-700">Looking for your match</p>
+                <p className="text-sm text-stone-400 leading-relaxed">
+                  We're searching for a compatible language partner.<br />
+                  We'll email you as soon as we find one.
+                </p>
+              </div>
+            );
+          }
+
+          return (
+            <div className="space-y-6">
+              {visible.map(partner => (
+                <SchedulingCard
+                  key={partner.matchId || partner.id}
+                  partner={partner}
+                  onReschedule={() => handleReschedule(partner)}
+                  onJoin={() => handleJoin(partner)}
+                  onBookExchange={() => handleBookExchange(partner)}
+                  onViewProfile={() => router.push(`/partner/${partner.matchId}`)}
+                  myName={myName}
+                  myAvatarUrl={myAvatarUrl}
+                />
+              ))}
+            </div>
+          );
+        })()}
 
 
       </main>
