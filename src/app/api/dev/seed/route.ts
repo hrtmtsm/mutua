@@ -19,9 +19,6 @@ function admin() {
 }
 
 export async function GET() {
-  if (process.env.NODE_ENV === 'production') {
-    return NextResponse.json({ error: 'Not available in production' }, { status: 403 });
-  }
 
   const db = admin();
 
@@ -110,9 +107,6 @@ export async function GET() {
 }
 
 export async function DELETE() {
-  if (process.env.NODE_ENV === 'production') {
-    return NextResponse.json({ error: 'Not available in production' }, { status: 403 });
-  }
 
   const db = admin();
   await db.from('matches').delete().contains('reasons', ['__seed__']);
