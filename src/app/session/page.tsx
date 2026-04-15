@@ -811,9 +811,22 @@ export default function SessionPage() {
           <div className={`relative flex-1 overflow-hidden ${partnerStream ? '' : 'flex items-center justify-center bg-neutral-900'}`} onClick={() => partnerVideoRef.current?.play()}>
             {!partnerStream && (
               <div className="flex flex-col items-center gap-3 text-center px-6">
-                <p className="text-white/50 text-sm">
-                  {rtcState === 'failed' ? 'Connection failed' : 'Waiting for partner…'}
-                </p>
+                {rtcState === 'failed' ? (
+                  <p className="text-white/50 text-sm">Connection failed</p>
+                ) : (
+                  <p className="text-white/50 text-sm flex items-center gap-0.5">
+                    Waiting for partner
+                    <span className="inline-flex gap-0.5 ml-1">
+                      {[0, 1, 2].map(i => (
+                        <span
+                          key={i}
+                          className="w-1 h-1 rounded-full bg-white/50 inline-block"
+                          style={{ animation: 'dotPulse 1.4s ease-in-out infinite', animationDelay: `${i * 0.2}s` }}
+                        />
+                      ))}
+                    </span>
+                  </p>
+                )}
                 {rtcState === 'failed' && (
                   <button
                     onClick={e => { e.stopPropagation(); window.location.reload(); }}
