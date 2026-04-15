@@ -7,7 +7,6 @@ import { LANG_FLAGS, LANG_AVATAR_COLOR, INTEREST_CATEGORIES, INTEREST_MIGRATION 
 import type { SavedPartner } from '@/lib/types';
 import { track } from '@/lib/analytics';
 import AppShell from '@/components/AppShell';
-import { ArrowLeftRight } from 'lucide-react';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -142,9 +141,9 @@ function SchedulingCard({
         </button>
         <button onClick={onViewProfile} className="flex-1 min-w-0 text-left">
           <p className="font-serif font-bold text-[#171717] text-2xl leading-tight truncate">{partner.name}</p>
-          <div className="flex items-center gap-1.5 mt-1 text-sm text-stone-400">
+          <div className="flex items-center gap-1.5 mt-1 text-sm text-stone-400 flex-nowrap whitespace-nowrap">
             <span>{nativeFlag} {partner.nativeLang}</span>
-            <ArrowLeftRight size={11} className="shrink-0" />
+            <span>↔</span>
             <span>{learningFlag} {partner.learningLang}</span>
           </div>
         </button>
