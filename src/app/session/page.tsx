@@ -828,9 +828,9 @@ export default function SessionPage() {
               ref={partnerVideoRef}
               autoPlay
               playsInline
-              className={`absolute inset-0 w-full h-full object-cover ${partnerCameraOn ? '' : 'hidden'}`}
+              className={`absolute inset-0 w-full h-full object-cover ${partnerStream && partnerCameraOn ? '' : 'hidden'}`}
             />
-            {!partnerCameraOn && (
+            {partnerStream && !partnerCameraOn && (
               <div className="absolute inset-0 flex items-center justify-center overflow-hidden"
                 style={{ backgroundColor: partner.avatar_url ? '#1a1a1a' : (LANG_AVATAR_COLOR[partner.native_language] ?? '#1e1e1e') }}>
                 {/* Blurred photo or color as background */}
@@ -847,8 +847,8 @@ export default function SessionPage() {
                 </div>
               </div>
             )}
-            {/* Partner name bar */}
-            <div className="absolute top-0 left-0 right-0 z-10 px-4 py-3 flex items-center justify-between"
+            {/* Partner name bar — only shown when connected */}
+            {partnerStream && <div className="absolute top-0 left-0 right-0 z-10 px-4 py-3 flex items-center justify-between"
               style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.35) 0%, transparent 100%)' }}>
               <div>
                 <div className="flex items-center gap-2">
@@ -865,7 +865,7 @@ export default function SessionPage() {
                 </p>
               </div>
               <span className="font-mono text-xs text-white/50 tabular-nums">{formatTime(seconds)}</span>
-            </div>
+            </div>}
           </div>
 
           {/* Prompt card — top-right over entire participant area */}
