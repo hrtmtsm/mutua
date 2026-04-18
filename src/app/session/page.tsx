@@ -251,6 +251,16 @@ export default function SessionPage() {
     }
   }, []);
 
+  // Record that this user entered the session room
+  useEffect(() => {
+    if (!myId || !matchId) return;
+    fetch('/api/record-join', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ matchId, sessionId: myId }),
+    }).catch(() => {});
+  }, [myId, matchId]);
+
   useEffect(() => {
     const stored = localStorage.getItem('mutua_match');
     if (!stored) { router.replace('/onboarding'); return; }
