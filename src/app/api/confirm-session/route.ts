@@ -77,16 +77,44 @@ function emailHtml(partnerName: string, scheduledTime: string, partnerSessionId?
 </html>`;
 }
 
+function formatInTimezone(isoUtc: string, timeZone: string): string {
+  try {
+    return new Date(isoUtc).toLocaleString('en-US', {
+      weekday: 'long', month: 'long', day: 'numeric',
+      hour: 'numeric', minute: '2-digit',
+      timeZoneName: 'short',
+      timeZone,
+    });
+  } catch {
+    // Fallback if timezone string is invalid
+    return new Date(isoUtc).toLocaleString('en-US', {
+      weekday: 'long', month: 'long', day: 'numeric',
+      hour: 'numeric', minute: '2-digit',
+      timeZoneName: 'short',
+    });
+  }
+}
+
 export async function POST(request: Request) {
-  const { matchId, partnerEmail, partnerName, partnerSessionId, scheduledTime, confirmerName } = await request.json();
-  if (!matchId || !partnerEmail || !scheduledTime) {
-    return NextResponse.json({ error: 'matchId, partnerEmail, scheduledTime required' }, { status: 400 });
+  const { matchId, partnerEmail, partnerName, partnerSessionId, scheduledAt, confirmerName } = await request.json();
+  if (!matchId || !partnerEmail || !scheduledAt) {
+    return NextResponse.json({ error: 'matchId, partnerEmail, scheduledAt required' }, { status: 400 });
   }
 
   const adminClient = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   );
+
+  // Look up recipient's timezone from their availability record
+  const { data: avail } = await adminClient
+    .from('user_availability')
+    .select('timezone')
+    .eq('session_id', partnerSessionId)
+    .maybeSingle();
+
+  const recipientTz = avail?.timezone ?? 'UTC';
+  const scheduledTime = formatInTimezone(scheduledAt, recipientTz);
 
   const displayName = confirmerName ?? 'Your partner';
 

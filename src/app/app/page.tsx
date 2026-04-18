@@ -277,7 +277,7 @@ export default function SessionPage() {
             matchId: m.id,
             partnerEmail,
             partnerSessionId,
-            scheduledTime: card.scheduledAt ? new Date(card.scheduledAt).toLocaleString() : '',
+            scheduledAt: card.scheduledAt ?? '',
             confirmerName: myNameStr,
           }),
         }).catch(() => {});
