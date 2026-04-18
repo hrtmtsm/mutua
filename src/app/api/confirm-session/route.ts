@@ -96,9 +96,9 @@ function formatInTimezone(isoUtc: string, timeZone: string): string {
 }
 
 export async function POST(request: Request) {
-  const { matchId, partnerEmail, partnerName, partnerSessionId, scheduledAt, confirmerName } = await request.json();
-  if (!matchId || !partnerEmail || !scheduledAt) {
-    return NextResponse.json({ error: 'matchId, partnerEmail, scheduledAt required' }, { status: 400 });
+  const { matchId, partnerEmail, partnerName, partnerSessionId, scheduledAt, scheduledTime: legacyScheduledTime, confirmerName } = await request.json();
+  if (!matchId || !partnerEmail || (!scheduledAt && !legacyScheduledTime)) {
+    return NextResponse.json({ error: 'matchId, partnerEmail, and scheduledAt (or scheduledTime) required' }, { status: 400 });
   }
 
   const adminClient = createClient(
@@ -106,15 +106,20 @@ export async function POST(request: Request) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   );
 
-  // Look up recipient's timezone from their availability record
-  const { data: avail } = await adminClient
-    .from('user_availability')
-    .select('timezone')
-    .eq('session_id', partnerSessionId)
-    .maybeSingle();
-
-  const recipientTz = avail?.timezone ?? 'UTC';
-  const scheduledTime = formatInTimezone(scheduledAt, recipientTz);
+  let scheduledTime: string;
+  if (scheduledAt) {
+    // New path: UTC ISO string — look up recipient's timezone for accurate formatting
+    const { data: avail } = await adminClient
+      .from('user_availability')
+      .select('timezone')
+      .eq('session_id', partnerSessionId)
+      .maybeSingle();
+    const recipientTz = avail?.timezone ?? 'UTC';
+    scheduledTime = formatInTimezone(scheduledAt, recipientTz);
+  } else {
+    // Legacy path: pre-formatted string from session-schedule page, use as-is
+    scheduledTime = legacyScheduledTime;
+  }
 
   const displayName = confirmerName ?? 'Your partner';
 
