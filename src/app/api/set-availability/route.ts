@@ -16,6 +16,83 @@ const resend        = new Resend(process.env.RESEND_API_KEY);
 const EMAILS_ENABLED = process.env.SEND_MATCH_EMAILS === 'true';
 const APP_URL        = process.env.NEXT_PUBLIC_APP_URL ?? 'https://trymutua.com';
 
+function formatInTimezone(isoUtc: string, timeZone: string): string {
+  try {
+    return new Date(isoUtc).toLocaleString('en-US', {
+      weekday: 'long', month: 'long', day: 'numeric',
+      hour: 'numeric', minute: '2-digit',
+      timeZoneName: 'short',
+      timeZone,
+    });
+  } catch {
+    return new Date(isoUtc).toLocaleString('en-US', {
+      weekday: 'long', month: 'long', day: 'numeric',
+      hour: 'numeric', minute: '2-digit',
+      timeZoneName: 'short',
+    });
+  }
+}
+
+function sessionScheduledEmailHtml(
+  recipientName: string | null,
+  partnerName: string,
+  scheduledTime: string,
+  nativeLang: string,
+  targetLang: string,
+  ctaUrl: string,
+): string {
+  const greeting = recipientName ? `Hi ${recipientName},` : 'Hi there,';
+  return `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/></head>
+<body style="margin:0;padding:0;background:#f5f4f0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f4f0;padding:40px 16px;">
+    <tr><td align="center">
+      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.06);">
+        <tr>
+          <td style="background:#1a6fb5 url(https://trymutua.com/sky.jpg) center/cover no-repeat;padding:40px 40px 32px;">
+            <p style="margin:0;font-size:26px;font-weight:900;color:#ffffff;letter-spacing:-0.5px;text-shadow:0 1px 4px rgba(0,0,0,0.3);">Mutua</p>
+            <p style="margin:8px 0 0;font-size:14px;color:rgba(255,255,255,0.85);text-shadow:0 1px 3px rgba(0,0,0,0.2);">Your language exchange community</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:40px 40px 32px;">
+            <p style="margin:0 0 8px;font-size:15px;color:#666666;">${greeting}</p>
+            <p style="margin:0 0 16px;font-size:26px;font-weight:800;color:#111111;line-height:1.2;">
+              Your <strong>${nativeLang} ↔ ${targetLang}</strong> session with ${partnerName} is booked 🗓️
+            </p>
+            <p style="margin:0 0 8px;font-size:15px;color:#666666;line-height:1.6;">
+              You're both free at the same time — we locked it in:
+            </p>
+            <p style="margin:0 0 32px;font-size:20px;font-weight:800;color:#111111;">
+              ${scheduledTime}
+            </p>
+            <table cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="background:linear-gradient(160deg,#60bdff 0%,#2B8FFF 40%,#1060d8 100%);border-radius:12px;box-shadow:0 4px 14px rgba(43,143,255,0.35)">
+                  <a href="${ctaUrl}" style="display:inline-block;padding:16px 32px;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;letter-spacing:-0.2px;">
+                    View session →
+                  </a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:24px 40px;border-top:1px solid #f0f0f0;">
+            <p style="margin:0;font-size:12px;color:#aaaaaa;line-height:1.6;">
+              You're receiving this because you signed up for Mutua.<br/>
+              <a href="https://trymutua.com" style="color:#aaaaaa;">trymutua.com</a>
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
 function adminClient() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -233,6 +310,57 @@ export async function POST(request: Request) {
   const db2 = adminClient();
   const schedulerResults: Record<string, string> = {};
 
+  // Build a map so we can access match data inside the async scheduler loop
+  const matchDataMap = new Map(matches.map(m => [m.id, m]));
+
+  const sendSessionScheduledEmails = async (matchId: string, startIso: string) => {
+    if (!EMAILS_ENABLED) return;
+    const m = matchDataMap.get(matchId);
+    if (!m || !m.email_a || !m.email_b) return;
+
+    try {
+      const [{ data: availA }, { data: availB }] = await Promise.all([
+        db2.from('user_availability').select('timezone').eq('session_id', m.session_id_a).maybeSingle(),
+        db2.from('user_availability').select('timezone').eq('session_id', m.session_id_b).maybeSingle(),
+      ]);
+      const tzA = (availA as any)?.timezone ?? 'UTC';
+      const tzB = (availB as any)?.timezone ?? 'UTC';
+
+      const timeForA = formatInTimezone(startIso, tzA);
+      const timeForB = formatInTimezone(startIso, tzB);
+
+      // Generate magic links for one-click sign-in
+      const makeMagicLink = async (email: string) => {
+        try {
+          const { data } = await db2.auth.admin.generateLink({
+            type: 'magiclink', email,
+            options: { redirectTo: `${APP_URL}/auth/callback` },
+          });
+          return data?.properties?.action_link ?? `${APP_URL}/auth/send`;
+        } catch { return `${APP_URL}/auth/send`; }
+      };
+
+      const [linkA, linkB] = await Promise.all([makeMagicLink(m.email_a), makeMagicLink(m.email_b)]);
+
+      await Promise.allSettled([
+        resend.emails.send({
+          from:    'Mutua <hello@trymutua.com>',
+          to:      m.email_a,
+          subject: `Your session with ${m.name_b ?? m.email_b.split('@')[0]} is booked 🗓️`,
+          html:    sessionScheduledEmailHtml(m.name_a, m.name_b ?? m.email_b.split('@')[0], timeForA, m.native_language_a, m.native_language_b, linkA),
+        }),
+        resend.emails.send({
+          from:    'Mutua <hello@trymutua.com>',
+          to:      m.email_b,
+          subject: `Your session with ${m.name_a ?? m.email_a.split('@')[0]} is booked 🗓️`,
+          html:    sessionScheduledEmailHtml(m.name_b, m.name_a ?? m.email_a.split('@')[0], timeForB, m.native_language_b, m.native_language_a, linkB),
+        }),
+      ]);
+    } catch (emailErr) {
+      console.error('[set-availability] session-scheduled email failed for', matchId, emailErr);
+    }
+  };
+
   await Promise.allSettled(
     matchesToSchedule.map(async (matchId) => {
       try {
@@ -240,6 +368,8 @@ export async function POST(request: Request) {
         schedulerResults[matchId] = result.state + (result.slot ? ` @ ${result.slot.start.toISOString()}` : '');
         if (result.state !== 'scheduled') {
           await db2.from('matches').update({ scheduling_state: result.state }).eq('id', matchId);
+        } else if (result.slot) {
+          sendSessionScheduledEmails(matchId, result.slot.start.toISOString());
         }
       } catch (err: any) {
         // Retry once on slot conflict, otherwise fall back to no_overlap
@@ -248,6 +378,8 @@ export async function POST(request: Request) {
           schedulerResults[matchId] = 'retry:' + result.state + (result.slot ? ` @ ${result.slot.start.toISOString()}` : '');
           if (result.state !== 'scheduled') {
             await db2.from('matches').update({ scheduling_state: result.state }).eq('id', matchId);
+          } else if (result.slot) {
+            sendSessionScheduledEmails(matchId, result.slot.start.toISOString());
           }
         } catch (err2) {
           schedulerResults[matchId] = 'error:' + String(err2);
