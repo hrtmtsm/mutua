@@ -212,10 +212,9 @@ export async function POST(request: Request) {
     };
 
     if (otherSideReady) {
-      // Both sides ready — clear any old confirmed session then re-run scheduler
-      if (m.scheduling_state === 'scheduled') {
-        await db.from('confirmed_sessions').delete().eq('match_id', m.id);
-      }
+      // Both sides ready — clear any existing confirmed session then re-run scheduler
+      // (covers both reschedule from 'scheduled' and orphaned rows from previous attempts)
+      await db.from('confirmed_sessions').delete().eq('match_id', m.id);
       Object.assign(updatePayload, { scheduling_state: 'computing', scheduled_at: null });
       matchesToSchedule.push(m.id);
     } else {
