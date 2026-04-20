@@ -81,6 +81,8 @@ export default function AvailabilityPicker({ initial = [], timezone: tzProp, onC
 
   const toggle = (day: number, minute: number) => {
     const key = `${day}-${minute}`;
+    // Overlap cells (both user + partner) are already selected — don't deselect on tap
+    if (partnerSet.has(key) && selected.has(key)) return;
     setSelected(prev => {
       const next = new Set(prev);
       next.has(key) ? next.delete(key) : next.add(key);
