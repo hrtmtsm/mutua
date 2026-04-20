@@ -134,7 +134,14 @@ function SetAvailabilityInner() {
             {schedulingState === 'scheduled'
               ? `Your current session will be replaced. Your partner's free times are highlighted — add slots that overlap to find a new time.`
               : showPartner
-                ? `Your schedules don't overlap yet. Partner's free times are highlighted — add slots that line up to find a shared window.`
+                ? (() => {
+                    const overlapCount = slots.filter(s =>
+                      partnerSlots.some(p => p.day_of_week === s.day_of_week && p.start_minute === s.start_minute)
+                    ).length;
+                    return overlapCount > 0
+                      ? `You have ${overlapCount} overlapping slot${overlapCount > 1 ? 's' : ''} with ${partnerName}. Hit save to lock it in!`
+                      : `Your schedules don't overlap yet. Partner's free times are highlighted — add slots that line up to find a shared window.`;
+                  })()
                 : `We'll match your schedule with ${partnerName}'s and automatically find the best time — you only set this once.`}
           </p>
 
