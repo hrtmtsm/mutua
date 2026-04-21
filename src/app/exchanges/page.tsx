@@ -107,7 +107,7 @@ function TicketCard({
                 <div className="fixed inset-0 z-40" onClick={() => setShowOverflow(false)} />
                 <div className="absolute right-0 top-9 z-50 bg-white rounded-xl shadow-lg border border-stone-100 py-1 w-44 text-sm">
                   <button onClick={() => { setShowOverflow(false); onViewProfile(); }} className="w-full px-4 py-2.5 text-left text-neutral-700 hover:bg-stone-50">View profile</button>
-                  <button onClick={() => { setShowOverflow(false); window.dispatchEvent(new CustomEvent('mutua:open-chat', { detail: { matchId } })); }} className="w-full px-4 py-2.5 text-left text-neutral-700 hover:bg-stone-50">Say hi 👋</button>
+                  <button onClick={() => { setShowOverflow(false); window.dispatchEvent(new CustomEvent('mutua:open-chat', { detail: { matchId: exchange.matchId } })); }} className="w-full px-4 py-2.5 text-left text-neutral-700 hover:bg-stone-50">Say hi 👋</button>
                   <button onClick={() => { setShowOverflow(false); onReschedule(); }} className="w-full px-4 py-2.5 text-left text-neutral-700 hover:bg-stone-50">Reschedule</button>
                 </div>
               </>
@@ -128,7 +128,7 @@ function TicketCard({
           {sessionPassed ? (
             <>
               <button
-                onClick={() => window.dispatchEvent(new CustomEvent('mutua:open-chat', { detail: { matchId } }))}
+                onClick={() => window.dispatchEvent(new CustomEvent('mutua:open-chat', { detail: { matchId: exchange.matchId } }))}
                 className="px-4 py-3 border border-stone-200 bg-white text-sm text-neutral-500 font-medium rounded-xl hover:bg-stone-50 transition-colors"
               >
                 Say hi 👋
@@ -143,7 +143,7 @@ function TicketCard({
           ) : (
             <>
               <button
-                onClick={() => window.dispatchEvent(new CustomEvent('mutua:open-chat', { detail: { matchId } }))}
+                onClick={() => window.dispatchEvent(new CustomEvent('mutua:open-chat', { detail: { matchId: exchange.matchId } }))}
                 className="px-4 py-3 border border-stone-200 bg-white text-sm text-neutral-500 font-medium rounded-xl hover:bg-stone-50 transition-colors"
               >
                 Say hi 👋
