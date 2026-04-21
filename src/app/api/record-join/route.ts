@@ -2,7 +2,7 @@
  * POST /api/record-join
  * Body: { matchId: string, sessionId: string }
  *
- * Stamps joined_at_a or joined_at_b on confirmed_sessions so we can
+ * Stamps joined_at on the caller's confirmed_sessions row so we can
  * see per-session who actually showed up.
  */
 
@@ -24,33 +24,26 @@ export async function POST(request: Request) {
 
   const db = admin();
 
-  // Find the confirmed session for this match
-  const { data: session } = await db
-    .from('confirmed_sessions')
-    .select('id, match_id, matches(session_id_a, session_id_b)')
-    .eq('match_id', matchId)
-    .order('created_at', { ascending: false })
-    .limit(1)
+  // Resolve the anonymous sessionId → auth user_id via user_availability
+  const { data: avail } = await db
+    .from('user_availability')
+    .select('user_id')
+    .eq('session_id', sessionId)
     .maybeSingle();
 
-  if (!session) {
-    return NextResponse.json({ error: 'no confirmed session found' }, { status: 404 });
+  if (!avail?.user_id) {
+    return NextResponse.json({ error: 'sessionId not found' }, { status: 404 });
   }
 
-  const match = (session as any).matches;
-  const isA = match?.session_id_a === sessionId;
-  const isB = match?.session_id_b === sessionId;
-
-  if (!isA && !isB) {
-    return NextResponse.json({ error: 'sessionId not part of this match' }, { status: 403 });
-  }
-
-  const column = isA ? 'joined_at_a' : 'joined_at_b';
-
-  await db
+  const { error } = await db
     .from('confirmed_sessions')
-    .update({ [column]: new Date().toISOString() })
-    .eq('id', session.id);
+    .update({ joined_at: new Date().toISOString() })
+    .eq('match_id', matchId)
+    .eq('user_id', avail.user_id);
 
-  return NextResponse.json({ ok: true, side: isA ? 'a' : 'b' });
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ ok: true });
 }

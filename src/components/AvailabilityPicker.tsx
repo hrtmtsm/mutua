@@ -158,14 +158,16 @@ export default function AvailabilityPicker({ initial = [], timezone: tzProp, onC
         </p>
       )}
 
-      {/* Sticky day header — lives outside the overflow container so sticky works */}
+      {/* Sticky day header */}
       <div className="sticky top-0 z-10 bg-white">
         <div
           className="grid bg-stone-100 border border-b-0 border-stone-200 rounded-t-2xl"
-          style={{ gridTemplateColumns: `repeat(7, minmax(0, 1fr))` }}
+          style={{ gridTemplateColumns: `2rem repeat(7, minmax(0, 1fr))` }}
         >
+          {/* Empty corner above time labels */}
+          <div />
           {DAY_LABELS.map((d, i) => (
-            <div key={d} className={`py-2.5 text-center text-xs font-semibold text-stone-600 ${i > 0 ? 'border-l border-stone-200' : ''}`}>
+            <div key={d} className={`py-2.5 text-center text-xs font-semibold text-stone-600 ${i >= 0 ? 'border-l border-stone-200' : ''}`}>
               {d}
             </div>
           ))}
@@ -174,14 +176,23 @@ export default function AvailabilityPicker({ initial = [], timezone: tzProp, onC
 
       {/* Time rows */}
       <div className={`border-l border-r border-b border-stone-200 rounded-b-2xl overflow-hidden ${fullHeight ? '' : 'overflow-y-auto max-h-80 scrollbar-thin'}`}>
-        {TIME_SLOTS.map(({ shortLabel, minute }, i) => {
+        {TIME_SLOTS.map(({ label, shortLabel, minute }, i) => {
           const isHour = minute % 60 === 0;
           return (
             <div
               key={minute}
               className={`grid ${isHour && i > 0 ? 'border-t border-stone-200' : i > 0 ? 'border-t border-stone-100' : ''}`}
-              style={{ gridTemplateColumns: `repeat(7, minmax(0, 1fr))` }}
+              style={{ gridTemplateColumns: `2rem repeat(7, minmax(0, 1fr))` }}
             >
+              {/* Time label — only on the hour */}
+              <div className="flex items-start justify-end pr-1.5 pt-0.5 shrink-0">
+                {isHour && (
+                  <span className="text-[9px] text-stone-400 leading-none">
+                    {label.replace(':00 ', ' ').replace(' AM', 'a').replace(' PM', 'p')}
+                  </span>
+                )}
+              </div>
+
               {DAY_LABELS.map((_, day) => {
                 const active   = isSelected(day, minute);
                 const partner  = isPartner(day, minute);
@@ -193,7 +204,7 @@ export default function AvailabilityPicker({ initial = [], timezone: tzProp, onC
                     onPointerEnter={e => handlePointerEnter(e, day, minute)}
                     onClick={() => handleClick(day, minute)}
                     style={active ? { borderRadius: '6px' } : undefined}
-                    className={`${day > 0 ? 'border-l border-stone-100' : ''} py-2.5 transition-colors flex items-center justify-center ${
+                    className={`border-l border-stone-100 py-2.5 transition-colors flex items-center justify-center ${
                       overlap
                         ? 'bg-emerald-400/50 hover:bg-emerald-400/60'
                         : active
@@ -203,11 +214,11 @@ export default function AvailabilityPicker({ initial = [], timezone: tzProp, onC
                             : 'bg-stone-50 hover:bg-[#2B8FFF]/10'
                     }`}
                   >
-                    <span className={`text-[9px] font-medium pointer-events-none select-none ${
-                      active ? 'text-[#1060d8]' : partner ? 'text-amber-700' : 'text-stone-400'
-                    }`}>
-                      {shortLabel}
-                    </span>
+                    {!active && !partner && (
+                      <span className="text-[8px] font-medium pointer-events-none select-none text-stone-300">
+                        {shortLabel}
+                      </span>
+                    )}
                   </button>
                 );
               })}

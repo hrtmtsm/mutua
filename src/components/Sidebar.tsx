@@ -319,8 +319,11 @@ export default function TopNav() {
 
 
   // Allow external components to open the chat directly
+  const [requestedMatchId, setRequestedMatchId] = useState<string | null>(null);
   useEffect(() => {
-    const handler = () => {
+    const handler = (e: Event) => {
+      const mid = (e as CustomEvent).detail?.matchId ?? null;
+      setRequestedMatchId(mid);
       setInboxOpen(true);
       setInboxTab('messages');
       setMsgView('chat');
@@ -432,23 +435,37 @@ export default function TopNav() {
     return () => document.removeEventListener('mousedown', handleClick);
   }, [inboxOpen]);
 
-  // Load match + messages when inbox opens, subscribe to realtime
+  // Load match + messages when inbox opens or target match changes
   useEffect(() => {
     if (!inboxOpen) return;
     const sessionId = localStorage.getItem('mutua_session_id');
     if (!sessionId) return;
     setMyId(sessionId);
 
+    // Clear stale state immediately so old chat doesn't flash
+    setMatchId(null);
+    setMessages([]);
+    setPartnerName('Partner');
+    setPartnerAvatarUrl(null);
+    setScheduleState(null);
+
     let channelRef: ReturnType<typeof supabase.channel> | null = null;
 
     async function load() {
-      const { data: match } = await supabase
+      let matchQuery = supabase
         .from('matches')
-        .select('id, name_a, name_b, session_id_a, session_id_b, native_language_a, native_language_b')
-        .or(`session_id_a.eq.${sessionId},session_id_b.eq.${sessionId}`)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .select('id, name_a, name_b, session_id_a, session_id_b, native_language_a, native_language_b');
+
+      if (requestedMatchId) {
+        matchQuery = matchQuery.eq('id', requestedMatchId);
+      } else {
+        matchQuery = matchQuery
+          .or(`session_id_a.eq.${sessionId},session_id_b.eq.${sessionId}`)
+          .order('created_at', { ascending: false })
+          .limit(1);
+      }
+
+      const { data: match } = await matchQuery.maybeSingle();
 
       if (!match) return;
       setMatchId(match.id);
@@ -485,7 +502,7 @@ export default function TopNav() {
     load();
 
     return () => { if (channelRef) supabase.removeChannel(channelRef); };
-  }, [inboxOpen]);
+  }, [inboxOpen, requestedMatchId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <>

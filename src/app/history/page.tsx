@@ -577,7 +577,7 @@ function SessionCard({
                   </button>
                 )}
                 <button
-                  onClick={() => { setShowOverflow(false); window.dispatchEvent(new Event('mutua:open-chat')); }}
+                  onClick={() => { setShowOverflow(false); window.dispatchEvent(new CustomEvent('mutua:open-chat', { detail: { matchId } })); }}
                   className="w-full px-4 py-2.5 text-left text-neutral-700 hover:bg-stone-50"
                 >
                   Say hi 👋

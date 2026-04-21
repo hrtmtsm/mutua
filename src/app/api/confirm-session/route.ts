@@ -108,13 +108,19 @@ export async function POST(request: Request) {
 
   let scheduledTime: string;
   if (scheduledAt) {
-    // New path: UTC ISO string — look up recipient's timezone for accurate formatting
-    const { data: avail } = await adminClient
-      .from('user_availability')
-      .select('timezone')
-      .eq('session_id', partnerSessionId)
-      .maybeSingle();
-    const recipientTz = avail?.timezone ?? 'UTC';
+    // Look up recipient's auth user_id by email, then fetch their timezone
+    const { data: usersData } = await adminClient.auth.admin.listUsers({ perPage: 1000 });
+    const recipientUser = (usersData?.users ?? []).find(u => u.email === partnerEmail);
+    let recipientTz = 'UTC';
+    if (recipientUser) {
+      const { data: avail } = await adminClient
+        .from('user_availability')
+        .select('timezone')
+        .eq('user_id', recipientUser.id)
+        .limit(1)
+        .maybeSingle();
+      if (avail?.timezone) recipientTz = avail.timezone;
+    }
     scheduledTime = formatInTimezone(scheduledAt, recipientTz);
   } else {
     // Legacy path: pre-formatted string from session-schedule page, use as-is

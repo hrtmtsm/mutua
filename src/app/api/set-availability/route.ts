@@ -318,9 +318,16 @@ export async function POST(request: Request) {
     if (!m || !m.email_a || !m.email_b) return;
 
     try {
+      // Look up auth user IDs by email so we can query user_availability by user_id
+      // (user_availability stores user_id, not session_id)
+      const { data: usersData } = await db2.auth.admin.listUsers({ perPage: 1000 });
+      const allUsers = usersData?.users ?? [];
+      const authA = allUsers.find(u => u.email === m.email_a);
+      const authB = allUsers.find(u => u.email === m.email_b);
+
       const [{ data: availA }, { data: availB }] = await Promise.all([
-        db2.from('user_availability').select('timezone').eq('session_id', m.session_id_a).maybeSingle(),
-        db2.from('user_availability').select('timezone').eq('session_id', m.session_id_b).maybeSingle(),
+        authA ? db2.from('user_availability').select('timezone').eq('user_id', authA.id).limit(1).maybeSingle() : Promise.resolve({ data: null }),
+        authB ? db2.from('user_availability').select('timezone').eq('user_id', authB.id).limit(1).maybeSingle() : Promise.resolve({ data: null }),
       ]);
       const tzA = (availA as any)?.timezone ?? 'UTC';
       const tzB = (availB as any)?.timezone ?? 'UTC';

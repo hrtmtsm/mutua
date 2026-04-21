@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import AvailabilityPicker from '@/components/AvailabilityPicker';
 import type { AvailabilitySlot } from '@/components/AvailabilityPicker';
 import TopNav from '@/components/Sidebar';
+import TimezonePickerModal from '@/components/TimezonePickerModal';
 import { ArrowLeft } from 'lucide-react';
 
 function SetAvailabilityInner() {
@@ -147,25 +148,8 @@ function SetAvailabilityInner() {
 
           {/* Timezone row — fixed, never scrolls */}
           <div className="mt-3 flex items-center gap-2 text-xs text-stone-600">
-            {showTzSelect ? (
-              <>
-                <select
-                  value={timezone}
-                  onChange={e => { setTimezone(e.target.value); setShowTzSelect(false); }}
-                  className="border border-stone-200 rounded-lg px-2 py-1 bg-white text-neutral-700 focus:outline-none text-xs"
-                >
-                  {((() => { try { return (Intl as any).supportedValuesOf('timeZone') as string[]; } catch { return ['Pacific/Honolulu','America/Los_Angeles','America/Chicago','America/New_York','America/Sao_Paulo','Europe/London','Europe/Paris','Europe/Berlin','Africa/Cairo','Africa/Nairobi','Asia/Dubai','Asia/Karachi','Asia/Kolkata','Asia/Bangkok','Asia/Shanghai','Asia/Tokyo','Asia/Seoul','Australia/Sydney','Pacific/Auckland']; } })()).map((tz: string) => (
-                    <option key={tz} value={tz}>{tz}</option>
-                  ))}
-                </select>
-                <button onClick={() => setShowTzSelect(false)} className="text-stone-400 hover:text-stone-600">Cancel</button>
-              </>
-            ) : (
-              <>
-                <span>Times in <strong>{timezone}</strong></span>
-                <button onClick={() => setShowTzSelect(true)} className="text-[#2B8FFF] underline">Change</button>
-              </>
-            )}
+            <span>Times in <strong>{timezone}</strong></span>
+            <button onClick={() => setShowTzSelect(true)} className="text-[#2B8FFF] underline">Change</button>
           </div>
         </div>
 
@@ -262,6 +246,13 @@ function SetAvailabilityInner() {
           </>
         )}
       </div>
+      {showTzSelect && (
+        <TimezonePickerModal
+          current={timezone}
+          onSelect={tz => setTimezone(tz)}
+          onClose={() => setShowTzSelect(false)}
+        />
+      )}
     </div>
   );
 }

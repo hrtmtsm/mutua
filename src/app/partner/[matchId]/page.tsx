@@ -132,7 +132,7 @@ export default function PartnerProfilePage() {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <button
-            onClick={() => window.dispatchEvent(new CustomEvent('mutua:open-chat'))}
+            onClick={() => window.dispatchEvent(new CustomEvent('mutua:open-chat', { detail: { matchId } }))}
             className="flex items-center gap-1.5 px-4 py-2 bg-stone-100 hover:bg-stone-200 transition-colors rounded-full text-sm font-semibold text-neutral-700"
           >
             <MessageCircle className="w-4 h-4" />
