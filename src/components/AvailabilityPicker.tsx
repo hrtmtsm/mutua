@@ -214,11 +214,14 @@ export default function AvailabilityPicker({ initial = [], timezone: tzProp, onC
                             : 'bg-stone-50 hover:bg-[#2B8FFF]/10'
                     }`}
                   >
-                    {!active && !partner && (
-                      <span className="text-[8px] font-medium pointer-events-none select-none text-stone-300">
-                        {shortLabel}
-                      </span>
-                    )}
+                    <span className={`text-[8px] font-medium pointer-events-none select-none ${
+                      overlap  ? 'text-emerald-700/60' :
+                      active   ? 'text-[#1060d8]/50'  :
+                      partner  ? 'text-amber-700/50'  :
+                                 'text-stone-300'
+                    }`}>
+                      {shortLabel}
+                    </span>
                   </button>
                 );
               })}
