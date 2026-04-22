@@ -13,7 +13,11 @@ export default function PageTransition({ children }: { children: React.ReactNode
     return () => window.removeEventListener('popstate', handlePop);
   }, []);
 
-  const cls = directionRef.current === 'pop' ? 'page-pop-in' : 'page-push-in';
+  // Bottom nav sets this flag before navigating — skip animation for tab switches
+  const skipTransition = typeof window !== 'undefined' && (window as any).__skipTransition;
+  if (skipTransition) (window as any).__skipTransition = false;
+
+  const cls = skipTransition ? '' : directionRef.current === 'pop' ? 'page-pop-in' : 'page-push-in';
   directionRef.current = 'push'; // reset for next navigation
 
   return (
