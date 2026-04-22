@@ -106,19 +106,27 @@ function useNavState() {
 
 // ── Thread list ───────────────────────────────────────────────────────────────
 
-function MessagesList({
-  matchId, partnerName, messages, myId, onOpen, hasUnreadMsg, avatarBg, avatarUrl,
-}: {
-  matchId: string | null;
+type Conversation = {
+  matchId:     string;
   partnerName: string;
-  messages: Message[];
+  avatarBg:    string;
+  avatarUrl:   string | null;
+  lastMessage: Message | null;
+};
+
+function initials(name: string) {
+  const parts = name.trim().split(/\s+/);
+  return (parts.length >= 2 ? parts[0][0] + parts[parts.length - 1][0] : name.trim().slice(0, 2)).toUpperCase();
+}
+
+function MessagesList({
+  conversations, myId, onOpen,
+}: {
+  conversations: Conversation[];
   myId: string;
-  onOpen: () => void;
-  hasUnreadMsg: boolean;
-  avatarBg: string;
-  avatarUrl?: string | null;
+  onOpen: (matchId: string, partnerName: string) => void;
 }) {
-  if (!matchId || messages.length === 0) {
+  if (conversations.length === 0) {
     return (
       <div className="px-4 py-8 text-center">
         <p className="text-sm font-semibold text-neutral-900 mb-1">No messages</p>
@@ -129,30 +137,32 @@ function MessagesList({
     );
   }
 
-  const last = messages[messages.length - 1];
-  const parts = partnerName.trim().split(/\s+/);
-  const initials = (parts.length >= 2 ? parts[0][0] + parts[parts.length - 1][0] : partnerName.trim().slice(0, 2)).toUpperCase();
-
   return (
     <div>
-      <button
-        onClick={onOpen}
-        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-stone-50 transition-colors text-left"
-      >
-        {avatarUrl
-          ? <img src={avatarUrl} alt={partnerName} className="w-9 h-9 rounded-xl object-cover shrink-0" />
-          : <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: avatarBg }}><span className="text-xs font-black text-white">{initials}</span></div>
-        }
-        <div className="flex-1 min-w-0">
-          <p className={`text-sm leading-tight ${hasUnreadMsg ? 'font-bold text-neutral-900' : 'font-semibold text-neutral-900'}`}>{partnerName}</p>
-          <p className={`text-xs truncate mt-0.5 ${hasUnreadMsg ? 'text-neutral-700 font-medium' : 'text-stone-400'}`}>
-            {last.sender_id === myId ? 'You: ' : ''}{last.text}
-          </p>
-        </div>
-        {hasUnreadMsg && (
-          <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
-        )}
-      </button>
+      {conversations.map(c => {
+        const ini = initials(c.partnerName);
+        const last = c.lastMessage;
+        return (
+          <button
+            key={c.matchId}
+            onClick={() => onOpen(c.matchId, c.partnerName)}
+            className="w-full flex items-center gap-3 px-4 py-3 hover:bg-stone-50 transition-colors text-left border-b border-stone-50 last:border-0"
+          >
+            {c.avatarUrl
+              ? <img src={c.avatarUrl} alt={c.partnerName} className="w-9 h-9 rounded-xl object-cover shrink-0" />
+              : <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: c.avatarBg }}><span className="text-xs font-black text-white">{ini}</span></div>
+            }
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-neutral-900 leading-tight">{c.partnerName}</p>
+              {last && (
+                <p className="text-xs truncate mt-0.5 text-stone-400">
+                  {last.sender_id === myId ? 'You: ' : ''}{last.text}
+                </p>
+              )}
+            </div>
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -331,6 +341,65 @@ export default function TopNav() {
     window.addEventListener('mutua:open-chat', handler);
     return () => window.removeEventListener('mutua:open-chat', handler);
   }, []);
+
+  // All conversations for the list view
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+
+  // Load all conversations whenever the inbox opens
+  useEffect(() => {
+    if (!inboxOpen) return;
+    const sessionId = localStorage.getItem('mutua_session_id');
+    if (!sessionId) return;
+
+    async function loadConversations() {
+      const { data: matches } = await supabase
+        .from('matches')
+        .select('id, name_a, name_b, session_id_a, session_id_b, native_language_a, native_language_b')
+        .or(`session_id_a.eq.${sessionId},session_id_b.eq.${sessionId}`)
+        .neq('scheduling_state', 'archived')
+        .order('created_at', { ascending: false });
+
+      if (!matches?.length) return;
+
+      const matchIds = matches.map(m => m.id);
+
+      // Fetch last message per match and all partner profiles in parallel
+      const partnerSessionIds = matches.map(m =>
+        m.session_id_a === sessionId ? m.session_id_b : m.session_id_a
+      );
+      const [{ data: allMessages }, { data: profiles }] = await Promise.all([
+        supabase.from('messages').select('*').in('match_id', matchIds).order('created_at', { ascending: true }),
+        supabase.from('profiles').select('session_id, name, avatar_url, native_language').in('session_id', partnerSessionIds),
+      ]);
+
+      const profileMap = Object.fromEntries((profiles ?? []).map(p => [p.session_id, p]));
+      const msgsByMatch: Record<string, Message[]> = {};
+      for (const msg of (allMessages ?? [])) {
+        (msgsByMatch[msg.match_id] ??= []).push(msg as Message);
+      }
+
+      const convos: Conversation[] = matches
+        .filter(m => (msgsByMatch[m.id]?.length ?? 0) > 0)
+        .map(m => {
+          const isA = m.session_id_a === sessionId;
+          const partnerSid = isA ? m.session_id_b : m.session_id_a;
+          const profile = profileMap[partnerSid];
+          const partnerLang = isA ? (m.native_language_b ?? '') : (m.native_language_a ?? '');
+          const msgs = msgsByMatch[m.id] ?? [];
+          return {
+            matchId:     m.id,
+            partnerName: profile?.name ?? (isA ? m.name_b : m.name_a) ?? 'Partner',
+            avatarBg:    LANG_AVATAR_COLOR[partnerLang] ?? '#171717',
+            avatarUrl:   profile?.avatar_url ?? null,
+            lastMessage: msgs[msgs.length - 1] ?? null,
+          };
+        });
+
+      setConversations(convos);
+    }
+
+    loadConversations();
+  }, [inboxOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Shared message state loaded once when inbox opens
   const [matchId, setMatchId]               = useState<string | null>(null);
@@ -649,14 +718,11 @@ export default function TopNav() {
                 </div>
               ) : (
                 <MessagesList
-                  matchId={matchId}
-                  partnerName={partnerName}
-                  messages={messages}
+                  conversations={conversations}
                   myId={myId}
-                  avatarBg={partnerAvatarBg}
-                  avatarUrl={partnerAvatarUrl}
-                  hasUnreadMsg={!!localStorage.getItem('mutua_unread_message')}
-                  onOpen={() => {
+                  onOpen={(mid, pName) => {
+                    setRequestedMatchId(mid);
+                    setPartnerName(pName);
                     setMsgView('chat');
                     localStorage.removeItem('mutua_unread_message');
                     localStorage.setItem('mutua_last_seen_msg_ts', new Date().toISOString());
