@@ -148,7 +148,8 @@ export default function TimezonePickerModal({ current, onSelect, onClose }: Prop
             placeholder="Time zone"
             value={query}
             onChange={e => setQuery(e.target.value)}
-            className="w-full pl-9 pr-9 py-2.5 bg-stone-100 rounded-xl text-sm text-neutral-800 placeholder-stone-400 focus:outline-none"
+            className="w-full pl-9 pr-9 py-2.5 bg-stone-100 rounded-xl text-neutral-800 placeholder-stone-400 focus:outline-none"
+            style={{ fontSize: '16px' }}
           />
           {query && (
             <button
