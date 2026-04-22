@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { Search, Globe, X } from 'lucide-react';
+import { Search, Globe, X, ArrowLeft } from 'lucide-react';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -142,9 +142,10 @@ export default function TimezonePickerModal({ current, onSelect, onClose }: Prop
         <div className="flex items-center gap-3 mb-3">
           <button
             onClick={handleClose}
-            className="flex items-center gap-1 text-[#2B8FFF] text-sm font-medium"
+            className="flex items-center gap-1.5 text-sm text-stone-400 hover:text-neutral-900 transition-colors"
           >
-            ‹ Back
+            <ArrowLeft className="w-4 h-4" />
+            Back
           </button>
         </div>
 
