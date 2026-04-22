@@ -143,7 +143,6 @@ export default function TimezonePickerModal({ current, onSelect, onClose }: Prop
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" />
           <input
-            autoFocus
             type="text"
             placeholder="Time zone"
             value={query}
