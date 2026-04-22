@@ -127,7 +127,7 @@ export default function TimezonePickerModal({ current, onSelect, onClose }: Prop
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-white animate-in slide-in-from-bottom duration-250">
+    <div className="fixed inset-0 z-50 flex flex-col bg-white page-push-in">
       {/* Header */}
       <div className="shrink-0 px-4 pt-4 pb-3 border-b border-stone-100">
         <div className="flex items-center gap-3 mb-3">
