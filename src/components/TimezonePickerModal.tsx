@@ -94,7 +94,8 @@ export default function TimezonePickerModal({ current, onSelect, onClose }: Prop
   const handleClose = () => {
     const el = containerRef.current;
     if (!el) { onClose(); return; }
-    el.style.animation = 'page-push-in 220ms cubic-bezier(0.25,0.46,0.45,0.94) reverse both';
+    el.classList.remove('page-push-in');
+    el.classList.add('page-pop-out');
     setTimeout(onClose, 210);
   };
 
