@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { Search, Globe, X } from 'lucide-react';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -89,6 +89,14 @@ interface Props {
 
 export default function TimezonePickerModal({ current, onSelect, onClose }: Props) {
   const [query, setQuery] = useState('');
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const handleClose = () => {
+    const el = containerRef.current;
+    if (!el) { onClose(); return; }
+    el.style.animation = 'page-push-in 220ms cubic-bezier(0.25,0.46,0.45,0.94) reverse both';
+    setTimeout(onClose, 210);
+  };
 
   // Build entries once on mount (clock frozen at open time is fine)
   const entries = useMemo<TZEntry[]>(() => {
@@ -121,18 +129,18 @@ export default function TimezonePickerModal({ current, onSelect, onClose }: Prop
 
   // Close on Escape
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') handleClose(); };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [onClose]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-white page-push-in">
+    <div ref={containerRef} className="fixed inset-0 z-50 flex flex-col bg-white page-push-in">
       {/* Header */}
       <div className="shrink-0 px-4 pt-4 pb-3 border-b border-stone-100">
         <div className="flex items-center gap-3 mb-3">
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="flex items-center gap-1 text-[#2B8FFF] text-sm font-medium"
           >
             ‹ Back
@@ -168,7 +176,7 @@ export default function TimezonePickerModal({ current, onSelect, onClose }: Prop
           return (
             <button
               key={entry.tz}
-              onClick={() => { onSelect(entry.tz); onClose(); }}
+              onClick={() => { onSelect(entry.tz); handleClose(); }}
               className={`w-full flex items-center gap-3 px-4 py-3.5 text-left border-b border-stone-50 transition-colors ${
                 active ? 'bg-blue-50' : 'hover:bg-stone-50'
               }`}
