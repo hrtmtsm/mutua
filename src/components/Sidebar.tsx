@@ -856,7 +856,6 @@ export function BottomNav() {
           <Link
             key={href}
             href={href}
-            onClick={() => { (window as any).__skipTransition = true; }}
             className={`flex-1 flex flex-col items-center gap-1 py-3 transition-colors ${
               active ? 'text-neutral-900' : 'text-stone-400'
             }`}

@@ -3,8 +3,13 @@
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 
+// Tab routes never animate — switching between them should feel instant
+const TAB_ROUTES = ['/app', '/exchanges', '/history', '/settings'];
+const isTab = (p: string) => TAB_ROUTES.some(r => p === r || p.startsWith(r + '/'));
+
 export default function PageTransition({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const prevPathname = useRef(pathname);
   const directionRef = useRef<'push' | 'pop'>('push');
 
   useEffect(() => {
@@ -13,13 +18,13 @@ export default function PageTransition({ children }: { children: React.ReactNode
     return () => window.removeEventListener('popstate', handlePop);
   }, []);
 
-  // Skip animation on desktop (md breakpoint = 768px) or bottom nav tab switches
   const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
-  const skipTransition = isDesktop || (typeof window !== 'undefined' && (window as any).__skipTransition);
-  if (!isDesktop && (window as any).__skipTransition) (window as any).__skipTransition = false;
+  const isTabSwitch = isTab(prevPathname.current) && isTab(pathname);
+  prevPathname.current = pathname;
 
-  const cls = skipTransition ? '' : directionRef.current === 'pop' ? 'page-pop-in' : 'page-push-in';
-  directionRef.current = 'push'; // reset for next navigation
+  const skip = isDesktop || isTabSwitch;
+  const cls = skip ? '' : directionRef.current === 'pop' ? 'page-pop-in' : 'page-push-in';
+  directionRef.current = 'push';
 
   return (
     <div key={pathname} className={cls}>
