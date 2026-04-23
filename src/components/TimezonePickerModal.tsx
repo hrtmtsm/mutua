@@ -87,9 +87,36 @@ interface Props {
   onClose:  () => void;
 }
 
+function TZRow({ entry, active, label, onSelect, handleClose }: {
+  entry: TZEntry; active: boolean; label?: string;
+  onSelect: (tz: string) => void; handleClose: () => void;
+}) {
+  return (
+    <button
+      onClick={() => { onSelect(entry.tz); handleClose(); }}
+      className={`w-full flex items-center gap-3 px-4 py-3.5 text-left border-b border-stone-50 transition-colors ${
+        active ? 'bg-blue-50' : 'hover:bg-stone-50'
+      }`}
+    >
+      <Globe className={`w-5 h-5 shrink-0 ${active ? 'text-[#2B8FFF]' : 'text-stone-400'}`} />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center justify-between gap-2">
+          <p className={`text-sm font-medium leading-tight truncate ${active ? 'text-[#2B8FFF]' : 'text-neutral-800'}`}>
+            {entry.longName}
+          </p>
+          {label && <span className="text-[10px] font-semibold text-stone-400 shrink-0 uppercase tracking-wide">{label}</span>}
+        </div>
+        <p className="text-xs text-stone-400 mt-0.5 truncate">{entry.region}</p>
+        <p className="text-xs text-stone-400">{entry.time} ({entry.offset})</p>
+      </div>
+    </button>
+  );
+}
+
 export default function TimezonePickerModal({ current, onSelect, onClose }: Props) {
   const [query, setQuery] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
+  const deviceTz = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone, []);
 
   const handleClose = () => {
     const el = containerRef.current;
@@ -173,31 +200,29 @@ export default function TimezonePickerModal({ current, onSelect, onClose }: Prop
 
       {/* List */}
       <div className="flex-1 overflow-y-auto">
-        {filtered.map(entry => {
-          const active = entry.tz === current;
+        {/* Pinned: selected + device timezone — hidden while searching */}
+        {!query.trim() && (() => {
+          const selectedEntry = entries.find(e => e.tz === current);
+          const deviceEntry   = entries.find(e => e.tz === deviceTz);
+          const showDevice    = deviceTz !== current;
           return (
-            <button
-              key={entry.tz}
-              onClick={() => { onSelect(entry.tz); handleClose(); }}
-              className={`w-full flex items-center gap-3 px-4 py-3.5 text-left border-b border-stone-50 transition-colors ${
-                active ? 'bg-blue-50' : 'hover:bg-stone-50'
-              }`}
-            >
-              <Globe className={`w-5 h-5 shrink-0 ${active ? 'text-[#2B8FFF]' : 'text-stone-400'}`} />
-              <div className="min-w-0">
-                <p className={`text-sm font-medium leading-tight truncate ${active ? 'text-[#2B8FFF]' : 'text-neutral-800'}`}>
-                  {entry.longName}
-                </p>
-                <p className="text-xs text-stone-400 mt-0.5 truncate">
-                  {entry.region}
-                </p>
-                <p className="text-xs text-stone-400">
-                  {entry.time} ({entry.offset})
-                </p>
+            <>
+              {selectedEntry && (
+                <TZRow entry={selectedEntry} active label="Selected" onSelect={onSelect} handleClose={handleClose} />
+              )}
+              {showDevice && deviceEntry && (
+                <TZRow entry={deviceEntry} active={deviceEntry.tz === current} label="Your location" onSelect={onSelect} handleClose={handleClose} />
+              )}
+              <div className="px-4 py-2 bg-stone-50 border-b border-stone-100">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-stone-400">All time zones</span>
               </div>
-            </button>
+            </>
           );
-        })}
+        })()}
+
+        {filtered.map(entry => (
+          <TZRow key={entry.tz} entry={entry} active={entry.tz === current} onSelect={onSelect} handleClose={handleClose} />
+        ))}
 
         {filtered.length === 0 && (
           <p className="text-center text-sm text-stone-400 py-16">No results for "{query}"</p>
