@@ -64,6 +64,11 @@ export default function AvailabilityPicker({ initial = [], timezone: tzProp, onC
   const [timezone, setTimezone] = useState(tzProp ?? Intl.DateTimeFormat().resolvedOptions().timeZone);
   const [tzConfirmed, setTzConfirmed] = useState(!!tzProp);
 
+  // Sync when parent changes the timezone externally (e.g. via modal)
+  useEffect(() => {
+    if (tzProp && tzProp !== timezone) setTimezone(tzProp);
+  }, [tzProp]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Notify parent whenever selection changes
   useEffect(() => {
     const slots = Array.from(selected).map(key => {

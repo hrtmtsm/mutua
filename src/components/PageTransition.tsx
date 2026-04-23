@@ -13,9 +13,10 @@ export default function PageTransition({ children }: { children: React.ReactNode
     return () => window.removeEventListener('popstate', handlePop);
   }, []);
 
-  // Bottom nav sets this flag before navigating — skip animation for tab switches
-  const skipTransition = typeof window !== 'undefined' && (window as any).__skipTransition;
-  if (skipTransition) (window as any).__skipTransition = false;
+  // Skip animation on desktop (md breakpoint = 768px) or bottom nav tab switches
+  const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
+  const skipTransition = isDesktop || (typeof window !== 'undefined' && (window as any).__skipTransition);
+  if (!isDesktop && (window as any).__skipTransition) (window as any).__skipTransition = false;
 
   const cls = skipTransition ? '' : directionRef.current === 'pop' ? 'page-pop-in' : 'page-push-in';
   directionRef.current = 'push'; // reset for next navigation
