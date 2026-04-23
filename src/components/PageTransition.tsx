@@ -18,12 +18,10 @@ export default function PageTransition({ children }: { children: React.ReactNode
     return () => window.removeEventListener('popstate', handlePop);
   }, []);
 
-  const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
   const isTabSwitch = isTab(prevPathname.current) && isTab(pathname);
   prevPathname.current = pathname;
 
-  const skip = isDesktop || isTabSwitch;
-  const cls = skip ? '' : directionRef.current === 'pop' ? 'page-pop-in' : 'page-push-in';
+  const cls = isTabSwitch ? '' : directionRef.current === 'pop' ? 'page-pop-in' : 'page-push-in';
   directionRef.current = 'push';
 
   return (
