@@ -5,6 +5,7 @@ import './globals.css';
 import 'flag-icons/css/flag-icons.min.css';
 import PostHogProvider from '@/components/PostHogProvider';
 import PageTransition from '@/components/PageTransition';
+import BanGate from '@/components/BanGate';
 
 const sora = Sora({
   subsets: ['latin'],
@@ -22,7 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${GeistSans.variable} ${sora.variable}`}>
       <body className="font-sans text-neutral-900 antialiased overflow-x-hidden bg-white">
-        <PostHogProvider><PageTransition>{children}</PageTransition></PostHogProvider>
+        <PostHogProvider><BanGate><PageTransition>{children}</PageTransition></BanGate></PostHogProvider>
       </body>
     </html>
   );
