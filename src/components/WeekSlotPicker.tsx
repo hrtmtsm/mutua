@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -77,6 +77,21 @@ export default function WeekSlotPicker({ timezone, partnerSlots, onChange }: Pro
   const [selected,     setSelected] = useState<Set<string>>(new Set());
   const [dragging,     setDragging] = useState<'add' | 'remove' | null>(null);
   const mouseHandled = useRef(false);
+
+  // Current-time line
+  const getNowMinute = () => {
+    const now = new Date();
+    return now.getHours() * 60 + now.getMinutes();
+  };
+  const [nowMinute, setNowMinute] = useState<number>(getNowMinute);
+  useEffect(() => {
+    const id = setInterval(() => setNowMinute(getNowMinute()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+  const totalGridMinutes  = (END_HOUR - START_HOUR) * 60;
+  const nowOffsetMinutes  = nowMinute - START_HOUR * 60;
+  const nowPct            = (nowOffsetMinutes / totalGridMinutes) * 100;
+  const showNowLine       = nowPct >= 0 && nowPct <= 100;
 
   const partnerSet = useMemo(() => {
     if (!partnerSlots?.length) return new Set<string>();
@@ -156,7 +171,19 @@ export default function WeekSlotPicker({ timezone, partnerSlots, onChange }: Pro
       </div>
 
       {/* Time rows */}
-      <div className="border-l border-r border-b border-stone-200 rounded-b-2xl overflow-hidden overflow-y-auto max-h-[60vh]">
+      <div className="relative border-l border-r border-b border-stone-200 rounded-b-2xl overflow-hidden overflow-y-auto max-h-[60vh]">
+        {/* Now line */}
+        {showNowLine && (
+          <div
+            className="absolute left-0 right-0 z-20 pointer-events-none"
+            style={{ top: `${nowPct}%` }}
+          >
+            <div className="flex items-center" style={{ paddingLeft: '3.5rem' }}>
+              <div className="w-2 h-2 rounded-full bg-red-500 -ml-1 shrink-0" />
+              <div className="flex-1 h-px bg-red-500" />
+            </div>
+          </div>
+        )}
         {TIME_ROWS.map(({ label, minuteOfDay }, rowIdx) => {
           const isHour = minuteOfDay % 60 === 0;
           return (
@@ -178,7 +205,7 @@ export default function WeekSlotPicker({ timezone, partnerSlots, onChange }: Pro
                     onPointerDown={e => handlePointerDown(e, dayIdx, minuteOfDay)}
                     onPointerEnter={e => handlePointerEnter(e, dayIdx, minuteOfDay)}
                     onClick={() => handleClick(dayIdx, minuteOfDay)}
-                    className={`border-l border-stone-100 py-2.5 transition-colors ${
+                    className={`border-l border-stone-100 py-4 transition-colors ${
                       overlap  ? 'bg-emerald-400/50 hover:bg-emerald-400/60' :
                       active   ? 'bg-[#2B8FFF]/40 hover:bg-[#2B8FFF]/50'    :
                       partner  ? 'bg-amber-200/50 hover:bg-amber-200/70'     :
