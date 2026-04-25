@@ -247,19 +247,41 @@ export default function WeekSlotPicker({ timezone, partnerSlots, onChange }: Pro
                 const active  = isSelected(dayIdx, minuteOfDay);
                 const partner = isPartner(dayIdx, minuteOfDay);
                 const overlap = active && partner;
+                const filled  = active || partner;
+
+                // Rounded corners: round top if slot above isn't the same state,
+                // round bottom if slot below isn't the same state
+                const aboveActive  = isSelected(dayIdx, minuteOfDay - 30);
+                const belowActive  = isSelected(dayIdx, minuteOfDay + 30);
+                const abovePartner = isPartner(dayIdx, minuteOfDay - 30);
+                const belowPartner = isPartner(dayIdx, minuteOfDay + 30);
+
+                const roundTop    = active  ? !aboveActive  : partner ? !abovePartner : false;
+                const roundBottom = active  ? !belowActive  : partner ? !belowPartner : false;
+
+                const roundClass = [
+                  roundTop    ? 'rounded-t-md' : '',
+                  roundBottom ? 'rounded-b-md' : '',
+                ].join(' ').trim();
+
+                const colorClass = overlap  ? 'bg-emerald-400/50' :
+                                   active   ? 'bg-[#2B8FFF]/40'   :
+                                   partner  ? 'bg-amber-200/50'   : '';
+
                 return (
                   <button
                     key={dayIdx}
                     onPointerDown={e => handlePointerDown(e, dayIdx, minuteOfDay)}
                     onPointerEnter={e => handlePointerEnter(e, dayIdx, minuteOfDay)}
                     onClick={() => handleClick(dayIdx, minuteOfDay)}
-                    className={`border-l border-stone-100 py-4 transition-colors ${
-                      overlap  ? 'bg-emerald-400/50 hover:bg-emerald-400/60' :
-                      active   ? 'bg-[#2B8FFF]/40 hover:bg-[#2B8FFF]/50'    :
-                      partner  ? 'bg-amber-200/50 hover:bg-amber-200/70'     :
-                                 'bg-stone-50 hover:bg-[#2B8FFF]/10'
+                    className={`border-l border-stone-100 py-4 relative transition-colors ${
+                      filled ? '' : 'bg-stone-50 hover:bg-[#2B8FFF]/10'
                     }`}
-                  />
+                  >
+                    {filled && (
+                      <span className={`absolute inset-x-0.5 inset-y-0 ${colorClass} ${roundClass}`} />
+                    )}
+                  </button>
                 );
               })}
             </div>
