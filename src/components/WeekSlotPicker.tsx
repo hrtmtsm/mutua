@@ -4,7 +4,7 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const START_HOUR = 7;
+const START_HOUR = 1;
 const END_HOUR   = 24;
 
 const TIME_ROWS: { label: string; minuteOfDay: number }[] = [];
