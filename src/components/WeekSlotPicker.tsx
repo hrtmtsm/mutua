@@ -187,7 +187,7 @@ export default function WeekSlotPicker({ timezone, partnerSlots, onChange }: Pro
             {canPrev && visibleCount < 7 && (
               <button
                 onClick={() => setDayOffset(o => o - 1)}
-                className="p-1 text-stone-400 hover:text-stone-700 transition-colors"
+                className="p-1 text-stone-400 hover:text-stone-700 transition-colors focus:outline-none"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
@@ -240,7 +240,7 @@ export default function WeekSlotPicker({ timezone, partnerSlots, onChange }: Pro
               style={{ gridTemplateColumns: colTemplate }}
             >
               <div className="flex items-start justify-end pr-2 pt-0.5 shrink-0">
-                {isHour && <span className="text-[9px] text-stone-400 leading-none">{label}</span>}
+                {isHour && <span className="text-[11px] text-stone-500 leading-none">{label}</span>}
               </div>
               {visibleDays.map((_, localIdx) => {
                 const dayIdx  = dayOffset + localIdx;
