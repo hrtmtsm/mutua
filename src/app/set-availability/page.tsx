@@ -185,10 +185,7 @@ function SetAvailabilityInner() {
               disabled={saving || cancelling || slots.length === 0 || !matchId}
               className="w-full py-3.5 btn-primary text-white font-bold text-sm rounded-xl disabled:opacity-40 disabled:pointer-events-none"
             >
-              {saving ? 'Saving...' : slots.length > 0
-                ? `Share ${slots.length} slot${slots.length > 1 ? 's' : ''} with ${partnerName} →`
-                : 'Tap slots above to continue'
-              }
+              {saving ? 'Saving...' : slots.length > 0 ? 'Set schedule →' : 'Tap slots above to continue'}
             </button>
 
             {schedulingState === 'scheduled' && matchId && (

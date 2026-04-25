@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -74,8 +74,9 @@ function slotToUTC(day: Date, minuteOfDay: number, timezone: string): string {
 export default function WeekSlotPicker({ timezone, partnerSlots, onChange }: Props) {
   const days = useMemo(() => getNext7Days(), []);
 
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [dragging, setDragging] = useState<'add' | 'remove' | null>(null);
+  const [selected,     setSelected] = useState<Set<string>>(new Set());
+  const [dragging,     setDragging] = useState<'add' | 'remove' | null>(null);
+  const mouseHandled = useRef(false);
 
   const partnerSet = useMemo(() => {
     if (!partnerSlots?.length) return new Set<string>();
@@ -109,6 +110,7 @@ export default function WeekSlotPicker({ timezone, partnerSlots, onChange }: Pro
 
   const handlePointerDown = (e: React.PointerEvent, dayIdx: number, minute: number) => {
     if (e.pointerType !== 'mouse') return;
+    mouseHandled.current = true;
     const key  = makeKey(dayIdx, minute);
     const mode = selected.has(key) ? 'remove' : 'add';
     setDragging(mode);
@@ -124,6 +126,11 @@ export default function WeekSlotPicker({ timezone, partnerSlots, onChange }: Pro
       notifyParent(next);
       return next;
     });
+  };
+
+  const handleClick = (dayIdx: number, minute: number) => {
+    if (mouseHandled.current) { mouseHandled.current = false; return; }
+    toggle(dayIdx, minute);
   };
 
   return (
@@ -170,7 +177,7 @@ export default function WeekSlotPicker({ timezone, partnerSlots, onChange }: Pro
                     key={dayIdx}
                     onPointerDown={e => handlePointerDown(e, dayIdx, minuteOfDay)}
                     onPointerEnter={e => handlePointerEnter(e, dayIdx, minuteOfDay)}
-                    onClick={() => toggle(dayIdx, minuteOfDay)}
+                    onClick={() => handleClick(dayIdx, minuteOfDay)}
                     className={`border-l border-stone-100 py-2.5 transition-colors ${
                       overlap  ? 'bg-emerald-400/50 hover:bg-emerald-400/60' :
                       active   ? 'bg-[#2B8FFF]/40 hover:bg-[#2B8FFF]/50'    :
