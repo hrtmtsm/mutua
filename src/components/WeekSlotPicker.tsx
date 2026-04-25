@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useRef, useEffect } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -76,7 +77,26 @@ export default function WeekSlotPicker({ timezone, partnerSlots, onChange }: Pro
 
   const [selected,     setSelected] = useState<Set<string>>(new Set());
   const [dragging,     setDragging] = useState<'add' | 'remove' | null>(null);
+  const [dayOffset,    setDayOffset] = useState(0);
+  const [visibleCount, setVisibleCount] = useState(7);
   const mouseHandled = useRef(false);
+
+  // Responsive: 3 cols on narrow screens, 7 on wide
+  useEffect(() => {
+    const update = () => setVisibleCount(window.innerWidth < 640 ? 3 : 7);
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+
+  // Reset offset when switching between mobile/desktop
+  useEffect(() => {
+    setDayOffset(0);
+  }, [visibleCount]);
+
+  const visibleDays = days.slice(dayOffset, dayOffset + visibleCount);
+  const canPrev     = dayOffset > 0;
+  const canNext     = dayOffset + visibleCount < days.length;
 
   // Current-time line
   const getNowMinute = () => {
@@ -88,17 +108,17 @@ export default function WeekSlotPicker({ timezone, partnerSlots, onChange }: Pro
     const id = setInterval(() => setNowMinute(getNowMinute()), 60_000);
     return () => clearInterval(id);
   }, []);
-  const totalGridMinutes  = (END_HOUR - START_HOUR) * 60;
-  const nowOffsetMinutes  = nowMinute - START_HOUR * 60;
-  const nowPct            = (nowOffsetMinutes / totalGridMinutes) * 100;
-  const showNowLine       = nowPct >= 0 && nowPct <= 100;
+  const totalGridMinutes = (END_HOUR - START_HOUR) * 60;
+  const nowOffsetMinutes = nowMinute - START_HOUR * 60;
+  const nowPct           = (nowOffsetMinutes / totalGridMinutes) * 100;
+  const showNowLine      = nowPct >= 0 && nowPct <= 100;
 
   const partnerSet = useMemo(() => {
     if (!partnerSlots?.length) return new Set<string>();
     return new Set(partnerSlots.map(s => new Date(s.startsAt).getTime().toString()));
   }, [partnerSlots]);
 
-  const makeKey   = (dayIdx: number, minute: number) => `${dayIdx}-${minute}`;
+  const makeKey    = (dayIdx: number, minute: number) => `${dayIdx}-${minute}`;
   const isSelected = (dayIdx: number, minute: number) => selected.has(makeKey(dayIdx, minute));
   const isPartner  = (dayIdx: number, minute: number) => {
     const utc = slotToUTC(days[dayIdx], minute, timezone);
@@ -148,6 +168,8 @@ export default function WeekSlotPicker({ timezone, partnerSlots, onChange }: Pro
     toggle(dayIdx, minute);
   };
 
+  const colTemplate = `3.5rem repeat(${visibleCount}, minmax(0, 1fr))`;
+
   return (
     <div
       className="select-none"
@@ -157,14 +179,34 @@ export default function WeekSlotPicker({ timezone, partnerSlots, onChange }: Pro
       {/* Day header */}
       <div className="sticky top-0 z-10 bg-white">
         <div
-          className="grid bg-stone-100 border border-b-0 border-stone-200 rounded-t-2xl"
-          style={{ gridTemplateColumns: `3.5rem repeat(7, minmax(0, 1fr))` }}
+          className="relative grid bg-stone-100 border border-b-0 border-stone-200 rounded-t-2xl"
+          style={{ gridTemplateColumns: colTemplate }}
         >
-          <div />
-          {days.map((day, i) => (
-            <div key={i} className="py-2 text-center border-l border-stone-200">
+          {/* Prev arrow */}
+          <div className="flex items-center justify-center">
+            {canPrev && (
+              <button
+                onClick={() => setDayOffset(o => o - 1)}
+                className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-stone-200 transition-colors text-stone-500"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+          {visibleDays.map((day, i) => (
+            <div key={i} className="py-2 text-center border-l border-stone-200 relative">
               <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wide">{DAY_SHORT[day.getDay()]}</p>
               <p className="text-xs font-bold text-neutral-700">{MONTH_SHORT[day.getMonth()]} {day.getDate()}</p>
+              {/* Next arrow — placed inside the last visible day column */}
+              {canNext && i === visibleDays.length - 1 && (
+                <button
+                  onClick={() => setDayOffset(o => o + 1)}
+                  className="absolute -right-3 top-1/2 -translate-y-1/2 z-10 w-6 h-6 flex items-center justify-center rounded-full bg-white shadow-sm border border-stone-200 hover:bg-stone-50 transition-colors text-stone-500"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              )}
             </div>
           ))}
         </div>
@@ -184,18 +226,20 @@ export default function WeekSlotPicker({ timezone, partnerSlots, onChange }: Pro
             </div>
           </div>
         )}
+
         {TIME_ROWS.map(({ label, minuteOfDay }, rowIdx) => {
           const isHour = minuteOfDay % 60 === 0;
           return (
             <div
               key={minuteOfDay}
               className={`grid ${rowIdx > 0 ? (isHour ? 'border-t border-stone-200' : 'border-t border-stone-100') : ''}`}
-              style={{ gridTemplateColumns: `3.5rem repeat(7, minmax(0, 1fr))` }}
+              style={{ gridTemplateColumns: colTemplate }}
             >
               <div className="flex items-start justify-end pr-2 pt-0.5 shrink-0">
                 {isHour && <span className="text-[9px] text-stone-400 leading-none">{label}</span>}
               </div>
-              {days.map((_, dayIdx) => {
+              {visibleDays.map((_, localIdx) => {
+                const dayIdx  = dayOffset + localIdx;
                 const active  = isSelected(dayIdx, minuteOfDay);
                 const partner = isPartner(dayIdx, minuteOfDay);
                 const overlap = active && partner;
