@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/send-nudges",
       "schedule": "0 10 */3 * *"
+    },
+    {
+      "path": "/api/cron/run-matching",
+      "schedule": "0 12 * * *"
     }
   ]
 }
