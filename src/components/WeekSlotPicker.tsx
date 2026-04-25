@@ -187,9 +187,9 @@ export default function WeekSlotPicker({ timezone, partnerSlots, onChange }: Pro
             {canPrev && visibleCount < 7 && (
               <button
                 onClick={() => setDayOffset(o => o - 1)}
-                className="w-7 h-7 flex items-center justify-center rounded-full bg-stone-200 hover:bg-stone-300 text-stone-600 transition-colors"
+                className="p-1 text-stone-400 hover:text-stone-700 transition-colors"
               >
-                <ChevronLeft className="w-4 h-4" />
+                <ChevronLeft className="w-5 h-5" />
               </button>
             )}
           </div>
@@ -202,9 +202,9 @@ export default function WeekSlotPicker({ timezone, partnerSlots, onChange }: Pro
               {canNext && visibleCount < 7 && i === visibleDays.length - 1 && (
                 <button
                   onClick={() => setDayOffset(o => o + 1)}
-                  className="absolute right-1 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full bg-stone-200 hover:bg-stone-300 text-stone-600 transition-colors"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 p-1 text-stone-400 hover:text-stone-700 transition-colors"
                 >
-                  <ChevronRight className="w-4 h-4" />
+                  <ChevronRight className="w-5 h-5" />
                 </button>
               )}
             </div>
