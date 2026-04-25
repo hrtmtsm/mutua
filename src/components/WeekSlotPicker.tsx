@@ -205,7 +205,7 @@ export default function WeekSlotPicker({ timezone, partnerSlots, onChange }: Pro
           {canNext && (
             <button
               onClick={() => setDayOffset(o => o + 1)}
-              className="absolute right-1 top-1/2 -translate-y-1/2 z-20 w-6 h-6 flex items-center justify-center rounded-full bg-white border border-stone-200 shadow-sm text-stone-500 hover:bg-stone-50 transition-colors"
+              className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-6 h-6 flex items-center justify-center rounded-full bg-white border border-stone-200 shadow-sm text-stone-500 hover:bg-stone-50 transition-colors"
             >
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
