@@ -26,7 +26,7 @@ export default function BanPreviewPage() {
       </p>
 
       <div className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 mb-6 text-left">
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-400 mb-1">Message we saw</p>
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-400 mb-1">Flagged message</p>
         <p className="text-sm text-neutral-700 leading-relaxed italic">
           "Could you give me your Instagram account I can't figure out how to connect for a second conversation"
         </p>
