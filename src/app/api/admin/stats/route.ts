@@ -53,5 +53,6 @@ export async function GET(req: NextRequest) {
     profiles_with_availability: totalAvailability,
     match_states: stateCounts,
     total_active_matches: matchStates?.length ?? 0,
+    emails_enabled: process.env.SEND_MATCH_EMAILS === 'true',
   });
 }
