@@ -240,7 +240,7 @@ export default function WeekSlotPicker({ timezone, partnerSlots, onChange }: Pro
               style={{ gridTemplateColumns: colTemplate }}
             >
               <div className="flex items-start justify-end pr-2 pt-0.5 shrink-0">
-                {isHour && <span className="text-[11px] text-stone-500 leading-none">{label}</span>}
+                {isHour && <span className="text-[11px] text-stone-600 leading-none">{label}</span>}
               </div>
               {visibleDays.map((_, localIdx) => {
                 const dayIdx  = dayOffset + localIdx;
