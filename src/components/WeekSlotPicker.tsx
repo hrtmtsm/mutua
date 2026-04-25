@@ -178,37 +178,37 @@ export default function WeekSlotPicker({ timezone, partnerSlots, onChange }: Pro
     >
       {/* Day header */}
       <div className="sticky top-0 z-10 bg-white">
-        <div
-          className="relative grid bg-stone-100 border border-b-0 border-stone-200 rounded-t-2xl"
-          style={{ gridTemplateColumns: colTemplate }}
-        >
-          {/* Prev arrow */}
-          <div className="flex items-center justify-center">
-            {canPrev && (
-              <button
-                onClick={() => setDayOffset(o => o - 1)}
-                className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-stone-200 transition-colors text-stone-500"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-            )}
+        <div className="relative">
+          <div
+            className="grid bg-stone-100 border border-b-0 border-stone-200 rounded-t-2xl"
+            style={{ gridTemplateColumns: colTemplate }}
+          >
+            <div /> {/* time-label spacer */}
+            {visibleDays.map((day, i) => (
+              <div key={i} className="py-2 text-center border-l border-stone-200">
+                <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wide">{DAY_SHORT[day.getDay()]}</p>
+                <p className="text-xs font-bold text-neutral-700">{MONTH_SHORT[day.getMonth()]} {day.getDate()}</p>
+              </div>
+            ))}
           </div>
 
-          {visibleDays.map((day, i) => (
-            <div key={i} className="py-2 text-center border-l border-stone-200 relative">
-              <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wide">{DAY_SHORT[day.getDay()]}</p>
-              <p className="text-xs font-bold text-neutral-700">{MONTH_SHORT[day.getMonth()]} {day.getDate()}</p>
-              {/* Next arrow — placed inside the last visible day column */}
-              {canNext && i === visibleDays.length - 1 && (
-                <button
-                  onClick={() => setDayOffset(o => o + 1)}
-                  className="absolute -right-3 top-1/2 -translate-y-1/2 z-10 w-6 h-6 flex items-center justify-center rounded-full bg-white shadow-sm border border-stone-200 hover:bg-stone-50 transition-colors text-stone-500"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-          ))}
+          {/* Navigation arrows — absolutely positioned so they never clip */}
+          {canPrev && (
+            <button
+              onClick={() => setDayOffset(o => o - 1)}
+              className="absolute left-14 top-1/2 -translate-y-1/2 -translate-x-1/2 z-20 w-6 h-6 flex items-center justify-center rounded-full bg-white border border-stone-200 shadow-sm text-stone-500 hover:bg-stone-50 transition-colors"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
+          )}
+          {canNext && (
+            <button
+              onClick={() => setDayOffset(o => o + 1)}
+              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-20 w-6 h-6 flex items-center justify-center rounded-full bg-white border border-stone-200 shadow-sm text-stone-500 hover:bg-stone-50 transition-colors"
+            >
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       </div>
 
