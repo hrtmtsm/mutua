@@ -45,22 +45,10 @@ function AdminInner() {
   const [error,    setError]      = useState('');
 
   // Ban modal state
-  const [modal,      setModal]      = useState<FlaggedMessage | null>(null);
-  const [duration,   setDuration]   = useState(7);
-  const [reason,     setReason]     = useState('');
-  const [banning,    setBanning]    = useState(false);
-  const [rematching, setRematching] = useState(false);
-  const [rematchResult, setRematchResult] = useState<string | null>(null);
-
-  const handleRematch = async () => {
-    setRematching(true);
-    setRematchResult(null);
-    const res = await fetch(`/api/admin/rematch-unmatched?secret=${encodeURIComponent(secret)}`, { method: 'POST' });
-    const data = await res.json();
-    setRematching(false);
-    if (data.error) setRematchResult(`Error: ${data.error}`);
-    else setRematchResult(`${data.unmatched_count} unmatched profiles found — ${data.newly_matched} newly matched.`);
-  };
+  const [modal,    setModal]      = useState<FlaggedMessage | null>(null);
+  const [duration, setDuration]   = useState(7);
+  const [reason,   setReason]     = useState('');
+  const [banning,  setBanning]    = useState(false);
 
   useEffect(() => {
     fetch(`/api/admin/flagged-messages?secret=${encodeURIComponent(secret)}`)
@@ -120,22 +108,8 @@ function AdminInner() {
   return (
     <div className="min-h-screen bg-stone-50">
       <div className="max-w-3xl mx-auto px-4 py-8">
-        <div className="flex items-start justify-between gap-4 mb-6">
-          <div>
-            <h1 className="font-serif font-black text-2xl text-neutral-900 mb-1">Flagged messages</h1>
-            <p className="text-sm text-stone-400">{messages.length} message{messages.length !== 1 ? 's' : ''} flagged for external contact sharing</p>
-          </div>
-          <div className="text-right shrink-0">
-            <button
-              onClick={handleRematch}
-              disabled={rematching}
-              className="px-4 py-2 text-sm bg-neutral-900 text-white font-semibold rounded-xl hover:bg-neutral-700 transition-colors disabled:opacity-40"
-            >
-              {rematching ? 'Running...' : 'Rematch unmatched'}
-            </button>
-            {rematchResult && <p className="text-xs text-stone-400 mt-1.5 max-w-xs">{rematchResult}</p>}
-          </div>
-        </div>
+        <h1 className="font-serif font-black text-2xl text-neutral-900 mb-1">Flagged messages</h1>
+        <p className="text-sm text-stone-400 mb-6">{messages.length} message{messages.length !== 1 ? 's' : ''} flagged for external contact sharing</p>
 
         {messages.length === 0 && (
           <p className="text-center text-stone-400 py-20 text-sm">No flagged messages</p>

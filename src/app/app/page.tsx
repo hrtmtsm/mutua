@@ -404,14 +404,6 @@ export default function SessionPage() {
     return () => clearInterval(interval);
   }, [anyComputing, sessionId, loadMatch]);
 
-  // Poll every 30s when no match yet — so users don't stay stuck after being matched
-  const hasNoMatch = partners.length === 0;
-  useEffect(() => {
-    if (!hasNoMatch || !sessionId) return;
-    const interval = setInterval(() => loadMatch(sessionId), 30_000);
-    return () => clearInterval(interval);
-  }, [hasNoMatch, sessionId, loadMatch]);
-
   const handleBookExchange = (partner: PartnerCard) => {
     track('schedule_clicked', { partner_name: partner.name, match_id: partner.matchId });
     localStorage.setItem('mutua_scheduling_partner', partner.name);
