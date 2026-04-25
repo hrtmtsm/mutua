@@ -194,21 +194,25 @@ export default function WeekSlotPicker({ timezone, partnerSlots, onChange }: Pro
             )}
           </div>
 
-          {visibleDays.map((day, i) => (
-            <div key={i} className="py-2 text-center border-l border-stone-200 relative">
-              <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wide">{DAY_SHORT[day.getDay()]}</p>
-              <p className="text-xs font-bold text-neutral-700">{MONTH_SHORT[day.getMonth()]} {day.getDate()}</p>
-              {/* Next arrow sits in the last day column */}
-              {canNext && visibleCount < 7 && i === visibleDays.length - 1 && (
-                <button
-                  onClick={() => setDayOffset(o => o + 1)}
-                  className="absolute right-1 top-1/2 -translate-y-1/2 p-1 text-stone-400 hover:text-stone-700 transition-colors"
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-              )}
-            </div>
-          ))}
+          {visibleDays.map((day, i) => {
+            const isLast = canNext && visibleCount < 7 && i === visibleDays.length - 1;
+            return (
+              <div key={i} className={`border-l border-stone-200 flex items-center ${isLast ? 'pr-1' : ''}`}>
+                <div className="flex-1 py-2 text-center">
+                  <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wide">{DAY_SHORT[day.getDay()]}</p>
+                  <p className="text-xs font-bold text-neutral-700">{MONTH_SHORT[day.getMonth()]} {day.getDate()}</p>
+                </div>
+                {isLast && (
+                  <button
+                    onClick={() => setDayOffset(o => o + 1)}
+                    className="p-1 text-stone-400 hover:text-stone-700 transition-colors shrink-0"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 
