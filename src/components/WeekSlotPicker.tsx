@@ -178,38 +178,37 @@ export default function WeekSlotPicker({ timezone, partnerSlots, onChange }: Pro
     >
       {/* Day header */}
       <div className="sticky top-0 z-10 bg-white">
-        <div className="relative">
-          <div
-            className="grid bg-stone-100 border border-b-0 border-stone-200 rounded-t-2xl"
-            style={{ gridTemplateColumns: colTemplate }}
-          >
-            <div /> {/* time-label spacer */}
-            {visibleDays.map((day, i) => (
-              <div key={i} className="py-2 text-center border-l border-stone-200">
-                <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wide">{DAY_SHORT[day.getDay()]}</p>
-                <p className="text-xs font-bold text-neutral-700">{MONTH_SHORT[day.getMonth()]} {day.getDate()}</p>
-              </div>
-            ))}
+        <div
+          className="grid bg-stone-100 border border-b-0 border-stone-200 rounded-t-2xl"
+          style={{ gridTemplateColumns: colTemplate }}
+        >
+          {/* Time-label cell — doubles as prev arrow on mobile */}
+          <div className="flex items-center justify-center">
+            {canPrev && visibleCount < 7 && (
+              <button
+                onClick={() => setDayOffset(o => o - 1)}
+                className="w-7 h-7 flex items-center justify-center rounded-full bg-stone-200 hover:bg-stone-300 text-stone-600 transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+            )}
           </div>
 
-          {/* Navigation arrows — kept inside the container to avoid overflow clipping */}
-          {canPrev && (
-            <button
-              onClick={() => setDayOffset(o => o - 1)}
-              className="absolute top-1/2 -translate-y-1/2 z-20 w-6 h-6 flex items-center justify-center rounded-full bg-white border border-stone-200 shadow-sm text-stone-500 hover:bg-stone-50 transition-colors"
-              style={{ left: 'calc(3.5rem + 4px)' }}
-            >
-              <ChevronLeft className="w-3.5 h-3.5" />
-            </button>
-          )}
-          {canNext && (
-            <button
-              onClick={() => setDayOffset(o => o + 1)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-6 h-6 flex items-center justify-center rounded-full bg-white border border-stone-200 shadow-sm text-stone-500 hover:bg-stone-50 transition-colors"
-            >
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          )}
+          {visibleDays.map((day, i) => (
+            <div key={i} className="py-2 text-center border-l border-stone-200 relative">
+              <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wide">{DAY_SHORT[day.getDay()]}</p>
+              <p className="text-xs font-bold text-neutral-700">{MONTH_SHORT[day.getMonth()]} {day.getDate()}</p>
+              {/* Next arrow sits in the last day column */}
+              {canNext && visibleCount < 7 && i === visibleDays.length - 1 && (
+                <button
+                  onClick={() => setDayOffset(o => o + 1)}
+                  className="absolute right-1 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full bg-stone-200 hover:bg-stone-300 text-stone-600 transition-colors"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          ))}
         </div>
       </div>
 
