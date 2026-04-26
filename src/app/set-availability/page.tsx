@@ -34,38 +34,60 @@ function SetAvailabilityInner() {
     }
   }, []);
 
-  // Pre-populate from last saved schedule (time-of-day pattern → current week dates)
+  // Pre-populate from saved slot template in profile
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem('mutua_slot_template');
-      if (!raw) return;
-      const minutes: number[] = JSON.parse(raw); // array of minuteOfDay values
-      if (!minutes.length) return;
-      // Re-apply pattern across all 7 days of this week
+    async function loadTemplate() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user?.id) return;
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('slot_template')
+          .eq('session_id', session.user.id)
+          .maybeSingle();
+        // slot_template may not exist yet — also try email match
+        const minutes: number[] | null = profile?.slot_template ?? null;
+        if (!minutes?.length) {
+          // fallback: load by email
+          const { data: p2 } = await supabase
+            .from('profiles')
+            .select('slot_template')
+            .eq('email', session.user.email ?? '')
+            .maybeSingle();
+          if (!p2?.slot_template?.length) return;
+          applyTemplate(p2.slot_template);
+        } else {
+          applyTemplate(minutes);
+        }
+      } catch {}
+    }
+
+    function applyTemplate(minutes: number[]) {
+      const tz  = Intl.DateTimeFormat().resolvedOptions().timeZone;
       const now = new Date();
-      const slots: SessionSlot[] = [];
+      const result: SessionSlot[] = [];
       for (let i = 1; i <= 7; i++) {
         const d = new Date(now);
         d.setDate(now.getDate() + i);
         for (const min of minutes) {
-          const h  = String(Math.floor(min / 60)).padStart(2, '0');
-          const mn = String(min % 60).padStart(2, '0');
-          const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+          const h   = String(Math.floor(min / 60)).padStart(2, '0');
+          const mn  = String(min % 60).padStart(2, '0');
           const fmt = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' });
-          const datePart = fmt.format(d); // YYYY-MM-DD
-          const localStr = `${datePart}T${h}:${mn}:00`;
-          const assumed  = new Date(localStr + 'Z');
+          const datePart  = fmt.format(d);
+          const localStr  = `${datePart}T${h}:${mn}:00`;
+          const assumed   = new Date(localStr + 'Z');
           const displayed = assumed.toLocaleString('en-CA', {
-            timeZone: tz,
-            year: 'numeric', month: '2-digit', day: '2-digit',
+            timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
             hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
           }).replace(', ', 'T');
           const offset = assumed.getTime() - new Date(displayed + 'Z').getTime();
-          slots.push({ startsAt: new Date(assumed.getTime() + offset).toISOString() });
+          result.push({ startsAt: new Date(assumed.getTime() + offset).toISOString() });
         }
       }
-      setInitialSlots(slots);
-    } catch {}
+      setInitialSlots(result);
+    }
+
+    loadTemplate();
   }, []);
 
   // Load partner's already-submitted slots
@@ -101,7 +123,7 @@ function SetAvailabilityInner() {
     if (res?.ok) {
       const data = await res.json();
       setResult(data);
-      // Save time-of-day pattern for reuse across future matches
+      // Save time-of-day pattern to profile for cross-device reuse
       try {
         const tz = timezone;
         const minutes = slots.map(s => {
@@ -112,7 +134,10 @@ function SetAvailabilityInner() {
           return hh * 60 + mm;
         });
         const unique = [...new Set(minutes)];
-        localStorage.setItem('mutua_slot_template', JSON.stringify(unique));
+        await supabase
+          .from('profiles')
+          .update({ slot_template: unique })
+          .eq('email', session?.user?.email ?? '');
       } catch {}
     }
     setSaving(false);
