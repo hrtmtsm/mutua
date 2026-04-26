@@ -279,7 +279,7 @@ export default function WeekSlotPicker({ timezone, partnerSlots, onChange }: Pro
                     }`}
                   >
                     {filled && (
-                      <span className={`absolute inset-x-0.5 inset-y-0 ${colorClass} ${roundClass}`} />
+                      <span className={`absolute inset-x-0.5 ${roundTop ? 'top-0' : '-top-px'} ${roundBottom ? 'bottom-0' : 'bottom-0'} ${colorClass} ${roundClass}`} />
                     )}
                   </button>
                 );
