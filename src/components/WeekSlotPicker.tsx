@@ -30,6 +30,7 @@ export interface SessionSlot {
 interface Props {
   timezone:      string;
   partnerSlots?: SessionSlot[];
+  initialSlots?: SessionSlot[];
   onChange:      (slots: SessionSlot[]) => void;
 }
 
@@ -72,10 +73,33 @@ function slotToUTC(day: Date, minuteOfDay: number, timezone: string): string {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export default function WeekSlotPicker({ timezone, partnerSlots, onChange }: Props) {
+export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, onChange }: Props) {
   const days = useMemo(() => getNext7Days(), []);
 
-  const [selected,     setSelected] = useState<Set<string>>(new Set());
+  const [selected, setSelected] = useState<Set<string>>(() => {
+    if (!initialSlots?.length) return new Set();
+    // Map initial UTC slots back to dayIdx-minute keys for this week
+    const set = new Set<string>();
+    for (const slot of initialSlots) {
+      const d = new Date(slot.startsAt);
+      const localStr = d.toLocaleString('en-CA', {
+        timeZone: timezone,
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', hour12: false,
+      });
+      const [datePart, timePart] = localStr.replace(', ', 'T').split('T');
+      const [hh, mm] = timePart.split(':').map(Number);
+      const minuteOfDay = hh * 60 + mm;
+      // Find which dayIdx this date corresponds to
+      const slotDate = datePart; // YYYY-MM-DD
+      const dayIdx = days.findIndex(day => {
+        const dayStr = day.toLocaleDateString('en-CA', { timeZone: timezone });
+        return dayStr === slotDate;
+      });
+      if (dayIdx !== -1) set.add(`${dayIdx}-${minuteOfDay}`);
+    }
+    return set;
+  });
   const [dragging,     setDragging] = useState<'add' | 'remove' | null>(null);
   const [dayOffset,    setDayOffset] = useState(0);
   const [visibleCount, setVisibleCount] = useState(7);
