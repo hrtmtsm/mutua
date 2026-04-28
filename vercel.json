@@ -9,6 +9,10 @@
       "schedule": "0 10 */3 * *"
     },
     {
+      "path": "/api/cron/nudge-waiting",
+      "schedule": "0 10 */2 * *"
+    },
+    {
       "path": "/api/cron/run-matching",
       "schedule": "0 12 * * *"
     }

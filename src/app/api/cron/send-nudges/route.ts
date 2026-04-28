@@ -1,7 +1,7 @@
 /**
  * GET /api/cron/send-nudges
  * Called every 3 days at 10:00 UTC by Vercel Cron (vercel.json).
- * Nudges matched users who haven't set their availability yet.
+ * Nudges pending_both and no_overlap matches.
  */
 
 import { NextResponse } from 'next/server';
@@ -21,7 +21,7 @@ export async function GET() {
   const res = await fetch(`${APP_URL}/api/admin/send-nudges?secret=${encodeURIComponent(ADMIN_SECRET)}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({}),
+    body: JSON.stringify({ state: 'pending_both' }),
   });
 
   const data = await res.json().catch(() => ({}));
