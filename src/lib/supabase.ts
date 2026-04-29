@@ -185,9 +185,15 @@ export async function getMessages(matchId: string): Promise<Message[]> {
 
 export async function sendMessage(matchId: string, senderId: string, text: string): Promise<void> {
   if (!isConfigured) return;
-  const { error } = await supabase.from('messages').insert({ match_id: matchId, sender_id: senderId, text });
-  // PGRST116 = "no rows returned" — fires on successful INSERT when RLS blocks the implicit RETURNING read
-  if (error && error.code !== 'PGRST116') throw error;
+  const res = await fetch('/api/send-message', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ matchId, senderId, text }),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error ?? 'Failed to send message');
+  }
 }
 
 export async function getMatchBySessionId(sessionId: string): Promise<Match | null> {
