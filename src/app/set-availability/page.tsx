@@ -96,11 +96,11 @@ function SetAvailabilityInner() {
     if (!matchId) return;
     async function loadPartner() {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) return;
-      const res = await fetch(
-        `/api/get-partner-slots?matchId=${encodeURIComponent(matchId!)}`,
-        { headers: { Authorization: `Bearer ${session.access_token}` } },
-      ).catch(() => null);
+      const sid = localStorage.getItem('mutua_session_id') ?? '';
+      const url = `/api/get-partner-slots?matchId=${encodeURIComponent(matchId!)}&sessionId=${encodeURIComponent(sid)}`;
+      const headers: Record<string, string> = {};
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+      const res = await fetch(url, { headers }).catch(() => null);
       if (res?.ok) {
         const data = await res.json();
         if (data.slots?.length) setPartnerSlots(data.slots);
@@ -130,7 +130,7 @@ function SetAvailabilityInner() {
         'Content-Type': 'application/json',
         ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
       },
-      body: JSON.stringify({ matchId, slots: futureSlots }),
+      body: JSON.stringify({ matchId, slots: futureSlots, sessionId: localStorage.getItem('mutua_session_id') ?? '' }),
     }).catch(() => null);
 
     if (!res) {
