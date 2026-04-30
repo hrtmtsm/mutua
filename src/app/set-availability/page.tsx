@@ -92,22 +92,32 @@ function SetAvailabilityInner() {
     loadTemplate();
   }, []);
 
-  // Load partner's already-submitted slots
+  // Load partner's already-submitted slots + user's own previously submitted slots
   useEffect(() => {
     if (!matchId) return;
-    async function loadPartner() {
+    async function loadSlots() {
       const { data: { session } } = await supabase.auth.getSession();
       const sid = localStorage.getItem('mutua_session_id') ?? '';
-      const url = `/api/get-partner-slots?matchId=${encodeURIComponent(matchId!)}&sessionId=${encodeURIComponent(sid)}`;
       const headers: Record<string, string> = {};
       if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
-      const res = await fetch(url, { headers }).catch(() => null);
-      if (res?.ok) {
-        const data = await res.json();
+
+      // Partner slots
+      const partnerUrl = `/api/get-partner-slots?matchId=${encodeURIComponent(matchId!)}&sessionId=${encodeURIComponent(sid)}`;
+      const partnerRes = await fetch(partnerUrl, { headers }).catch(() => null);
+      if (partnerRes?.ok) {
+        const data = await partnerRes.json();
         if (data.slots?.length) setPartnerSlots(data.slots);
       }
+
+      // My own previously submitted slots for this match
+      const myUrl = `/api/get-my-slots?matchId=${encodeURIComponent(matchId!)}&sessionId=${encodeURIComponent(sid)}`;
+      const myRes = await fetch(myUrl, { headers }).catch(() => null);
+      if (myRes?.ok) {
+        const data = await myRes.json();
+        if (data.slots?.length) setInitialSlots(data.slots);
+      }
     }
-    loadPartner();
+    loadSlots();
   }, [matchId]);
 
   const handleSave = async () => {
