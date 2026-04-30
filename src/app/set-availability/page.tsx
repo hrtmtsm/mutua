@@ -158,10 +158,12 @@ function SetAvailabilityInner() {
         return hh * 60 + mm;
       });
       const unique = [...new Set(minutes)];
-      await supabase
-        .from('profiles')
-        .update({ slot_template: unique })
-        .eq('email', session?.user?.email ?? '');
+      const sid = localStorage.getItem('mutua_session_id') ?? '';
+      if (session?.user?.email) {
+        await supabase.from('profiles').update({ slot_template: unique }).eq('email', session.user.email);
+      } else if (sid) {
+        await supabase.from('profiles').update({ slot_template: unique }).eq('session_id', sid);
+      }
     } catch {}
 
     setSaving(false);
