@@ -76,11 +76,9 @@ function slotToUTC(day: Date, minuteOfDay: number, timezone: string): string {
 export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, onChange }: Props) {
   const days = useMemo(() => getNext7Days(), []);
 
-  const [selected, setSelected] = useState<Set<string>>(() => {
-    if (!initialSlots?.length) return new Set();
-    // Map initial UTC slots back to dayIdx-minute keys for this week
+  const slotsToKeys = (slots: SessionSlot[]): Set<string> => {
     const set = new Set<string>();
-    for (const slot of initialSlots) {
+    for (const slot of slots) {
       const d = new Date(slot.startsAt);
       const localStr = d.toLocaleString('en-CA', {
         timeZone: timezone,
@@ -90,16 +88,29 @@ export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, o
       const [datePart, timePart] = localStr.replace(', ', 'T').split('T');
       const [hh, mm] = timePart.split(':').map(Number);
       const minuteOfDay = hh * 60 + mm;
-      // Find which dayIdx this date corresponds to
-      const slotDate = datePart; // YYYY-MM-DD
-      const dayIdx = days.findIndex(day => {
-        const dayStr = day.toLocaleDateString('en-CA', { timeZone: timezone });
-        return dayStr === slotDate;
-      });
+      const dayIdx = days.findIndex(day =>
+        day.toLocaleDateString('en-CA', { timeZone: timezone }) === datePart
+      );
       if (dayIdx !== -1) set.add(`${dayIdx}-${minuteOfDay}`);
     }
     return set;
-  });
+  };
+
+  const [selected, setSelected] = useState<Set<string>>(() =>
+    initialSlots?.length ? slotsToKeys(initialSlots) : new Set()
+  );
+
+  // When initialSlots arrives async (e.g. from get-my-slots), update selected
+  useEffect(() => {
+    if (!initialSlots?.length) return;
+    const keys = slotsToKeys(initialSlots);
+    setSelected(keys);
+    onChange(Array.from(keys).map(k => {
+      const [di, min] = k.split('-').map(Number);
+      return { startsAt: slotToUTC(days[di], min, timezone) };
+    }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialSlots]);
   const [dragging,     setDragging] = useState<'add' | 'remove' | null>(null);
   const [dayOffset,    setDayOffset] = useState(0);
   const [visibleCount, setVisibleCount] = useState(7);
@@ -120,17 +131,6 @@ export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, o
     scrollRef.current.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
   }, [partnerSlots, timezone]);
 
-  // Notify parent of initial pre-populated slots so parent state isn't empty
-  useEffect(() => {
-    if (selected.size > 0) {
-      const slots: SessionSlot[] = Array.from(selected).map(k => {
-        const [di, min] = k.split('-').map(Number);
-        return { startsAt: slotToUTC(days[di], min, timezone) };
-      });
-      onChange(slots);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // run once on mount
 
   // Responsive: 3 cols on narrow screens, 7 on wide
   useEffect(() => {
