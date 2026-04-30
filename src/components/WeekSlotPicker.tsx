@@ -104,6 +104,21 @@ export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, o
   const [dayOffset,    setDayOffset] = useState(0);
   const [visibleCount, setVisibleCount] = useState(7);
   const mouseHandled = useRef(false);
+  const scrollRef    = useRef<HTMLDivElement>(null);
+
+  // When partner slots load, scroll so the earliest partner slot is visible
+  useEffect(() => {
+    if (!partnerSlots?.length || !scrollRef.current) return;
+    const earliest = partnerSlots.reduce((a, b) => a.startsAt < b.startsAt ? a : b);
+    const d = new Date(earliest.startsAt);
+    const tzDate = new Date(d.toLocaleString('en-US', { timeZone: timezone }));
+    const minute = tzDate.getHours() * 60 + tzDate.getMinutes();
+    const rowIndex = TIME_ROWS.findIndex(r => r.minuteOfDay === minute);
+    if (rowIndex < 0) return;
+    const rowHeight = scrollRef.current.scrollHeight / TIME_ROWS.length;
+    const target = rowHeight * rowIndex - scrollRef.current.clientHeight / 3;
+    scrollRef.current.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
+  }, [partnerSlots, timezone]);
 
   // Notify parent of initial pre-populated slots so parent state isn't empty
   useEffect(() => {
@@ -256,7 +271,7 @@ export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, o
       </div>
 
       {/* Time rows */}
-      <div className="border-l border-r border-b border-stone-200 rounded-b-2xl overflow-hidden overflow-y-auto max-h-[60vh]">
+      <div ref={scrollRef} className="border-l border-r border-b border-stone-200 rounded-b-2xl overflow-hidden overflow-y-auto max-h-[60vh]">
         {TIME_ROWS.map(({ label, minuteOfDay }, rowIdx) => {
           const isHour = minuteOfDay % 60 === 0;
           // Now line: render inside the row that contains the current minute
