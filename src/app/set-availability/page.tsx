@@ -39,27 +39,28 @@ function SetAvailabilityInner() {
   useEffect(() => {
     async function loadTemplate() {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.user?.id) return;
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('slot_template')
-          .eq('session_id', session.user.id)
-          .maybeSingle();
-        // slot_template may not exist yet — also try email match
-        const minutes: number[] | null = profile?.slot_template ?? null;
-        if (!minutes?.length) {
-          // fallback: load by email
-          const { data: p2 } = await supabase
+        // Try localStorage session_id first (works for all users including restore-link users)
+        const sid = localStorage.getItem('mutua_session_id') ?? '';
+        if (sid) {
+          const { data: profile } = await supabase
             .from('profiles')
             .select('slot_template')
-            .eq('email', session.user.email ?? '')
+            .eq('session_id', sid)
             .maybeSingle();
-          if (!p2?.slot_template?.length) return;
-          applyTemplate(p2.slot_template);
-        } else {
-          applyTemplate(minutes);
+          if (profile?.slot_template?.length) {
+            applyTemplate(profile.slot_template);
+            return;
+          }
         }
+        // Fallback: auth session email
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user?.email) return;
+        const { data: p2 } = await supabase
+          .from('profiles')
+          .select('slot_template')
+          .eq('email', session.user.email)
+          .maybeSingle();
+        if (p2?.slot_template?.length) applyTemplate(p2.slot_template);
       } catch {}
     }
 
