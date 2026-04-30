@@ -26,7 +26,8 @@ async function ensureProfile(admin: any, email: string, nativeLang: string, lear
 export async function POST(request: Request) {
   const { emailA, emailB, secret, minutesFromNow = 5, schedulingState } = await request.json();
 
-  if (secret !== ADMIN_SECRET) {
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
+  if (secret !== ADMIN_SECRET && secret !== serviceKey) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   if (!emailA || !emailB) {
