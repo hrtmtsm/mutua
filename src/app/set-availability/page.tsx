@@ -35,89 +35,71 @@ function SetAvailabilityInner() {
     }
   }, []);
 
-  // Pre-populate from saved slot template in profile
+  // Load slots: my submitted slots for this match, partner slots, then template as fallback
   useEffect(() => {
-    async function loadTemplate() {
-      try {
-        // Try localStorage session_id first (works for all users including restore-link users)
-        const sid = localStorage.getItem('mutua_session_id') ?? '';
-        if (sid) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('slot_template')
-            .eq('session_id', sid)
-            .maybeSingle();
-          if (profile?.slot_template?.length) {
-            applyTemplate(profile.slot_template);
-            return;
-          }
-        }
-        // Fallback: auth session email
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.user?.email) return;
-        const { data: p2 } = await supabase
-          .from('profiles')
-          .select('slot_template')
-          .eq('email', session.user.email)
-          .maybeSingle();
-        if (p2?.slot_template?.length) applyTemplate(p2.slot_template);
-      } catch {}
-    }
-
-    function applyTemplate(minutes: number[]) {
-      const tz  = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      const now = new Date();
-      const result: SessionSlot[] = [];
-      for (let i = 1; i <= 7; i++) {
-        const d = new Date(now);
-        d.setDate(now.getDate() + i);
-        for (const min of minutes) {
-          const h   = String(Math.floor(min / 60)).padStart(2, '0');
-          const mn  = String(min % 60).padStart(2, '0');
-          const fmt = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' });
-          const datePart  = fmt.format(d);
-          const localStr  = `${datePart}T${h}:${mn}:00`;
-          const assumed   = new Date(localStr + 'Z');
-          const displayed = assumed.toLocaleString('en-CA', {
-            timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
-            hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
-          }).replace(', ', 'T');
-          const offset = assumed.getTime() - new Date(displayed + 'Z').getTime();
-          result.push({ startsAt: new Date(assumed.getTime() + offset).toISOString() });
-        }
-      }
-      setInitialSlots(result);
-    }
-
-    loadTemplate();
-  }, []);
-
-  // Load partner's already-submitted slots + user's own previously submitted slots
-  useEffect(() => {
-    if (!matchId) return;
-    async function loadSlots() {
+    async function loadAll() {
       const { data: { session } } = await supabase.auth.getSession();
       const sid = localStorage.getItem('mutua_session_id') ?? '';
       const headers: Record<string, string> = {};
       if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
-      // Partner slots
-      const partnerUrl = `/api/get-partner-slots?matchId=${encodeURIComponent(matchId!)}&sessionId=${encodeURIComponent(sid)}`;
-      const partnerRes = await fetch(partnerUrl, { headers }).catch(() => null);
-      if (partnerRes?.ok) {
-        const data = await partnerRes.json();
-        if (data.slots?.length) setPartnerSlots(data.slots);
+      // 1. My own previously submitted slots (takes priority over template)
+      let gotMySlots = false;
+      if (matchId) {
+        const myUrl = `/api/get-my-slots?matchId=${encodeURIComponent(matchId)}&sessionId=${encodeURIComponent(sid)}`;
+        const myRes = await fetch(myUrl, { headers }).catch(() => null);
+        if (myRes?.ok) {
+          const data = await myRes.json();
+          if (data.slots?.length) { setInitialSlots(data.slots); gotMySlots = true; }
+        }
       }
 
-      // My own previously submitted slots for this match
-      const myUrl = `/api/get-my-slots?matchId=${encodeURIComponent(matchId!)}&sessionId=${encodeURIComponent(sid)}`;
-      const myRes = await fetch(myUrl, { headers }).catch(() => null);
-      if (myRes?.ok) {
-        const data = await myRes.json();
-        if (data.slots?.length) setInitialSlots(data.slots);
+      // 2. Template fallback — only if no submitted slots exist for this match
+      if (!gotMySlots) {
+        try {
+          let templateMinutes: number[] | null = null;
+          if (sid) {
+            const { data: profile } = await supabase.from('profiles').select('slot_template').eq('session_id', sid).maybeSingle();
+            templateMinutes = profile?.slot_template ?? null;
+          }
+          if (!templateMinutes?.length && session?.user?.email) {
+            const { data: p2 } = await supabase.from('profiles').select('slot_template').eq('email', session.user.email).maybeSingle();
+            templateMinutes = p2?.slot_template ?? null;
+          }
+          if (templateMinutes?.length) {
+            const tz  = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            const now = new Date();
+            const result: SessionSlot[] = [];
+            for (let i = 1; i <= 7; i++) {
+              const d = new Date(now);
+              d.setDate(now.getDate() + i);
+              for (const min of templateMinutes) {
+                const h  = String(Math.floor(min / 60)).padStart(2, '0');
+                const mn = String(min % 60).padStart(2, '0');
+                const datePart = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+                const assumed  = new Date(`${datePart}T${h}:${mn}:00Z`);
+                const displayed = assumed.toLocaleString('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).replace(', ', 'T');
+                const offset = assumed.getTime() - new Date(displayed + 'Z').getTime();
+                result.push({ startsAt: new Date(assumed.getTime() + offset).toISOString() });
+              }
+            }
+            setInitialSlots(result);
+          }
+        } catch {}
+      }
+
+      // 3. Partner slots (independent of above)
+      if (matchId) {
+        const partnerUrl = `/api/get-partner-slots?matchId=${encodeURIComponent(matchId)}&sessionId=${encodeURIComponent(sid)}`;
+        const partnerRes = await fetch(partnerUrl, { headers }).catch(() => null);
+        if (partnerRes?.ok) {
+          const data = await partnerRes.json();
+          if (data.slots?.length) setPartnerSlots(data.slots);
+        }
       }
     }
-    loadSlots();
+    loadAll();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [matchId]);
 
   const handleSave = async () => {
