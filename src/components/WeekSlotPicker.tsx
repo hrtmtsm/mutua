@@ -150,10 +150,7 @@ export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, o
     const id = setInterval(() => setNowMinute(getNowMinute(timezone)), 60_000);
     return () => clearInterval(id);
   }, [timezone]);
-  const totalGridMinutes = (END_HOUR - START_HOUR) * 60;
-  const nowOffsetMinutes = nowMinute - START_HOUR * 60;
-  const nowPct           = (nowOffsetMinutes / totalGridMinutes) * 100;
-  const showNowLine      = nowPct >= 0 && nowPct <= 100;
+  const showNowLine = nowMinute >= START_HOUR * 60 && nowMinute < END_HOUR * 60;
 
   const partnerSet = useMemo(() => {
     if (!partnerSlots?.length) return new Set<string>();
@@ -260,29 +257,31 @@ export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, o
 
       {/* Time rows */}
       <div className="border-l border-r border-b border-stone-200 rounded-b-2xl overflow-hidden overflow-y-auto max-h-[60vh]">
-        {/* Inner wrapper is the positioning context so top:% is relative to full content height, not visible height */}
-        <div className="relative">
-        {/* Now line */}
-        {showNowLine && (
-          <div
-            className="absolute left-0 right-0 z-20 pointer-events-none"
-            style={{ top: `${nowPct}%` }}
-          >
-            <div className="flex items-center" style={{ paddingLeft: '3.5rem' }}>
-              <div className="w-2 h-2 rounded-full bg-red-500 -ml-1 shrink-0" />
-              <div className="flex-1 h-px bg-red-500" />
-            </div>
-          </div>
-        )}
-
         {TIME_ROWS.map(({ label, minuteOfDay }, rowIdx) => {
           const isHour = minuteOfDay % 60 === 0;
+          // Now line: render inside the row that contains the current minute
+          const rowStart   = minuteOfDay;
+          const rowEnd     = minuteOfDay + 30;
+          const showNow    = showNowLine && nowMinute >= rowStart && nowMinute < rowEnd;
+          const nowRowPct  = showNow ? ((nowMinute - rowStart) / 30) * 100 : 0;
+
           return (
             <div
               key={minuteOfDay}
-              className={`grid ${rowIdx > 0 ? (isHour ? 'border-t border-stone-200' : 'border-t border-stone-100') : ''}`}
+              className={`relative grid ${rowIdx > 0 ? (isHour ? 'border-t border-stone-200' : 'border-t border-stone-100') : ''}`}
               style={{ gridTemplateColumns: colTemplate }}
             >
+              {showNow && (
+                <div
+                  className="absolute left-0 right-0 z-20 pointer-events-none"
+                  style={{ top: `${nowRowPct}%` }}
+                >
+                  <div className="flex items-center" style={{ paddingLeft: '3.5rem' }}>
+                    <div className="w-2 h-2 rounded-full bg-red-500 -ml-1 shrink-0" />
+                    <div className="flex-1 h-px bg-red-500" />
+                  </div>
+                </div>
+              )}
               <div className="flex items-start justify-end pr-2 pt-0.5 shrink-0">
                 {isHour && <span className="text-[11px] text-stone-600 leading-none">{label}</span>}
               </div>
@@ -316,7 +315,6 @@ export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, o
             </div>
           );
         })}
-        </div>
       </div>
 
       {partnerSlots && partnerSlots.length > 0 && (
