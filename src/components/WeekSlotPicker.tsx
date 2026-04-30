@@ -105,6 +105,18 @@ export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, o
   const [visibleCount, setVisibleCount] = useState(7);
   const mouseHandled = useRef(false);
 
+  // Notify parent of initial pre-populated slots so parent state isn't empty
+  useEffect(() => {
+    if (selected.size > 0) {
+      const slots: SessionSlot[] = Array.from(selected).map(k => {
+        const [di, min] = k.split('-').map(Number);
+        return { startsAt: slotToUTC(days[di], min, timezone) };
+      });
+      onChange(slots);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // run once on mount
+
   // Responsive: 3 cols on narrow screens, 7 on wide
   useEffect(() => {
     const update = () => setVisibleCount(window.innerWidth < 640 ? 3 : 7);
