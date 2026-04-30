@@ -23,6 +23,7 @@ function SetAvailabilityInner() {
   const [saved,        setSaved]        = useState(false);
   const [cancelling,   setCancelling]   = useState(false);
   const [result,       setResult]       = useState<{ state: string; scheduledAt?: string | null } | null>(null);
+  const [saveError,    setSaveError]    = useState<string | null>(null);
   const [partnerName,  setPartnerName]  = useState('your partner');
 
   useEffect(() => {
@@ -111,35 +112,58 @@ function SetAvailabilityInner() {
   const handleSave = async () => {
     if (!matchId || slots.length === 0) return;
     setSaving(true);
+    setSaveError(null);
     const { data: { session } } = await supabase.auth.getSession();
+
+    // Filter out past slots before submitting
+    const now = new Date();
+    const futureSlots = slots.filter(s => new Date(s.startsAt) > now);
+    if (futureSlots.length === 0) {
+      setSaving(false);
+      setSaveError('All selected times are in the past. Please pick times later this week.');
+      return;
+    }
+
     const res = await fetch('/api/set-session-slots', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
       },
-      body: JSON.stringify({ matchId, slots }),
+      body: JSON.stringify({ matchId, slots: futureSlots }),
     }).catch(() => null);
-    if (res?.ok) {
-      const data = await res.json();
-      setResult(data);
-      // Save time-of-day pattern to profile for cross-device reuse
-      try {
-        const tz = timezone;
-        const minutes = slots.map(s => {
-          const localStr = new Date(s.startsAt).toLocaleString('en-CA', {
-            timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false,
-          });
-          const [hh, mm] = localStr.split(':').map(Number);
-          return hh * 60 + mm;
-        });
-        const unique = [...new Set(minutes)];
-        await supabase
-          .from('profiles')
-          .update({ slot_template: unique })
-          .eq('email', session?.user?.email ?? '');
-      } catch {}
+
+    if (!res) {
+      setSaving(false);
+      setSaveError('Network error. Please try again.');
+      return;
     }
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setSaving(false);
+      setSaveError(data.error ?? 'Something went wrong. Please try again.');
+      return;
+    }
+
+    setResult(data);
+    // Save time-of-day pattern to profile for cross-device reuse
+    try {
+      const tz = timezone;
+      const minutes = futureSlots.map(s => {
+        const localStr = new Date(s.startsAt).toLocaleString('en-CA', {
+          timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false,
+        });
+        const [hh, mm] = localStr.split(':').map(Number);
+        return hh * 60 + mm;
+      });
+      const unique = [...new Set(minutes)];
+      await supabase
+        .from('profiles')
+        .update({ slot_template: unique })
+        .eq('email', session?.user?.email ?? '');
+    } catch {}
+
     setSaving(false);
     setSaved(true);
   };
@@ -245,7 +269,7 @@ function SetAvailabilityInner() {
                 {result?.state === 'scheduled' ? 'View session →' : 'Sounds good'}
               </button>
               <button
-                onClick={() => { setSaved(false); setResult(null); }}
+                onClick={() => { setSaved(false); setResult(null); setSaveError(null); }}
                 className="flex-1 py-3 border border-stone-200 text-stone-500 font-medium text-sm rounded-xl hover:bg-stone-100 transition-colors"
               >
                 Update times
@@ -254,6 +278,9 @@ function SetAvailabilityInner() {
           </div>
         ) : (
           <>
+            {saveError && (
+              <p className="text-xs text-rose-500 text-center mb-2">{saveError}</p>
+            )}
             <button
               onClick={handleSave}
               disabled={saving || cancelling || slots.length === 0 || !matchId}
