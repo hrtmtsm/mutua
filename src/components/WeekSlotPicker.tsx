@@ -117,19 +117,23 @@ export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, o
   const mouseHandled = useRef(false);
   const scrollRef    = useRef<HTMLDivElement>(null);
 
-  // When partner slots load, scroll so the earliest partner slot is visible
+  // Scroll to earliest relevant slot (own or partner) when slots load
   useEffect(() => {
-    if (!partnerSlots?.length || !scrollRef.current) return;
-    const earliest = partnerSlots.reduce((a, b) => a.startsAt < b.startsAt ? a : b);
-    const d = new Date(earliest.startsAt);
-    const tzDate = new Date(d.toLocaleString('en-US', { timeZone: timezone }));
+    if (!scrollRef.current) return;
+    const candidates = [...(partnerSlots ?? []), ...Array.from(selected).map(k => {
+      const [di, min] = k.split('-').map(Number);
+      return { startsAt: slotToUTC(days[di], min, timezone) };
+    })];
+    if (!candidates.length) return;
+    const earliest = candidates.reduce((a, b) => a.startsAt < b.startsAt ? a : b);
+    const tzDate = new Date(new Date(earliest.startsAt).toLocaleString('en-US', { timeZone: timezone }));
     const minute = tzDate.getHours() * 60 + tzDate.getMinutes();
     const rowIndex = TIME_ROWS.findIndex(r => r.minuteOfDay === minute);
     if (rowIndex < 0) return;
     const rowHeight = scrollRef.current.scrollHeight / TIME_ROWS.length;
     const target = rowHeight * rowIndex - scrollRef.current.clientHeight / 3;
     scrollRef.current.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
-  }, [partnerSlots, timezone]);
+  }, [partnerSlots, selected, timezone]);
 
 
   // Responsive: 3 cols on narrow screens, 7 on wide
