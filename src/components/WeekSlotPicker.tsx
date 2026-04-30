@@ -137,9 +137,16 @@ export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, o
   // Current-time line — in the selected timezone
   const getNowMinute = () => {
     const now = new Date();
-    // Convert to target timezone by re-parsing a locale string — works reliably across browsers
-    const tzDate = new Date(now.toLocaleString('en-US', { timeZone: timezone }));
-    return tzDate.getHours() * 60 + tzDate.getMinutes();
+    const fmt = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',   // 0–23, no AM/PM ambiguity
+    });
+    const parts = fmt.formatToParts(now);
+    const h = parseInt(parts.find(p => p.type === 'hour')?.value   ?? '0', 10);
+    const m = parseInt(parts.find(p => p.type === 'minute')?.value ?? '0', 10);
+    return h * 60 + m;
   };
   const [nowMinute, setNowMinute] = useState<number>(getNowMinute);
   useEffect(() => {
