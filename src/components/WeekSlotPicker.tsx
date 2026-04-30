@@ -135,24 +135,20 @@ export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, o
   const canNext     = dayOffset + visibleCount < days.length;
 
   // Current-time line — in the selected timezone
-  const getNowMinute = () => {
+  // Pass tz explicitly to avoid stale closure issues
+  const getNowMinute = (tz: string) => {
     const now = new Date();
-    const fmt = new Intl.DateTimeFormat('en-US', {
-      timeZone: timezone,
-      hour: '2-digit',
-      minute: '2-digit',
-      hourCycle: 'h23',   // 0–23, no AM/PM ambiguity
-    });
-    const parts = fmt.formatToParts(now);
-    const h = parseInt(parts.find(p => p.type === 'hour')?.value   ?? '0', 10);
-    const m = parseInt(parts.find(p => p.type === 'minute')?.value ?? '0', 10);
+    // en-GB reliably gives "HH:MM:SS" in 24-hour without any locale quirks
+    const timeStr = now.toLocaleTimeString('en-GB', { timeZone: tz });
+    const [h, m] = timeStr.split(':').map(Number);
     return h * 60 + m;
   };
-  const [nowMinute, setNowMinute] = useState<number>(getNowMinute);
+  const [nowMinute, setNowMinute] = useState<number>(() => getNowMinute(timezone));
   useEffect(() => {
-    const id = setInterval(() => setNowMinute(getNowMinute()), 60_000);
+    // Immediately update when timezone changes, then keep ticking
+    setNowMinute(getNowMinute(timezone));
+    const id = setInterval(() => setNowMinute(getNowMinute(timezone)), 60_000);
     return () => clearInterval(id);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timezone]);
   const totalGridMinutes = (END_HOUR - START_HOUR) * 60;
   const nowOffsetMinutes = nowMinute - START_HOUR * 60;
