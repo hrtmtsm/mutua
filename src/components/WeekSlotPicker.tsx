@@ -259,7 +259,9 @@ export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, o
       </div>
 
       {/* Time rows */}
-      <div className="relative border-l border-r border-b border-stone-200 rounded-b-2xl overflow-hidden overflow-y-auto max-h-[60vh]">
+      <div className="border-l border-r border-b border-stone-200 rounded-b-2xl overflow-hidden overflow-y-auto max-h-[60vh]">
+        {/* Inner wrapper is the positioning context so top:% is relative to full content height, not visible height */}
+        <div className="relative">
         {/* Now line */}
         {showNowLine && (
           <div
@@ -314,6 +316,7 @@ export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, o
             </div>
           );
         })}
+        </div>
       </div>
 
       {partnerSlots && partnerSlots.length > 0 && (
