@@ -134,16 +134,22 @@ export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, o
   const canPrev     = dayOffset > 0;
   const canNext     = dayOffset + visibleCount < days.length;
 
-  // Current-time line
+  // Current-time line — in the selected timezone
   const getNowMinute = () => {
     const now = new Date();
-    return now.getHours() * 60 + now.getMinutes();
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone, hour: 'numeric', minute: 'numeric', hour12: false,
+    }).formatToParts(now);
+    const h = parseInt(parts.find(p => p.type === 'hour')?.value   ?? '0', 10);
+    const m = parseInt(parts.find(p => p.type === 'minute')?.value ?? '0', 10);
+    return h * 60 + m;
   };
   const [nowMinute, setNowMinute] = useState<number>(getNowMinute);
   useEffect(() => {
     const id = setInterval(() => setNowMinute(getNowMinute()), 60_000);
     return () => clearInterval(id);
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timezone]);
   const totalGridMinutes = (END_HOUR - START_HOUR) * 60;
   const nowOffsetMinutes = nowMinute - START_HOUR * 60;
   const nowPct           = (nowOffsetMinutes / totalGridMinutes) * 100;
