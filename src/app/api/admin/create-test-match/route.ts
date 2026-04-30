@@ -24,7 +24,7 @@ async function ensureProfile(admin: any, email: string, nativeLang: string, lear
 }
 
 export async function POST(request: Request) {
-  const { emailA, emailB, secret, minutesFromNow = 5 } = await request.json();
+  const { emailA, emailB, secret, minutesFromNow = 5, schedulingState } = await request.json();
 
   if (secret !== ADMIN_SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -73,8 +73,8 @@ export async function POST(request: Request) {
       goal:               'Casual conversation',
       comm_style:         'Video call',
       practice_frequency: 'Once a week',
-      scheduling_state:   'scheduled',
-      scheduled_at:       scheduledAt,
+      scheduling_state:   schedulingState ?? 'scheduled',
+      scheduled_at:       schedulingState && schedulingState !== 'scheduled' ? null : scheduledAt,
       score:              100,
       reasons:            ['Test match'],
     })
