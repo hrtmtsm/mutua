@@ -291,21 +291,6 @@ export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, o
                 const overlap = active && partner;
                 const filled  = active || partner;
 
-                // Rounded corners: round top if slot above isn't the same state,
-                // round bottom if slot below isn't the same state
-                const aboveActive  = isSelected(dayIdx, minuteOfDay - 30);
-                const belowActive  = isSelected(dayIdx, minuteOfDay + 30);
-                const abovePartner = isPartner(dayIdx, minuteOfDay - 30);
-                const belowPartner = isPartner(dayIdx, minuteOfDay + 30);
-
-                const roundTop    = active  ? !aboveActive  : partner ? !abovePartner : false;
-                const roundBottom = active  ? !belowActive  : partner ? !belowPartner : false;
-
-                const roundClass = [
-                  roundTop    ? 'rounded-t-md' : '',
-                  roundBottom ? 'rounded-b-md' : '',
-                ].join(' ').trim();
-
                 const colorClass = overlap  ? 'bg-emerald-400/50' :
                                    active   ? 'bg-[#2B8FFF]/40'   :
                                    partner  ? 'bg-amber-200/50'   : '';
@@ -321,7 +306,7 @@ export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, o
                     }`}
                   >
                     {filled && (
-                      <span className={`absolute inset-x-0.5 ${roundTop ? 'top-0' : '-top-px'} ${roundBottom ? 'bottom-0' : 'bottom-0'} ${colorClass} ${roundClass}`} />
+                      <span className={`absolute inset-x-0.5 inset-y-0.5 rounded-md ${colorClass}`} />
                     )}
                   </button>
                 );
