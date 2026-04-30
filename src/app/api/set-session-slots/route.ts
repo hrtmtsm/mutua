@@ -21,18 +21,22 @@ function adminClient() {
 
 export async function POST(request: Request) {
   const token = request.headers.get('authorization')?.replace('Bearer ', '');
-  if (!token) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
   const body = await request.json().catch(() => ({}));
-  const { matchId, slots } = body as { matchId?: string; slots?: { startsAt: string }[] };
+  const { matchId, slots, sessionId } = body as {
+    matchId?: string;
+    slots?: { startsAt: string }[];
+    sessionId?: string;
+  };
 
   if (!matchId || !slots?.length) {
     return NextResponse.json({ error: 'matchId and slots required' }, { status: 400 });
   }
+  if (!token && !sessionId) {
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  }
 
   const db = adminClient();
-  const { data: { user }, error: authErr } = await db.auth.getUser(token);
-  if (authErr || !user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
   // Validate slots
   const now = new Date();
@@ -45,21 +49,40 @@ export async function POST(request: Request) {
   // Verify user is part of this match
   const { data: match } = await db
     .from('matches')
-    .select('id, email_a, email_b, name_a, name_b, native_language_a, native_language_b, scheduling_state')
+    .select('id, email_a, email_b, name_a, name_b, native_language_a, native_language_b, scheduling_state, session_id_a, session_id_b')
     .eq('id', matchId)
     .single();
 
   if (!match) return NextResponse.json({ error: 'match not found' }, { status: 404 });
-  if (match.email_a !== user.email && match.email_b !== user.email) {
-    return NextResponse.json({ error: 'not your match' }, { status: 403 });
+
+  let iAmA: boolean;
+  let authUserId: string;
+
+  if (token) {
+    const { data: { user }, error: authErr } = await db.auth.getUser(token);
+    if (authErr || !user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+    if (match.email_a !== user.email && match.email_b !== user.email) {
+      return NextResponse.json({ error: 'not your match' }, { status: 403 });
+    }
+    iAmA = match.email_a === user.email;
+    authUserId = user.id;
+  } else {
+    // session_id fallback: look up auth user by email from match
+    if (match.session_id_a !== sessionId && match.session_id_b !== sessionId) {
+      return NextResponse.json({ error: 'not your match' }, { status: 403 });
+    }
+    iAmA = match.session_id_a === sessionId;
+    const myEmail = iAmA ? match.email_a : match.email_b;
+    const { data: usersData } = await db.auth.admin.listUsers({ perPage: 1000 });
+    const authUser = (usersData?.users ?? []).find(u => u.email === myEmail);
+    if (!authUser) return NextResponse.json({ error: 'auth user not found — please sign in via email link' }, { status: 401 });
+    authUserId = authUser.id;
   }
 
-  const iAmA = match.email_a === user.email;
-
   // Replace this user's slots for this match
-  await db.from('session_slots').delete().eq('user_id', user.id).eq('match_id', matchId);
+  await db.from('session_slots').delete().eq('user_id', authUserId).eq('match_id', matchId);
   const { error: insertErr } = await db.from('session_slots').insert(
-    slots.map(s => ({ user_id: user.id, match_id: matchId, starts_at: s.startsAt }))
+    slots.map(s => ({ user_id: authUserId, match_id: matchId, starts_at: s.startsAt }))
   );
   if (insertErr) return NextResponse.json({ error: insertErr.message }, { status: 500 });
 
