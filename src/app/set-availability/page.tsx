@@ -8,6 +8,61 @@ import TimezonePickerModal from '@/components/TimezonePickerModal';
 import WeekSlotPicker, { type SessionSlot } from '@/components/WeekSlotPicker';
 import { ArrowLeft } from 'lucide-react';
 
+// ── Template helpers ───────────────────────────────────────────────────────────
+// Encode as dow*10000+minuteOfDay so we remember which specific days were chosen.
+// Values <1440 are the old minute-only format (expand to all 7 days for compat).
+
+function encodeTemplateSlots(futureSlots: SessionSlot[], tz: string): number[] {
+  const vals = futureSlots.map(s => {
+    const localStr = new Date(s.startsAt).toLocaleString('en-CA', {
+      timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false,
+    });
+    const [hh, mm] = localStr.split(':').map(Number);
+    const min = hh * 60 + mm;
+    const dow = new Date(new Date(s.startsAt).toLocaleString('en-US', { timeZone: tz })).getDay();
+    return dow * 10000 + min;
+  });
+  return [...new Set(vals)];
+}
+
+function makeSlot(d: Date, minuteOfDay: number, tz: string): SessionSlot {
+  const h  = String(Math.floor(minuteOfDay / 60)).padStart(2, '0');
+  const mn = String(minuteOfDay % 60).padStart(2, '0');
+  const dp = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+  const assumed   = new Date(`${dp}T${h}:${mn}:00Z`);
+  const displayed = assumed.toLocaleString('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).replace(', ', 'T');
+  const offset    = assumed.getTime() - new Date(displayed + 'Z').getTime();
+  return { startsAt: new Date(assumed.getTime() + offset).toISOString() };
+}
+
+function buildSlotsFromTemplate(templateValues: number[], tz: string): SessionSlot[] {
+  const now = new Date();
+  const out: SessionSlot[] = [];
+  const isNewFormat = templateValues.some(v => v >= 10000);
+
+  if (isNewFormat) {
+    // DOW-encoded: find the matching day in the next 7 days
+    for (const val of templateValues) {
+      const dow = Math.floor(val / 10000);
+      const min = val % 10000;
+      for (let i = 1; i <= 7; i++) {
+        const d = new Date(now);
+        d.setDate(now.getDate() + i);
+        const tzDow = new Date(d.toLocaleString('en-US', { timeZone: tz })).getDay();
+        if (tzDow === dow) { out.push(makeSlot(d, min, tz)); break; }
+      }
+    }
+  } else {
+    // Legacy minute-only: expand to all 7 days
+    for (let i = 1; i <= 7; i++) {
+      const d = new Date(now);
+      d.setDate(now.getDate() + i);
+      for (const min of templateValues) out.push(makeSlot(d, min, tz));
+    }
+  }
+  return out;
+}
+
 function SetAvailabilityInner() {
   const router          = useRouter();
   const searchParams    = useSearchParams();
@@ -24,25 +79,9 @@ function SetAvailabilityInner() {
     try {
       const raw = localStorage.getItem('mutua_slot_template');
       if (!raw) return [];
-      const mins: number[] = JSON.parse(raw);
-      if (!mins?.length) return [];
-      const tz  = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      const now = new Date();
-      const out: SessionSlot[] = [];
-      for (let i = 1; i <= 7; i++) {
-        const d = new Date(now);
-        d.setDate(now.getDate() + i);
-        for (const min of mins) {
-          const h  = String(Math.floor(min / 60)).padStart(2, '0');
-          const mn = String(min % 60).padStart(2, '0');
-          const dp = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
-          const assumed   = new Date(`${dp}T${h}:${mn}:00Z`);
-          const displayed = assumed.toLocaleString('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).replace(', ', 'T');
-          const offset    = assumed.getTime() - new Date(displayed + 'Z').getTime();
-          out.push({ startsAt: new Date(assumed.getTime() + offset).toISOString() });
-        }
-      }
-      return out;
+      const vals: number[] = JSON.parse(raw);
+      if (!vals?.length) return [];
+      return buildSlotsFromTemplate(vals, Intl.DateTimeFormat().resolvedOptions().timeZone);
     } catch { return []; }
   });
   const [showTzSelect, setShowTzSelect] = useState(false);
@@ -102,9 +141,6 @@ function SetAvailabilityInner() {
             if (local) try { templateMinutes = JSON.parse(local); } catch {}
           }
           if (templateMinutes?.length) {
-            const tz  = timezone;
-            const now = new Date();
-
             // Fetch already-confirmed sessions to exclude taken slots
             const confirmedRes = await fetch(
               `/api/get-confirmed-sessions?sessionId=${encodeURIComponent(sid)}`,
@@ -117,24 +153,8 @@ function SetAvailabilityInner() {
               )
             );
 
-            const result: SessionSlot[] = [];
-            for (let i = 1; i <= 7; i++) {
-              const d = new Date(now);
-              d.setDate(now.getDate() + i);
-              for (const min of templateMinutes) {
-                const h  = String(Math.floor(min / 60)).padStart(2, '0');
-                const mn = String(min % 60).padStart(2, '0');
-                const datePart = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
-                const assumed  = new Date(`${datePart}T${h}:${mn}:00Z`);
-                const displayed = assumed.toLocaleString('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).replace(', ', 'T');
-                const offset = assumed.getTime() - new Date(displayed + 'Z').getTime();
-                const slotUtc = new Date(assumed.getTime() + offset);
-                // Skip slots already booked with another partner
-                if (!takenTimes.has(slotUtc.getTime())) {
-                  result.push({ startsAt: slotUtc.toISOString() });
-                }
-              }
-            }
+            const result = buildSlotsFromTemplate(templateMinutes, timezone)
+              .filter(s => !takenTimes.has(new Date(s.startsAt).getTime()));
             setInitialSlots(result);
           }
         } catch {}
@@ -192,18 +212,9 @@ function SetAvailabilityInner() {
     }
 
     setResult(data);
-    // Save time-of-day pattern to profile for cross-device reuse
+    // Save day-of-week + time pattern for reuse across partners
     try {
-      const tz = timezone;
-      const minutes = futureSlots.map(s => {
-        const localStr = new Date(s.startsAt).toLocaleString('en-CA', {
-          timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false,
-        });
-        const [hh, mm] = localStr.split(':').map(Number);
-        return hh * 60 + mm;
-      });
-      const unique = [...new Set(minutes)];
-      // Always save to localStorage for same-device reuse (works without migration)
+      const unique = encodeTemplateSlots(futureSlots, timezone);
       localStorage.setItem('mutua_slot_template', JSON.stringify(unique));
       const sid = localStorage.getItem('mutua_session_id') ?? '';
       if (session?.user?.email) {
