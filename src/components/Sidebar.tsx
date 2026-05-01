@@ -142,6 +142,9 @@ function MessagesList({
       {conversations.map(c => {
         const ini = initials(c.partnerName);
         const last = c.lastMessage;
+        // Unread: last message is from partner AND its id differs from last-seen id
+        const lastSeenId = localStorage.getItem(`mutua_last_seen_${c.matchId}`);
+        const hasUnreadMsg = !!last && last.sender_id !== myId && last.id !== lastSeenId;
         return (
           <button
             key={c.matchId}
@@ -153,13 +156,16 @@ function MessagesList({
               : <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: c.avatarBg }}><span className="text-xs font-black text-white">{ini}</span></div>
             }
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-neutral-900 leading-tight">{c.partnerName}</p>
+              <p className={`text-sm leading-tight ${hasUnreadMsg ? 'font-bold text-neutral-900' : 'font-semibold text-neutral-900'}`}>{c.partnerName}</p>
               {last && (
-                <p className="text-xs truncate mt-0.5 text-stone-400">
+                <p className={`text-xs truncate mt-0.5 ${hasUnreadMsg ? 'text-neutral-700 font-medium' : 'text-stone-400'}`}>
                   {last.sender_id === myId ? 'You: ' : ''}{last.text}
                 </p>
               )}
             </div>
+            {hasUnreadMsg && (
+              <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
+            )}
           </button>
         );
       })}
@@ -735,6 +741,13 @@ export default function TopNav() {
                     setRequestedMatchId(mid);
                     setPartnerName(pName);
                     setMsgView('chat');
+                    // Mark this conversation as seen (per-match unread dot)
+                    const conv = conversations.find(c => c.matchId === mid);
+                    if (conv?.lastMessage) {
+                      localStorage.setItem(`mutua_last_seen_${mid}`, conv.lastMessage.id);
+                      // Force re-render of conversations list to clear the dot
+                      setConversations(prev => [...prev]);
+                    }
                     localStorage.removeItem('mutua_unread_message');
                     localStorage.setItem('mutua_last_seen_msg_ts', new Date().toISOString());
                     setHasUnread(!!localStorage.getItem('mutua_unread_notification'));
