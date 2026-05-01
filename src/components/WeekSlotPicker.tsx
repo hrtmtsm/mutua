@@ -114,12 +114,13 @@ export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, o
   const [dragging,     setDragging] = useState<'add' | 'remove' | null>(null);
   const [dayOffset,    setDayOffset] = useState(0);
   const [visibleCount, setVisibleCount] = useState(7);
-  const mouseHandled = useRef(false);
-  const scrollRef    = useRef<HTMLDivElement>(null);
+  const mouseHandled  = useRef(false);
+  const scrollRef     = useRef<HTMLDivElement>(null);
+  const hasScrolled   = useRef(false);
 
-  // Scroll to earliest relevant slot (own or partner) when slots load
+  // Scroll to earliest relevant slot (own or partner) once on initial load only
   useEffect(() => {
-    if (!scrollRef.current) return;
+    if (hasScrolled.current || !scrollRef.current) return;
     const candidates = [...(partnerSlots ?? []), ...Array.from(selected).map(k => {
       const [di, min] = k.split('-').map(Number);
       return { startsAt: slotToUTC(days[di], min, timezone) };
@@ -133,6 +134,7 @@ export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, o
     const rowHeight = scrollRef.current.scrollHeight / TIME_ROWS.length;
     const target = rowHeight * rowIndex - scrollRef.current.clientHeight / 3;
     scrollRef.current.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
+    hasScrolled.current = true;
   }, [partnerSlots, selected, timezone]);
 
 
