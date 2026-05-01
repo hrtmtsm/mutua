@@ -50,7 +50,10 @@ function SetAvailabilityInner() {
         const myRes = await fetch(myUrl, { headers }).catch(() => null);
         if (myRes?.ok) {
           const data = await myRes.json();
-          if (data.slots?.length) { setInitialSlots(data.slots); gotMySlots = true; }
+          // Only use previously submitted slots if at least one is still in the future
+          const now = new Date();
+          const futureSlots = (data.slots ?? []).filter((s: { startsAt: string }) => new Date(s.startsAt) > now);
+          if (futureSlots.length) { setInitialSlots(futureSlots); gotMySlots = true; }
         }
       }
 
