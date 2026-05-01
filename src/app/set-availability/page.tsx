@@ -67,7 +67,7 @@ function SetAvailabilityInner() {
             templateMinutes = p2?.slot_template ?? null;
           }
           if (templateMinutes?.length) {
-            const tz  = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            const tz  = timezone;
             const now = new Date();
             const result: SessionSlot[] = [];
             for (let i = 1; i <= 7; i++) {
