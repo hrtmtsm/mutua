@@ -13,6 +13,7 @@ create table if not exists profiles (
   name               text,
   email              text,
   avatar_url         text,
+  slot_template      integer[],
   created_at         timestamptz default now()
 );
 
