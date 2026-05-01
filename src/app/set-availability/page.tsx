@@ -69,6 +69,11 @@ function SetAvailabilityInner() {
             const { data: p2 } = await supabase.from('profiles').select('slot_template').eq('email', session.user.email).maybeSingle();
             templateMinutes = p2?.slot_template ?? null;
           }
+          // Fallback to localStorage (works without DB migration, same-device)
+          if (!templateMinutes?.length) {
+            const local = localStorage.getItem('mutua_slot_template');
+            if (local) try { templateMinutes = JSON.parse(local); } catch {}
+          }
           if (templateMinutes?.length) {
             const tz  = timezone;
             const now = new Date();
@@ -171,6 +176,8 @@ function SetAvailabilityInner() {
         return hh * 60 + mm;
       });
       const unique = [...new Set(minutes)];
+      // Always save to localStorage for same-device reuse (works without migration)
+      localStorage.setItem('mutua_slot_template', JSON.stringify(unique));
       const sid = localStorage.getItem('mutua_session_id') ?? '';
       if (session?.user?.email) {
         await supabase.from('profiles').update({ slot_template: unique }).eq('email', session.user.email);
