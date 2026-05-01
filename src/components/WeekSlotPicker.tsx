@@ -346,8 +346,33 @@ export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, o
         </div>
       )}
 
-      {selected.size === 0 && (
+      {selected.size === 0 ? (
         <p className="text-xs text-stone-400 mt-2 text-center">Tap any block to mark when you're free this week</p>
+      ) : initialSlots && initialSlots.length > 0 && selected.size === initialSlots.length ? (
+        <div className="flex items-center justify-center gap-3 mt-2">
+          <p className="text-xs text-stone-400">Pre-filled from your previous availability</p>
+          <button
+            onClick={() => {
+              setSelected(new Set());
+              onChange([]);
+            }}
+            className="text-xs text-rose-400 hover:text-rose-600 transition-colors"
+          >
+            Clear all
+          </button>
+        </div>
+      ) : (
+        <div className="flex justify-center mt-2">
+          <button
+            onClick={() => {
+              setSelected(new Set());
+              onChange([]);
+            }}
+            className="text-xs text-stone-400 hover:text-rose-500 transition-colors"
+          >
+            Clear all
+          </button>
+        </div>
       )}
     </div>
   );
