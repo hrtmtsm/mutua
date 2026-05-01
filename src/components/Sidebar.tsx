@@ -674,13 +674,16 @@ export default function TopNav() {
               ) : inboxTab === 'notifications' ? (
                 <div className="px-4 py-4 space-y-2">
                   {scheduleState === 'scheduled' && (
-                    <div className="flex items-start gap-3 p-3 bg-white border border-stone-100 rounded-xl">
+                    <button
+                      onClick={() => { setInboxOpen(false); window.location.href = '/exchanges'; }}
+                      className="w-full flex items-start gap-3 p-3 bg-white border border-stone-100 rounded-xl hover:bg-stone-50 transition-colors text-left"
+                    >
                       <span className="text-base mt-0.5">📅</span>
                       <div>
                         <p className="text-xs font-semibold text-neutral-900">Session scheduled</p>
-                        <p className="text-xs text-stone-500 mt-0.5">Your first session with {partnerName} has been confirmed.</p>
+                        <p className="text-xs text-stone-500 mt-0.5">Your first session with {partnerName} has been confirmed. Tap to view →</p>
                       </div>
-                    </div>
+                    </button>
                   )}
                   {scheduleState === 'computing' && (
                     <div className="flex items-start gap-3 p-3 bg-white border border-stone-100 rounded-xl">
