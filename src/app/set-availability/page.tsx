@@ -71,6 +71,7 @@ function SetAvailabilityInner() {
 
   const [slots,        setSlots]        = useState<SessionSlot[]>([]);
   const [partnerSlots, setPartnerSlots] = useState<SessionSlot[]>([]);
+  const [blockedSlots, setBlockedSlots] = useState<SessionSlot[]>([]);
   const [timezone,     setTimezone]     = useState(Intl.DateTimeFormat().resolvedOptions().timeZone);
 
   // Initialize from localStorage immediately — slots appear on first render, no network wait
@@ -160,7 +161,19 @@ function SetAvailabilityInner() {
         } catch {}
       }
 
-      // 3. Partner slots (independent of above)
+      // 3. Confirmed sessions → blocked slots (always fetch, independent of template)
+      const confirmedRes2 = await fetch(
+        `/api/get-confirmed-sessions?sessionId=${encodeURIComponent(sid)}`,
+        { headers }
+      ).catch(() => null);
+      if (confirmedRes2?.ok) {
+        const confirmedData2 = await confirmedRes2.json();
+        if (confirmedData2.sessions?.length) {
+          setBlockedSlots(confirmedData2.sessions.map((s: { startsAt: string }) => ({ startsAt: s.startsAt })));
+        }
+      }
+
+      // 4. Partner slots (independent of above)
       if (matchId) {
         const partnerUrl = `/api/get-partner-slots?matchId=${encodeURIComponent(matchId)}&sessionId=${encodeURIComponent(sid)}`;
         const partnerRes = await fetch(partnerUrl, { headers }).catch(() => null);
@@ -303,6 +316,7 @@ function SetAvailabilityInner() {
             timezone={timezone}
             partnerSlots={partnerSlots}
             initialSlots={initialSlots}
+            blockedSlots={blockedSlots}
             onChange={setSlots}
           />
         </div>

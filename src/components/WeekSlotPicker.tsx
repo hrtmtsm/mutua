@@ -31,6 +31,7 @@ interface Props {
   timezone:      string;
   partnerSlots?: SessionSlot[];
   initialSlots?: SessionSlot[];
+  blockedSlots?: SessionSlot[]; // already-confirmed sessions — cannot be selected
   onChange:      (slots: SessionSlot[]) => void;
 }
 
@@ -73,7 +74,7 @@ function slotToUTC(day: Date, minuteOfDay: number, timezone: string): string {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, onChange }: Props) {
+export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, blockedSlots, onChange }: Props) {
   const days = useMemo(() => getNext7Days(), []);
 
   const slotsToKeys = (slots: SessionSlot[]): Set<string> => {
@@ -178,11 +179,20 @@ export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, o
     return new Set(partnerSlots.map(s => new Date(s.startsAt).getTime().toString()));
   }, [partnerSlots]);
 
+  const blockedSet = useMemo(() => {
+    if (!blockedSlots?.length) return new Set<string>();
+    return new Set(blockedSlots.map(s => new Date(s.startsAt).getTime().toString()));
+  }, [blockedSlots]);
+
   const makeKey    = (dayIdx: number, minute: number) => `${dayIdx}-${minute}`;
   const isSelected = (dayIdx: number, minute: number) => selected.has(makeKey(dayIdx, minute));
   const isPartner  = (dayIdx: number, minute: number) => {
     const utc = slotToUTC(days[dayIdx], minute, timezone);
     return partnerSet.has(new Date(utc).getTime().toString());
+  };
+  const isBlocked  = (dayIdx: number, minute: number) => {
+    const utc = slotToUTC(days[dayIdx], minute, timezone);
+    return blockedSet.has(new Date(utc).getTime().toString());
   };
 
   const notifyParent = (next: Set<string>) => {
@@ -308,7 +318,8 @@ export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, o
               </div>
               {visibleDays.map((_, localIdx) => {
                 const dayIdx  = dayOffset + localIdx;
-                const active  = isSelected(dayIdx, minuteOfDay);
+                const blocked = isBlocked(dayIdx, minuteOfDay);
+                const active  = !blocked && isSelected(dayIdx, minuteOfDay);
                 const partner = isPartner(dayIdx, minuteOfDay);
                 const overlap = active && partner;
                 const filled  = active || partner;
@@ -316,6 +327,25 @@ export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, o
                 const colorClass = overlap  ? 'bg-emerald-400/50' :
                                    active   ? 'bg-[#2B8FFF]/40'   :
                                    partner  ? 'bg-amber-200/50'   : '';
+
+                if (blocked) {
+                  return (
+                    <div
+                      key={dayIdx}
+                      title="Already scheduled"
+                      className="border-l border-stone-100 py-4 relative bg-stone-100 cursor-not-allowed"
+                    >
+                      <span className="absolute inset-x-0.5 inset-y-0.5 rounded-md overflow-hidden">
+                        <span
+                          className="absolute inset-0"
+                          style={{
+                            background: 'repeating-linear-gradient(-45deg, transparent, transparent 3px, rgba(0,0,0,0.06) 3px, rgba(0,0,0,0.06) 4px)',
+                          }}
+                        />
+                      </span>
+                    </div>
+                  );
+                }
 
                 return (
                   <button
