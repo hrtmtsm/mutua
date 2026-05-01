@@ -69,6 +69,19 @@ function SetAvailabilityInner() {
           if (templateMinutes?.length) {
             const tz  = timezone;
             const now = new Date();
+
+            // Fetch already-confirmed sessions to exclude taken slots
+            const confirmedRes = await fetch(
+              `/api/get-confirmed-sessions?sessionId=${encodeURIComponent(sid)}`,
+              { headers }
+            ).catch(() => null);
+            const confirmedData = confirmedRes?.ok ? await confirmedRes.json() : {};
+            const takenTimes = new Set<number>(
+              (confirmedData.sessions ?? []).map((s: { startsAt: string }) =>
+                new Date(s.startsAt).getTime()
+              )
+            );
+
             const result: SessionSlot[] = [];
             for (let i = 1; i <= 7; i++) {
               const d = new Date(now);
@@ -80,7 +93,11 @@ function SetAvailabilityInner() {
                 const assumed  = new Date(`${datePart}T${h}:${mn}:00Z`);
                 const displayed = assumed.toLocaleString('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).replace(', ', 'T');
                 const offset = assumed.getTime() - new Date(displayed + 'Z').getTime();
-                result.push({ startsAt: new Date(assumed.getTime() + offset).toISOString() });
+                const slotUtc = new Date(assumed.getTime() + offset);
+                // Skip slots already booked with another partner
+                if (!takenTimes.has(slotUtc.getTime())) {
+                  result.push({ startsAt: slotUtc.toISOString() });
+                }
               }
             }
             setInitialSlots(result);
