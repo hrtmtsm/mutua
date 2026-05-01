@@ -38,6 +38,33 @@ function SetAvailabilityInner() {
   // Load slots: my submitted slots for this match, partner slots, then template as fallback
   useEffect(() => {
     async function loadAll() {
+      // 0. Immediately show localStorage template (sync, no network wait)
+      const localTemplate = localStorage.getItem('mutua_slot_template');
+      if (localTemplate) {
+        try {
+          const templateMinutes: number[] = JSON.parse(localTemplate);
+          if (templateMinutes?.length) {
+            const tz = timezone;
+            const now = new Date();
+            const quickSlots: SessionSlot[] = [];
+            for (let i = 1; i <= 7; i++) {
+              const d = new Date(now);
+              d.setDate(now.getDate() + i);
+              for (const min of templateMinutes) {
+                const h  = String(Math.floor(min / 60)).padStart(2, '0');
+                const mn = String(min % 60).padStart(2, '0');
+                const datePart = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+                const assumed   = new Date(`${datePart}T${h}:${mn}:00Z`);
+                const displayed = assumed.toLocaleString('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).replace(', ', 'T');
+                const offset    = assumed.getTime() - new Date(displayed + 'Z').getTime();
+                quickSlots.push({ startsAt: new Date(assumed.getTime() + offset).toISOString() });
+              }
+            }
+            if (quickSlots.length) setInitialSlots(quickSlots);
+          }
+        } catch {}
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
       const sid = localStorage.getItem('mutua_session_id') ?? '';
       const headers: Record<string, string> = {};
