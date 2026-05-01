@@ -654,7 +654,15 @@ export default function TopNav() {
                           : 'text-stone-400 hover:text-neutral-700'
                       }`}
                     >
-                      {tab === 'notifications' ? 'Notifications' : 'Messages'}
+                      <span className="relative inline-flex items-center gap-1">
+                        {tab === 'notifications' ? 'Notifications' : 'Messages'}
+                        {tab === 'notifications' && !!localStorage.getItem('mutua_unread_notification') && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-red-500 inline-block" />
+                        )}
+                        {tab === 'messages' && !!localStorage.getItem('mutua_unread_message') && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-red-500 inline-block" />
+                        )}
+                      </span>
                     </button>
                   ))}
                 </div>
