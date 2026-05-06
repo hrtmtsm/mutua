@@ -147,7 +147,7 @@ function SchedulingCard({
             <span className="truncate">{learningFlag} {partner.learningLang}</span>
           </div>
         </button>
-        <div className="relative shrink-0">
+        <div className="relative shrink-0 self-start">
           <button onClick={() => setShowOverflow(v => !v)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100 transition-colors text-stone-300">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
               <circle cx="8" cy="3" r="1.4"/><circle cx="8" cy="8" r="1.4"/><circle cx="8" cy="13" r="1.4"/>
