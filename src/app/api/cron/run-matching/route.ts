@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 const MAX_MATCHES    = 5;
+const STUCK_DAYS     = 7;  // days before a user is considered stuck
 const EMAILS_ENABLED = process.env.SEND_MATCH_EMAILS === 'true';
 const APP_URL        = (process.env.NEXT_PUBLIC_APP_URL ?? 'https://trymutua.com').replace(/\/$/, '');
 
@@ -55,15 +56,39 @@ export async function GET(req: NextRequest) {
   // Load existing active matches to avoid duplicates and respect cap
   const { data: existingMatches } = await db
     .from('matches')
-    .select('email_a, email_b')
+    .select('email_a, email_b, scheduling_state, created_at')
     .neq('scheduling_state', 'archived');
 
   const alreadyPaired = new Set<string>();
   const matchCount    = new Map<string, number>();
+
+  // Track per-user: whether all matches are pending and oldest is > STUCK_DAYS old
+  const userMatchAges  = new Map<string, number[]>(); // email → [age_in_days]
+  const userHasActive  = new Set<string>();            // has at least one scheduled/completed match
+
   for (const m of existingMatches ?? []) {
     alreadyPaired.add([m.email_a, m.email_b].sort().join('|'));
     matchCount.set(m.email_a, (matchCount.get(m.email_a) ?? 0) + 1);
     matchCount.set(m.email_b, (matchCount.get(m.email_b) ?? 0) + 1);
+
+    const ageMs = Date.now() - new Date(m.created_at).getTime();
+    const ageDays = ageMs / (24 * 60 * 60 * 1000);
+    for (const email of [m.email_a, m.email_b]) {
+      if (!userMatchAges.has(email)) userMatchAges.set(email, []);
+      userMatchAges.get(email)!.push(ageDays);
+    }
+
+    if (m.scheduling_state === 'scheduled') {
+      userHasActive.add(m.email_a);
+      userHasActive.add(m.email_b);
+    }
+  }
+
+  // A user is "stuck" if: no scheduled match AND all matches are older than STUCK_DAYS
+  const stuckUsers = new Set<string>();
+  for (const [email, ages] of userMatchAges) {
+    if (userHasActive.has(email)) continue;
+    if (ages.every(d => d >= STUCK_DAYS)) stuckUsers.add(email);
   }
 
   // Build all valid new pairs (language match, not already paired, under cap)
@@ -89,8 +114,9 @@ export async function GET(req: NextRequest) {
   const errors:  { emailA: string; emailB: string; error: string }[]  = [];
 
   for (const { a, b, s } of pairs) {
-    if ((matchCount.get(a.email) ?? 0) >= MAX_MATCHES) continue;
-    if ((matchCount.get(b.email) ?? 0) >= MAX_MATCHES) continue;
+    // Bypass cap for stuck users; enforce it for everyone else
+    if (!stuckUsers.has(a.email) && (matchCount.get(a.email) ?? 0) >= MAX_MATCHES) continue;
+    if (!stuckUsers.has(b.email) && (matchCount.get(b.email) ?? 0) >= MAX_MATCHES) continue;
 
     const reasons = [
       `Native ${a.native_language} speaker — exactly the language ${b.name ?? b.email.split('@')[0]} wants to practice`,
@@ -146,6 +172,7 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     matchesCreated: created.length,
+    stuckUsers:     stuckUsers.size,
     errors:         errors.length,
     created,
     ...(errors.length ? { errorDetails: errors } : {}),
