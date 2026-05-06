@@ -12,27 +12,45 @@ import { ArrowLeft } from 'lucide-react';
 // Encode as dow*10000+minuteOfDay so we remember which specific days were chosen.
 // Values <1440 are the old minute-only format (expand to all 7 days for compat).
 
+function getUTCOffsetMinutes(d: Date, tz: string): number {
+  try {
+    const str = new Intl.DateTimeFormat('en', { timeZone: tz, timeZoneName: 'longOffset' }).format(d);
+    const m = str.match(/GMT([+-])(\d{1,2}):(\d{2})/);
+    if (!m) return 0;
+    const sign = m[1] === '+' ? 1 : -1;
+    return sign * (parseInt(m[2]) * 60 + parseInt(m[3]));
+  } catch { return 0; }
+}
+
+function getLocalDow(d: Date, tz: string): number {
+  const localDateStr = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+  const [y, mo, day] = localDateStr.split('-').map(Number);
+  return new Date(Date.UTC(y, mo - 1, day)).getUTCDay();
+}
+
 function encodeTemplateSlots(futureSlots: SessionSlot[], tz: string): number[] {
   const vals = futureSlots.map(s => {
-    const localStr = new Date(s.startsAt).toLocaleString('en-CA', {
-      timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false,
-    });
-    const [hh, mm] = localStr.split(':').map(Number);
-    const min = hh * 60 + mm;
-    const dow = new Date(new Date(s.startsAt).toLocaleString('en-US', { timeZone: tz })).getDay();
+    const d = new Date(s.startsAt);
+    const offsetMin = getUTCOffsetMinutes(d, tz);
+    const localMs   = d.getTime() + offsetMin * 60_000;
+    const min       = Math.floor(localMs / 60_000) % (24 * 60);
+    const dow       = getLocalDow(d, tz);
     return dow * 10000 + min;
   });
   return [...new Set(vals)];
 }
 
 function makeSlot(d: Date, minuteOfDay: number, tz: string): SessionSlot {
-  const h  = String(Math.floor(minuteOfDay / 60)).padStart(2, '0');
-  const mn = String(minuteOfDay % 60).padStart(2, '0');
-  const dp = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
-  const assumed   = new Date(`${dp}T${h}:${mn}:00Z`);
-  const displayed = assumed.toLocaleString('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).replace(', ', 'T');
-  const offset    = assumed.getTime() - new Date(displayed + 'Z').getTime();
-  return { startsAt: new Date(assumed.getTime() + offset).toISOString() };
+  const localDate = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+  const [y, mo, day] = localDate.split('-').map(Number);
+  const h = Math.floor(minuteOfDay / 60);
+  const m = minuteOfDay % 60;
+  const fakeUTC = new Date(Date.UTC(y, mo - 1, day, h, m, 0));
+  // Two-pass to handle DST edge cases
+  const offset1 = getUTCOffsetMinutes(fakeUTC, tz);
+  const pass1   = new Date(fakeUTC.getTime() - offset1 * 60_000);
+  const offset2 = getUTCOffsetMinutes(pass1, tz);
+  return { startsAt: new Date(fakeUTC.getTime() - offset2 * 60_000).toISOString() };
 }
 
 function buildSlotsFromTemplate(templateValues: number[], tz: string): SessionSlot[] {
@@ -48,8 +66,7 @@ function buildSlotsFromTemplate(templateValues: number[], tz: string): SessionSl
       for (let i = 1; i <= 7; i++) {
         const d = new Date(now);
         d.setDate(now.getDate() + i);
-        const tzDow = new Date(d.toLocaleString('en-US', { timeZone: tz })).getDay();
-        if (tzDow === dow) { out.push(makeSlot(d, min, tz)); break; }
+        if (getLocalDow(d, tz) === dow) { out.push(makeSlot(d, min, tz)); break; }
       }
     }
   } else {
@@ -70,7 +87,8 @@ function SetAvailabilityInner() {
   const schedulingState = searchParams.get('schedulingState');
 
   const [slots,        setSlots]        = useState<SessionSlot[]>([]);
-  const [partnerSlots, setPartnerSlots] = useState<SessionSlot[]>([]);
+  const [partnerSlots,    setPartnerSlots]    = useState<SessionSlot[]>([]);
+  const [partnerProjected, setPartnerProjected] = useState(false);
   const [blockedSlots, setBlockedSlots] = useState<SessionSlot[]>([]);
   const [timezone,     setTimezone]     = useState(Intl.DateTimeFormat().resolvedOptions().timeZone);
 
@@ -179,7 +197,10 @@ function SetAvailabilityInner() {
         const partnerRes = await fetch(partnerUrl, { headers }).catch(() => null);
         if (partnerRes?.ok) {
           const data = await partnerRes.json();
-          if (data.slots?.length) setPartnerSlots(data.slots);
+          if (data.slots?.length) {
+            setPartnerSlots(data.slots);
+            setPartnerProjected(data.projected === true);
+          }
         }
       }
     }
@@ -285,7 +306,9 @@ function SetAvailabilityInner() {
             {partnerSlots.length > 0
               ? overlapCount > 0
                 ? `You have ${overlapCount} overlapping slot${overlapCount > 1 ? 's' : ''} with ${partnerName}. Hit save to lock it in!`
-                : `${partnerName}'s free times are highlighted — tap slots that overlap to find a shared window.`
+                : partnerProjected
+                  ? `Showing ${partnerName}'s typical availability (they haven't submitted for this week yet). Pick overlapping slots and we'll confirm once they do.`
+                  : `${partnerName}'s free times are highlighted — tap slots that overlap to find a shared window.`
               : `Tap blocks when you're free. We'll match your times with ${partnerName}'s and book automatically.`
             }
           </p>

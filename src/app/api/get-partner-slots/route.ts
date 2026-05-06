@@ -1,6 +1,50 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
+// Project a DOW+minute template into the next 7 days (UTC)
+function buildSlotsFromTemplate(templateValues: number[]): { startsAt: string }[] {
+  const now = new Date();
+  const out: { startsAt: string }[] = [];
+  const isNewFormat = templateValues.some(v => v >= 10000);
+
+  if (isNewFormat) {
+    for (const val of templateValues) {
+      const dow = Math.floor(val / 10000);
+      const min = val % 10000;
+      for (let i = 1; i <= 7; i++) {
+        const d = new Date(now);
+        d.setUTCDate(now.getUTCDate() + i);
+        if (d.getUTCDay() === dow) {
+          d.setUTCHours(Math.floor(min / 60), min % 60, 0, 0);
+          out.push({ startsAt: d.toISOString() });
+          break;
+        }
+      }
+    }
+  } else {
+    // Legacy: expand to all 7 days
+    for (let i = 1; i <= 7; i++) {
+      const d = new Date(now);
+      d.setUTCDate(now.getUTCDate() + i);
+      for (const min of templateValues) {
+        const slot = new Date(d);
+        slot.setUTCHours(Math.floor(min / 60), min % 60, 0, 0);
+        out.push({ startsAt: slot.toISOString() });
+      }
+    }
+  }
+  return out;
+}
+
+// Derive a DOW+minute template from a list of past UTC timestamps
+function deriveTemplateFromPastSlots(pastSlots: { starts_at: string }[]): number[] {
+  const vals = pastSlots.map(s => {
+    const d = new Date(s.starts_at);
+    return d.getUTCDay() * 10000 + d.getUTCHours() * 60 + d.getUTCMinutes();
+  });
+  return [...new Set(vals)];
+}
+
 export async function GET(req: NextRequest) {
   const token     = req.headers.get('authorization')?.replace('Bearer ', '');
   const matchId   = req.nextUrl.searchParams.get('matchId');
@@ -24,7 +68,6 @@ export async function GET(req: NextRequest) {
   let partnerEmail: string;
 
   if (token) {
-    // Auth token path
     const { data: { user } } = await db.auth.getUser(token);
     if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
     if (match.email_a !== user.email && match.email_b !== user.email) {
@@ -32,7 +75,6 @@ export async function GET(req: NextRequest) {
     }
     partnerEmail = match.email_a === user.email ? match.email_b : match.email_a;
   } else {
-    // session_id fallback path
     if (match.session_id_a !== sessionId && match.session_id_b !== sessionId) {
       return NextResponse.json({ error: 'not your match' }, { status: 403 });
     }
@@ -41,14 +83,58 @@ export async function GET(req: NextRequest) {
 
   const { data: usersData } = await db.auth.admin.listUsers({ perPage: 1000 });
   const partner = (usersData?.users ?? []).find(u => u.email === partnerEmail);
-  if (!partner) return NextResponse.json({ slots: [] });
+  if (!partner) return NextResponse.json({ slots: [], projected: false });
 
-  const { data: slots } = await db
+  // Fetch all partner slots for this match (past + future)
+  const { data: allSlots } = await db
     .from('session_slots')
     .select('starts_at')
     .eq('user_id', partner.id)
     .eq('match_id', matchId)
     .order('starts_at', { ascending: true });
 
-  return NextResponse.json({ slots: (slots ?? []).map(s => ({ startsAt: s.starts_at })) });
+  const now = new Date();
+  const futureSlots = (allSlots ?? []).filter(s => new Date(s.starts_at) > now);
+
+  // If partner has future slots, return them directly
+  if (futureSlots.length > 0) {
+    return NextResponse.json({
+      slots: futureSlots.map(s => ({ startsAt: s.starts_at })),
+      projected: false,
+    });
+  }
+
+  // No future slots — try slot_template from their profile
+  const partnerSessionId = match.session_id_a === sessionId ? match.session_id_b : match.session_id_a;
+  let templateValues: number[] | null = null;
+
+  // Try by email first, then session_id
+  if (partnerEmail) {
+    const { data: profile } = await db
+      .from('profiles')
+      .select('slot_template')
+      .eq('email', partnerEmail)
+      .maybeSingle();
+    templateValues = profile?.slot_template ?? null;
+  }
+  if (!templateValues?.length && partnerSessionId) {
+    const { data: profile } = await db
+      .from('profiles')
+      .select('slot_template')
+      .eq('session_id', partnerSessionId)
+      .maybeSingle();
+    templateValues = profile?.slot_template ?? null;
+  }
+
+  // If still nothing, derive from their past submitted slots
+  if (!templateValues?.length && (allSlots ?? []).length > 0) {
+    templateValues = deriveTemplateFromPastSlots(allSlots!);
+  }
+
+  if (!templateValues?.length) {
+    return NextResponse.json({ slots: [], projected: false });
+  }
+
+  const projected = buildSlotsFromTemplate(templateValues);
+  return NextResponse.json({ slots: projected, projected: true });
 }
