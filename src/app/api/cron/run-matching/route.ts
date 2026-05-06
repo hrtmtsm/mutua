@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 const MAX_MATCHES    = 5;
-const STUCK_DAYS     = 7;  // days before a user is considered stuck
+const STUCK_DAYS     = 3;  // days before a user is considered stuck
 const EMAILS_ENABLED = process.env.SEND_MATCH_EMAILS === 'true';
 const APP_URL        = (process.env.NEXT_PUBLIC_APP_URL ?? 'https://trymutua.com').replace(/\/$/, '');
 
