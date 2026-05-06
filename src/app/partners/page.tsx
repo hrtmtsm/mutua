@@ -193,7 +193,9 @@ export default function PartnersPage() {
         </div>
 
         {loading ? (
-          <p className="text-sm text-stone-400 px-6">Loading…</p>
+          <div className="flex justify-center py-12">
+            <div className="w-6 h-6 border-2 border-[#2B8FFF] border-t-transparent rounded-full animate-spin" />
+          </div>
         ) : stats.length === 0 ? (
           <p className="text-sm text-stone-400 px-6">No partners yet.</p>
         ) : (
