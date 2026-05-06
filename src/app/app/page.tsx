@@ -141,10 +141,10 @@ function SchedulingCard({
         </button>
         <button onClick={onViewProfile} className="flex-1 min-w-0 text-left">
           <p className="font-serif font-bold text-[#171717] text-2xl leading-tight truncate">{partner.name}</p>
-          <div className="flex items-center gap-1.5 mt-1 text-sm text-stone-400 flex-nowrap whitespace-nowrap">
-            <span>{nativeFlag} {partner.nativeLang}</span>
-            <span>↔</span>
-            <span>{learningFlag} {partner.learningLang}</span>
+          <div className="flex items-center gap-1.5 mt-1 text-sm text-stone-400 min-w-0">
+            <span className="truncate">{nativeFlag} {partner.nativeLang}</span>
+            <span className="shrink-0">↔</span>
+            <span className="truncate">{learningFlag} {partner.learningLang}</span>
           </div>
         </button>
         <div className="relative shrink-0">
