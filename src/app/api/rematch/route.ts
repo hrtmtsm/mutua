@@ -170,5 +170,20 @@ export async function POST(req: Request) {
   // Clean up intents so they can rematch again in future
   await db.from('rematch_intents').delete().eq('match_id', matchId);
 
+  // Freeing up a slot — try to find new partners for both users
+  const baseUrl = (process.env.NEXT_PUBLIC_APP_URL ?? 'https://trymutua.com').replace(/\/$/, '');
+  await Promise.allSettled([
+    fetch(`${baseUrl}/api/auto-match`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ session_id: original.session_id_a }),
+    }),
+    fetch(`${baseUrl}/api/auto-match`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ session_id: original.session_id_b }),
+    }),
+  ]);
+
   return NextResponse.json({ matched: true, newMatchId: newMatch?.id });
 }
