@@ -104,8 +104,8 @@ export default function PartnerProfilePage() {
 
   if (loading) return (
     <AppShell>
-      <main className="flex-1 px-6 py-10 max-w-2xl mx-auto w-full">
-        <p className="text-sm text-stone-400">Loading...</p>
+      <main className="flex-1 px-6 py-10 max-w-2xl mx-auto w-full flex justify-center">
+        <div className="w-6 h-6 border-2 border-[#2B8FFF] border-t-transparent rounded-full animate-spin" />
       </main>
     </AppShell>
   );

@@ -253,7 +253,9 @@ export default function ExchangesPage() {
         <h1 className="font-serif font-semibold text-2xl text-[#171717]">Exchanges</h1>
 
         {loading ? (
-          <p className="text-sm text-stone-400">Loading...</p>
+          <div className="flex justify-center py-12">
+            <div className="w-6 h-6 border-2 border-[#2B8FFF] border-t-transparent rounded-full animate-spin" />
+          </div>
         ) : exchanges.length > 0 ? (
           <div className="space-y-4">
             {exchanges.map(ex => (
