@@ -450,23 +450,8 @@ export default function SessionPage() {
         <h1 className="font-serif font-semibold text-2xl text-[#171717]">Your partners</h1>
 
         {loading ? (
-          <div className="space-y-4">
-            {[0, 1].map(i => (
-              <div key={i} className="bg-white rounded-2xl border border-stone-200 p-7 space-y-4 animate-pulse">
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-full bg-stone-200 shrink-0" />
-                  <div className="flex-1 space-y-2">
-                    <div className="h-5 w-32 bg-stone-200 rounded-full" />
-                    <div className="h-3.5 w-48 bg-stone-100 rounded-full" />
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <div className="h-8 w-28 bg-stone-100 rounded-full" />
-                  <div className="h-8 w-20 bg-stone-100 rounded-full" />
-                </div>
-                <div className="h-10 w-40 bg-stone-100 rounded-xl" />
-              </div>
-            ))}
+          <div className="flex justify-center py-12">
+            <div className="w-6 h-6 border-2 border-[#2B8FFF] border-t-transparent rounded-full animate-spin" />
           </div>
         ) : (() => {
           // Scheduled sessions live in Exchanges; missed/past ones in Progress
