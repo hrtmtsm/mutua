@@ -48,25 +48,37 @@ function getNext7Days(): Date[] {
   return days;
 }
 
+// Parse "GMT+05:30" / "GMT-04:00" from longOffset — pure string match, no hour12 ambiguity.
+// Falls back to 0 on unsupported browsers (pre-Chromium 95 / pre-Safari 15.4).
+function getUTCOffsetMinutes(d: Date, tz: string): number {
+  try {
+    const str = new Intl.DateTimeFormat('en', { timeZone: tz, timeZoneName: 'longOffset' }).format(d);
+    const m = str.match(/GMT([+-])(\d{1,2}):(\d{2})/);
+    if (!m) return 0;
+    const sign = m[1] === '+' ? 1 : -1;
+    return sign * (parseInt(m[2]) * 60 + parseInt(m[3]));
+  } catch { return 0; }
+}
+
 function slotToUTC(day: Date, minuteOfDay: number, timezone: string): string {
   try {
-    const fmt = (d: Date, opts: Intl.DateTimeFormatOptions) =>
-      new Intl.DateTimeFormat('en-CA', { timeZone: timezone, ...opts }).format(d);
-    const year  = fmt(day, { year:  'numeric' });
-    const month = fmt(day, { month: '2-digit' });
-    const date  = fmt(day, { day:   '2-digit' });
-    const h     = String(Math.floor(minuteOfDay / 60)).padStart(2, '0');
-    const mn    = String(minuteOfDay % 60).padStart(2, '0');
-    const localStr = `${year}-${month}-${date}T${h}:${mn}:00`;
-    const assumed  = new Date(localStr + 'Z');
-    const displayed = assumed.toLocaleString('en-CA', {
-      timeZone: timezone,
-      year: 'numeric', month: '2-digit', day: '2-digit',
-      hour: '2-digit', minute: '2-digit', second: '2-digit',
-      hour12: false,
-    }).replace(', ', 'T');
-    const offset = assumed.getTime() - new Date(displayed + 'Z').getTime();
-    return new Date(assumed.getTime() + offset).toISOString();
+    // Get the local calendar date in the target timezone
+    const localDate = new Intl.DateTimeFormat('en-CA', {
+      timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit',
+    }).format(day); // always 'YYYY-MM-DD' — en-CA date-only is reliable everywhere
+    const [y, mo, d] = localDate.split('-').map(Number);
+    const h = Math.floor(minuteOfDay / 60);
+    const m = minuteOfDay % 60;
+
+    // Treat the desired local time as UTC to get a reference point
+    const fakeUTC = new Date(Date.UTC(y, mo - 1, d, h, m, 0));
+
+    // Two-pass offset: first pass approximates, second corrects for DST edge cases
+    const offset1 = getUTCOffsetMinutes(fakeUTC, timezone);
+    const pass1   = new Date(fakeUTC.getTime() - offset1 * 60_000);
+    const offset2 = getUTCOffsetMinutes(pass1, timezone);
+
+    return new Date(fakeUTC.getTime() - offset2 * 60_000).toISOString();
   } catch {
     return new Date(day).toISOString();
   }
@@ -81,16 +93,17 @@ export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, b
     const set = new Set<string>();
     for (const slot of slots) {
       const d = new Date(slot.startsAt);
-      const localStr = d.toLocaleString('en-CA', {
-        timeZone: timezone,
-        year: 'numeric', month: '2-digit', day: '2-digit',
-        hour: '2-digit', minute: '2-digit', hour12: false,
-      });
-      const [datePart, timePart] = localStr.replace(', ', 'T').split('T');
-      const [hh, mm] = timePart.split(':').map(Number);
-      const minuteOfDay = hh * 60 + mm;
+      // Shift UTC ms by offset → local ms; then extract H/M via pure arithmetic
+      const offsetMin   = getUTCOffsetMinutes(d, timezone);
+      const localMs     = d.getTime() + offsetMin * 60_000;
+      const minuteOfDay = Math.floor(localMs / 60_000) % (24 * 60);
+      const localDateStr = new Intl.DateTimeFormat('en-CA', {
+        timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit',
+      }).format(d);
       const dayIdx = days.findIndex(day =>
-        day.toLocaleDateString('en-CA', { timeZone: timezone }) === datePart
+        new Intl.DateTimeFormat('en-CA', {
+          timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit',
+        }).format(day) === localDateStr
       );
       if (dayIdx !== -1) set.add(`${dayIdx}-${minuteOfDay}`);
     }
