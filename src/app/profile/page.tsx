@@ -9,7 +9,6 @@ import { track } from '@/lib/analytics';
 import { supabase, saveProfile } from '@/lib/supabase';
 import type { UserAvailability } from '@/lib/supabase';
 import AppShell from '@/components/AppShell';
-import AvailabilityPicker from '@/components/AvailabilityPicker';
 import { Pencil, Camera, ChevronDown } from 'lucide-react';
 
 
@@ -579,55 +578,6 @@ export default function ProfilePage() {
 
             </div>
 
-            {/* ── Availability card ── */}
-            <div className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-semibold text-stone-400">Weekly availability</p>
-                  {availSlots.length > 0 && !editingAvail && (
-                    <p className="text-xs text-stone-400 mt-0.5">{availSlots.length} slot{availSlots.length === 1 ? '' : 's'} saved</p>
-                  )}
-                </div>
-                {!editingAvail ? (
-                  <button onClick={() => setEditingAvail(true)} className="text-xs font-semibold text-[#2B8FFF] hover:underline">
-                    {availSlots.length > 0 ? 'Edit' : 'Set availability'}
-                  </button>
-                ) : (
-                  <button onClick={() => setEditingAvail(false)} className="text-xs text-stone-400 hover:text-neutral-900 transition-colors">Cancel</button>
-                )}
-              </div>
-
-              {!editingAvail && availSlots.length === 0 && (
-                <p className="text-sm text-stone-500">
-                  Set your recurring free times so we can find a session slot with your partner automatically.
-                </p>
-              )}
-
-              {editingAvail && (
-                <AvailabilityPicker
-                  initial={availSlots}
-                  timezone={availTimezone || undefined}
-                  onChange={(slots, tz) => { setAvailSlots(slots as UserAvailability[]); setAvailTimezone(tz); }}
-                  onSave={async (slots, tz) => {
-                    setSavingAvail(true);
-                    const { data: { session } } = await supabase.auth.getSession();
-                    await fetch('/api/set-availability', {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                        ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
-                      },
-                      body: JSON.stringify({ slots, timezone: tz }),
-                    });
-                    setAvailSlots(slots as UserAvailability[]);
-                    setAvailTimezone(tz);
-                    setSavingAvail(false);
-                    setEditingAvail(false);
-                  }}
-                  saving={savingAvail}
-                />
-              )}
-            </div>
 
           </>
         ) : (
