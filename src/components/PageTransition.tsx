@@ -1,61 +1,59 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 
-// Tab routes never animate — switching between them should feel instant
 const TAB_ROUTES = ['/app', '/exchanges', '/history', '/settings'];
 const isTab = (p: string) => TAB_ROUTES.some(r => p === r || p.startsWith(r + '/'));
 
+// Register BEFORE Next.js processes popstate (capture phase runs first).
+// This ensures _pendingPop is true when React re-renders with the new pathname.
+let _pendingPop = false;
+if (typeof window !== 'undefined') {
+  window.addEventListener('popstate', () => { _pendingPop = true; }, { capture: true });
+}
+
 export default function PageTransition({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const prevPathnameRef = useRef(pathname);
-  const directionRef = useRef<'push' | 'pop'>('push');
-  const [showExitOverlay, setShowExitOverlay] = useState(false);
-  const needsExitRef = useRef(false);
+  const prevRef = useRef(pathname);
+  const shouldOverlayRef = useRef(false);
+  const [showOverlay, setShowOverlay] = useState(false);
 
-  useEffect(() => {
-    const handlePop = () => { directionRef.current = 'pop'; };
-    window.addEventListener('popstate', handlePop);
-    return () => window.removeEventListener('popstate', handlePop);
-  }, []);
-
-  // Compute animation before updating refs
-  const prevPath = prevPathnameRef.current;
-  const pathnameChanged = prevPath !== pathname;
-  const isTabSwitch = isTab(prevPath) && isTab(pathname);
-  const direction = directionRef.current;
+  // Compute direction synchronously during render so enterCls is correct
+  // on the very first paint (useEffect would be too late for CSS animations).
+  const prev = prevRef.current;
+  const pathnameChanged = prev !== pathname;
+  const isTabSwitch = isTab(prev) && isTab(pathname);
+  let isPop = false;
 
   if (pathnameChanged) {
-    if (!isTabSwitch && direction === 'pop') {
-      needsExitRef.current = true;
-    }
-    prevPathnameRef.current = pathname;
-    directionRef.current = 'push';
+    isPop = _pendingPop;
+    _pendingPop = false;
+    prevRef.current = pathname;
+    shouldOverlayRef.current = isPop && !isTabSwitch;
   }
 
-  // Trigger exit overlay before paint so there's no flash of the new page
+  // For pop: incoming page has no animation; a white overlay slides right instead.
+  // For push: incoming page slides in from the right.
+  const enterCls = pathnameChanged && !isTabSwitch && !isPop ? 'page-push-in' : '';
+
+  // Show overlay before first paint so there's no flash of the new page.
   useLayoutEffect(() => {
-    if (needsExitRef.current) {
-      needsExitRef.current = false;
-      setShowExitOverlay(true);
+    if (shouldOverlayRef.current) {
+      shouldOverlayRef.current = false;
+      setShowOverlay(true);
     }
   }, [pathname]);
-
-  // Push: slide in from right. Pop: no enter animation — exit overlay handles it.
-  const enterCls =
-    !pathnameChanged || isTabSwitch ? '' :
-    direction === 'push' ? 'page-push-in' : '';
 
   return (
     <>
       <div key={pathname} className={enterCls}>
         {children}
       </div>
-      {showExitOverlay && (
+      {showOverlay && (
         <div
           className="fixed inset-0 z-50 bg-white page-pop-out pointer-events-none"
-          onAnimationEnd={() => setShowExitOverlay(false)}
+          onAnimationEnd={() => setShowOverlay(false)}
         />
       )}
     </>
