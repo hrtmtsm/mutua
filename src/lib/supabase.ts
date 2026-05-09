@@ -210,6 +210,15 @@ export async function getMatchBySessionId(sessionId: string): Promise<Match | nu
   return data as Match | null;
 }
 
+const STATE_PRIORITY: Record<string, number> = {
+  scheduled:    0,
+  pending_a:    1,
+  pending_b:    1,
+  computing:    2,
+  no_overlap:   3,
+  pending_both: 4,
+};
+
 export async function getMatchesBySessionId(sessionId: string): Promise<Match[]> {
   if (!isConfigured) return [];
   const { data, error } = await supabase
@@ -218,7 +227,14 @@ export async function getMatchesBySessionId(sessionId: string): Promise<Match[]>
     .or(`session_id_a.eq.${sessionId},session_id_b.eq.${sessionId}`)
     .neq('scheduling_state', 'archived')
     .order('created_at', { ascending: false })
-    .limit(8);
+    .limit(20);
   if (error) throw error;
-  return (data ?? []) as Match[];
+  return (data ?? [])
+    .sort((a, b) => {
+      const pa = STATE_PRIORITY[a.scheduling_state] ?? 5;
+      const pb = STATE_PRIORITY[b.scheduling_state] ?? 5;
+      if (pa !== pb) return pa - pb;
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    })
+    .slice(0, 8) as Match[];
 }
