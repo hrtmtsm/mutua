@@ -340,10 +340,7 @@ function SetAvailabilityInner() {
               </p>
             </div>
           </div>
-          <h1 className="font-serif font-black text-2xl text-neutral-900">
-            When are you free this week?
-          </h1>
-          {partnerSlots.length > 0 && overlapCount > 0 && (
+{partnerSlots.length > 0 && overlapCount > 0 && (
             <p className="text-sm text-stone-500 mt-1.5">
               {`You have ${overlapCount} overlapping slot${overlapCount > 1 ? 's' : ''} with ${partnerName}. Hit save to lock it in!`}
             </p>
