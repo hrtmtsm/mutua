@@ -584,8 +584,13 @@ export default function TopNav() {
     <header className="sticky top-0 z-20 bg-white border-b border-stone-200/60">
       <div className="max-w-5xl mx-auto px-4 md:px-6 flex items-center h-14">
 
-        {/* Page title */}
-        <span className="font-serif font-bold text-xl tracking-tight text-neutral-900 shrink-0">
+        {/* Desktop: Mutua logo */}
+        <Link href="/app" className="hidden md:block font-serif font-bold text-xl tracking-tight text-neutral-900 shrink-0">
+          Mutua
+        </Link>
+
+        {/* Mobile: page title */}
+        <span className="md:hidden font-serif font-bold text-xl tracking-tight text-neutral-900 shrink-0">
           {(() => {
             if (pathname === '/app' || pathname.startsWith('/app/')) return 'Home';
             if (pathname === '/exchanges' || pathname.startsWith('/exchanges/')) return 'Exchanges';
