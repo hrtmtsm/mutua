@@ -28,11 +28,12 @@ export interface SessionSlot {
 }
 
 interface Props {
-  timezone:      string;
-  partnerSlots?: SessionSlot[];
-  initialSlots?: SessionSlot[];
-  blockedSlots?: SessionSlot[];
-  onChange:      (slots: SessionSlot[]) => void;
+  timezone:          string;
+  partnerSlots?:     SessionSlot[];
+  initialSlots?:     SessionSlot[];
+  blockedSlots?:     SessionSlot[];
+  onChange:          (slots: SessionSlot[]) => void;
+  onTimezoneChange?: () => void;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -78,7 +79,7 @@ function slotToUTC(day: Date, minuteOfDay: number, timezone: string): string {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, blockedSlots, onChange }: Props) {
+export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, blockedSlots, onChange, onTimezoneChange }: Props) {
   const days = useMemo(() => getNext7Days(), []);
 
   const slotsToKeys = (slots: SessionSlot[]): Set<string> => {
@@ -257,6 +258,25 @@ export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, b
             <p className="text-xs font-bold text-neutral-700 mt-0.5">{day.getMonth() + 1}/{day.getDate()}</p>
           </div>
         ))}
+      </div>
+
+      {/* Divider + timezone */}
+      <div className="border-t border-stone-200 mt-2 mb-2" />
+      <div className="flex items-center gap-1.5 text-xs text-stone-500 mb-3">
+        <span>
+          In your time zone,{' '}
+          <span className="font-medium text-neutral-700">{timezone.replace(/_/g, ' ')}</span>
+          {' '}
+          <span className="text-stone-400">
+            (GMT{(() => {
+              const off = new Intl.DateTimeFormat('en', { timeZone: timezone, timeZoneName: 'shortOffset' }).formatToParts(new Date()).find(p => p.type === 'timeZoneName')?.value ?? '';
+              return off.replace('GMT', '') || '+0:00';
+            })()})
+          </span>
+        </span>
+        {onTimezoneChange && (
+          <button onClick={onTimezoneChange} className="text-[#2B8FFF] underline ml-1">Change</button>
+        )}
       </div>
 
       {/* Time pill grid */}
