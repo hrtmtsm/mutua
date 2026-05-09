@@ -1,9 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { User, ArrowLeftRight, TrendingUp, Bell, ArrowLeft, Send, Settings, MessageSquarePlus, X, Home, Calendar } from 'lucide-react';
+import { User, ArrowLeftRight, TrendingUp, Bell, ArrowLeft, Send, Settings, MessageSquarePlus, X, Home, Calendar, MessageCircle } from 'lucide-react';
 import { LANG_AVATAR_COLOR } from '@/lib/constants';
 import { supabase, getMessages, sendMessage, type Message } from '@/lib/supabase';
 import { track } from '@/lib/analytics';
@@ -307,6 +307,7 @@ function MessageChat({
 // ── Top nav ───────────────────────────────────────────────────────────────────
 
 export default function TopNav() {
+  const router = useRouter();
   const { pathname, initials, name, avatarBg, avatarUrl, hasUnread, setHasUnread, hasRematchBadge } = useNavState();
   const [inboxOpen, setInboxOpen] = useState(false);
   const [inboxTab, setInboxTab]   = useState<'notifications' | 'messages'>('notifications');
@@ -618,6 +619,8 @@ export default function TopNav() {
             if (pathname === '/exchanges' || pathname.startsWith('/exchanges/')) return 'Exchanges';
             if (pathname === '/history' || pathname.startsWith('/history/')) return 'Progress';
             if (pathname === '/set-availability') return 'Schedule';
+            if (pathname === '/notifications') return 'Notifications';
+            if (pathname.startsWith('/messages')) return 'Messages';
             if (pathname.startsWith('/partner')) return 'Profile';
             if (pathname.startsWith('/find-match')) return 'Find a Partner';
             if (pathname.startsWith('/match-result')) return 'Match';
@@ -659,16 +662,18 @@ export default function TopNav() {
         {/* Right side: bell + avatar */}
         <div className="relative flex items-center gap-3 shrink-0" ref={inboxRef}>
 
-          {/* Bell */}
+          {/* Bell — routes on mobile, opens dropdown on desktop */}
           <button
             onClick={() => {
+              if (window.innerWidth < 768) {
+                router.push('/notifications');
+                return;
+              }
               setInboxOpen(o => !o);
               setMsgView('list');
-              // Only clear notification unread on bell click; message unread clears when chat opens
               if (!!localStorage.getItem('mutua_unread_notification')) {
                 localStorage.removeItem('mutua_unread_notification');
               }
-              // Mark current scheduling state as seen
               if (currentSchedStateRef.current) localStorage.setItem('mutua_last_seen_sched_state', currentSchedStateRef.current);
               if (!localStorage.getItem('mutua_unread_message')) {
                 setHasUnread(false);
@@ -678,6 +683,17 @@ export default function TopNav() {
           >
             <Bell className="w-5 h-5" />
             {hasUnread && (
+              <span className="absolute top-1 right-1 w-2 h-2 bg-rose-500 rounded-full" />
+            )}
+          </button>
+
+          {/* Messages icon — mobile only */}
+          <button
+            onClick={() => router.push('/messages')}
+            className="md:hidden relative p-1.5 text-stone-400 hover:text-neutral-700 transition-colors"
+          >
+            <MessageCircle className="w-5 h-5" />
+            {!!localStorage.getItem('mutua_unread_message') && (
               <span className="absolute top-1 right-1 w-2 h-2 bg-rose-500 rounded-full" />
             )}
           </button>
