@@ -7,6 +7,7 @@ import TopNav from '@/components/Sidebar';
 import TimezonePickerModal from '@/components/TimezonePickerModal';
 import WeekSlotPicker, { type SessionSlot } from '@/components/WeekSlotPicker';
 import { ArrowLeft } from 'lucide-react';
+import { Avatar } from '@/components/PartnerCard';
 
 // ── Template helpers ───────────────────────────────────────────────────────────
 // Encode as dow*10000+minuteOfDay so we remember which specific days were chosen.
@@ -109,16 +110,49 @@ function SetAvailabilityInner() {
   const [cancelling,   setCancelling]   = useState(false);
   const [result,       setResult]       = useState<{ state: string; scheduledAt?: string | null } | null>(null);
   const [saveError,    setSaveError]    = useState<string | null>(null);
-  const [partnerName,  setPartnerName]  = useState('your partner');
+  const [partnerName,      setPartnerName]      = useState('your partner');
+  const [partnerAvatarUrl, setPartnerAvatarUrl] = useState<string | null>(null);
+  const [partnerNativeLang, setPartnerNativeLang] = useState('');
 
   useEffect(() => {
-    const direct = localStorage.getItem('mutua_scheduling_partner');
-    if (direct) { setPartnerName(direct); return; }
+    // Try localStorage first
     const raw = localStorage.getItem('mutua_current_partner');
     if (raw) {
-      try { const p = JSON.parse(raw); if (p.name) setPartnerName(p.name); } catch {}
+      try {
+        const p = JSON.parse(raw);
+        if (p.name)            setPartnerName(p.name);
+        if (p.avatar_url)      setPartnerAvatarUrl(p.avatar_url);
+        if (p.native_language) setPartnerNativeLang(p.native_language);
+      } catch {}
     }
-  }, []);
+    const direct = localStorage.getItem('mutua_scheduling_partner');
+    if (direct) setPartnerName(direct);
+
+    // Also try to fetch fresh avatar from DB if matchId is available
+    if (matchId) {
+      const sid = localStorage.getItem('mutua_session_id') ?? '';
+      supabase
+        .from('matches')
+        .select('session_id_a, session_id_b')
+        .eq('id', matchId)
+        .maybeSingle()
+        .then(({ data: m }) => {
+          if (!m) return;
+          const partnerId = m.session_id_a === sid ? m.session_id_b : m.session_id_a;
+          supabase
+            .from('profiles')
+            .select('name, avatar_url, native_language')
+            .eq('session_id', partnerId)
+            .maybeSingle()
+            .then(({ data: prof }) => {
+              if (!prof) return;
+              if (prof.name)            setPartnerName(prof.name);
+              if (prof.avatar_url)      setPartnerAvatarUrl(prof.avatar_url);
+              if (prof.native_language) setPartnerNativeLang(prof.native_language);
+            });
+        });
+    }
+  }, [matchId]);
 
   // Load slots: my submitted slots for this match, partner slots, then template as fallback
   useEffect(() => {
@@ -296,9 +330,16 @@ function SetAvailabilityInner() {
             Back
           </button>
 
-          <p className="text-xs font-bold uppercase tracking-widest text-stone-400 mb-1">
-            {schedulingState === 'scheduled' ? `Rescheduling with ${partnerName}` : `Scheduling with ${partnerName}`}
-          </p>
+          {/* Partner identity */}
+          <div className="flex items-center gap-3 mb-4">
+            <Avatar name={partnerName} lang={partnerNativeLang} avatarUrl={partnerAvatarUrl} size="md" />
+            <div>
+              <p className="font-bold text-lg text-neutral-900 leading-tight">{partnerName}</p>
+              <p className="text-sm text-stone-400">
+                {schedulingState === 'scheduled' ? 'Rescheduling a session' : 'Scheduling a session'}
+              </p>
+            </div>
+          </div>
           <h1 className="font-serif font-black text-2xl text-neutral-900">
             When are you free this week?
           </h1>
