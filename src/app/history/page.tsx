@@ -616,8 +616,6 @@ export default function HistoryPage() {
   const [sessions,      setSessions]      = useState<SessionEntry[]>([]);
   const [targetLang,    setTargetLang]    = useState('');
   const [showAll,       setShowAll]       = useState(false);
-  const [scheduleModal, setScheduleModal] = useState<{ name: string; partnerId: string; matchId: string | null } | null>(null);
-  const [rematchState,  setRematchState]  = useState<'idle' | 'loading' | 'sent' | 'matched'>('idle');
   const [reviewModal,   setReviewModal]   = useState<string | null>(null);
   const [myLang,        setMyLang]        = useState('');
   // Live partner profiles keyed by partnerId
@@ -812,9 +810,16 @@ export default function HistoryPage() {
             {weekCta && (
               <button
                 onClick={() => {
-                  if (hasStreak && topPartner) setScheduleModal({ name: topPartner.partnerName, partnerId: topPartner.partnerId, matchId: liveProfiles[topPartner.partnerId]?.matchId ?? null });
-                  else if (partners.length > 0) setScheduleModal({ name: partners[0].partnerName, partnerId: partners[0].partnerId, matchId: liveProfiles[partners[0].partnerId]?.matchId ?? null });
-                  else router.push('/app');
+                  const target = (hasStreak && topPartner) ? topPartner : partners[0];
+                  if (target) {
+                    const matchId = liveProfiles[target.partnerId]?.matchId;
+                    const params = new URLSearchParams({ schedulingState: 'pending_both' });
+                    if (matchId) params.set('matchId', matchId);
+                    localStorage.setItem('mutua_scheduling_partner', target.partnerName);
+                    router.push(`/set-availability?${params.toString()}`);
+                  } else {
+                    router.push('/app');
+                  }
                 }}
                 className="mt-4 px-5 py-2.5 btn-primary text-white text-sm font-semibold rounded-xl"
               >
@@ -901,7 +906,13 @@ export default function HistoryPage() {
                   missed={s.missed}
                   matchId={matchId}
                   onReview={() => { track('review_session_clicked', { partner_name: displayName }); setReviewModal(displayName); }}
-                  onSchedule={() => setScheduleModal({ name: s.partnerName, partnerId: s.partnerId, matchId: liveProfiles[s.partnerId]?.matchId ?? null })}
+                  onSchedule={() => {
+                    const matchId = liveProfiles[s.partnerId]?.matchId;
+                    const params = new URLSearchParams({ schedulingState: 'pending_both' });
+                    if (matchId) params.set('matchId', matchId);
+                    localStorage.setItem('mutua_scheduling_partner', s.partnerName);
+                    router.push(`/set-availability?${params.toString()}`);
+                  }}
                 />
               );
             })}
@@ -940,85 +951,6 @@ export default function HistoryPage() {
         </div>
       )}
 
-      {/* Schedule modal */}
-      {scheduleModal && (() => {
-        const live        = liveProfiles[scheduleModal.partnerId];
-        const name        = live?.name || scheduleModal.name;
-        const avatarUrl   = live?.avatarUrl ?? null;
-        const nativeLang  = live?.nativeLang ?? '';
-        return (
-          <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 px-4 pb-6 sm:pb-0">
-            <div className="bg-white border border-stone-200 rounded-2xl px-5 py-5 w-full max-w-sm relative">
-              {/* Close button */}
-              <button
-                onClick={() => { setScheduleModal(null); setRematchState('idle'); }}
-                className="absolute top-4 right-4 w-7 h-7 flex items-center justify-center rounded-full text-stone-400 hover:text-neutral-700 hover:bg-stone-100 transition-colors"
-                aria-label="Close"
-              >
-                <X className="w-4 h-4" />
-              </button>
-
-              {/* Partner avatar */}
-              <div className="flex justify-center mb-4">
-                <div className="w-12 h-12 rounded-full overflow-hidden shrink-0">
-                  <PartnerAvatar name={name} avatarUrl={avatarUrl} nativeLang={nativeLang} />
-                </div>
-              </div>
-
-              {rematchState === 'sent' || rematchState === 'matched' ? (
-                <>
-                  <p className="font-bold text-neutral-900 mb-1 text-center">
-                    {rematchState === 'matched' ? 'You\'re rematched!' : 'Request sent!'}
-                  </p>
-                  <p className="text-sm text-stone-500 leading-relaxed text-center">
-                    {rematchState === 'matched'
-                      ? `A new session with ${name} is being scheduled.`
-                      : `We'll schedule a session with ${name} once they confirm.`}
-                  </p>
-                  <button onClick={() => { setScheduleModal(null); setRematchState('idle'); }} className="mt-4 w-full py-3 btn-primary text-white font-bold rounded-xl text-sm">
-                    Got it
-                  </button>
-                </>
-              ) : (
-                <>
-                  <p className="font-bold text-neutral-900 mb-1 text-center">Keep the momentum going</p>
-                  <p className="text-sm text-stone-500 leading-relaxed text-center">
-                    We'll match you with {name} again using your current schedule.
-                  </p>
-                  <div className="flex gap-2 mt-4">
-                    <button
-                      onClick={() => {
-                        const matchId = scheduleModal?.matchId;
-                        const params = new URLSearchParams({ schedulingState: 'pending_both' });
-                        if (matchId) params.set('matchId', matchId);
-                        localStorage.setItem('mutua_scheduling_partner', name);
-                        setScheduleModal(null);
-                        router.push(`/set-availability?${params.toString()}`);
-                      }}
-                      className="flex-1 py-3 btn-primary text-white font-bold rounded-xl text-sm"
-                    >
-                      Sounds good
-                    </button>
-                    <button
-                      onClick={() => {
-                        const matchId = scheduleModal?.matchId;
-                        const params = new URLSearchParams({ schedulingState: 'pending_both' });
-                        if (matchId) params.set('matchId', matchId);
-                        localStorage.setItem('mutua_scheduling_partner', name);
-                        setScheduleModal(null);
-                        router.push(`/set-availability?${params.toString()}`);
-                      }}
-                      className="flex-1 py-3 border border-stone-200 bg-white text-stone-500 font-medium rounded-xl text-sm hover:bg-stone-100 transition-colors"
-                    >
-                      Update schedule
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        );
-      })()}
     </AppShell>
   );
 }
