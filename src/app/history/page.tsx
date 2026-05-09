@@ -469,7 +469,9 @@ function PartnerRelationshipCard({ stats, live }: {
 
   return (
     <div className={`bg-white border border-stone-200 rounded-2xl px-4 py-4 flex items-center gap-3 transition-opacity ${fading && !status?.label.includes('consistent') ? 'opacity-60' : ''}`}>
-      <PartnerAvatar name={name} avatarUrl={avatarUrl} nativeLang={nativeLang} />
+      <div className="w-12 h-12 rounded-full overflow-hidden shrink-0">
+        <PartnerAvatar name={name} avatarUrl={avatarUrl} nativeLang={nativeLang} />
+      </div>
       <div className="flex-1 min-w-0">
         {status && (
           <p className={`text-[11px] font-semibold mb-0.5 ${status.cls}`}>
@@ -490,7 +492,7 @@ function PartnerAvatar({ name, avatarUrl, nativeLang }: { name: string; avatarUr
   const initials = name.trim().split(/\s+/).map((w: string) => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
   return (
     <div
-      className="w-12 h-12 rounded-2xl overflow-hidden shrink-0 flex items-center justify-center relative"
+      className="w-full h-full rounded-full overflow-hidden flex items-center justify-center relative"
       style={{ backgroundColor: bg }}
     >
       <span className="text-sm font-bold text-white">{initials}</span>
@@ -538,7 +540,9 @@ function SessionCard({
         </div>
       )}
       <div className="flex items-center gap-4">
-        <PartnerAvatar name={displayName} avatarUrl={avatarUrl} nativeLang={nativeLang} />
+        <div className="w-12 h-12 rounded-full overflow-hidden shrink-0">
+          <PartnerAvatar name={displayName} avatarUrl={avatarUrl} nativeLang={nativeLang} />
+        </div>
 
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-[#171717] text-base leading-tight truncate">{displayName}</p>
@@ -783,7 +787,7 @@ export default function HistoryPage() {
                       const bg       = LANG_AVATAR_COLOR[live?.nativeLang ?? ''] ?? '#3b82f6';
                       const initials = name.trim().slice(0, 2).toUpperCase();
                       return (
-                        <div key={id} className="w-9 h-9 rounded-xl border-2 border-white overflow-hidden shrink-0" style={{ marginLeft: i > 0 ? -12 : 0, zIndex: shown.length - i }}>
+                        <div key={id} className="w-9 h-9 rounded-full border-2 border-white overflow-hidden shrink-0" style={{ marginLeft: i > 0 ? -12 : 0, zIndex: shown.length - i }}>
                           <PartnerAvatar name={name} avatarUrl={live?.avatarUrl ?? null} nativeLang={live?.nativeLang ?? ''} />
                         </div>
                       );
@@ -860,7 +864,7 @@ export default function HistoryPage() {
                 const initials = name.trim().slice(0, 2).toUpperCase();
                 const bg = LANG_AVATAR_COLOR[live?.nativeLang ?? ''] ?? '#3b82f6';
                 return (
-                  <div className="w-7 h-7 rounded-lg overflow-hidden shrink-0">
+                  <div className="w-8 h-8 rounded-full overflow-hidden shrink-0">
                     <PartnerAvatar name={name} avatarUrl={avatarUrl} nativeLang={live?.nativeLang ?? ''} />
                   </div>
                 );
@@ -956,7 +960,9 @@ export default function HistoryPage() {
 
               {/* Partner avatar */}
               <div className="flex justify-center mb-4">
-                <PartnerAvatar name={name} avatarUrl={avatarUrl} nativeLang={nativeLang} />
+                <div className="w-12 h-12 rounded-full overflow-hidden shrink-0">
+                  <PartnerAvatar name={name} avatarUrl={avatarUrl} nativeLang={nativeLang} />
+                </div>
               </div>
 
               {rematchState === 'sent' || rematchState === 'matched' ? (
