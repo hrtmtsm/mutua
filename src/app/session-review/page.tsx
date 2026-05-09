@@ -27,7 +27,7 @@ function AvatarCircle({ name, lang, avatarUrl }: { name: string; lang: string; a
   const initials = name.trim().slice(0, 2).toUpperCase();
   return (
     <div
-      className="w-16 h-16 rounded-full border-4 border-white overflow-hidden flex items-center justify-center font-black text-white text-lg shrink-0"
+      className="w-20 h-20 rounded-full border-4 border-white overflow-hidden flex items-center justify-center font-black text-white text-xl shrink-0"
       style={{ backgroundColor: bg }}
     >
       {avatarUrl && !failed
@@ -120,23 +120,20 @@ export default function SessionReviewPage() {
             <div className="z-10">
               {myAvatar
                 ? <AvatarCircle name={myAvatar.name} lang={myAvatar.lang} avatarUrl={myAvatar.url} />
-                : <div className="w-16 h-16 rounded-full border-4 border-white bg-stone-200" />
+                : <div className="w-20 h-20 rounded-full border-4 border-white bg-stone-200" />
               }
             </div>
-            <div className="-ml-4">
+            <div className="-ml-5">
               {partnerAvatar
                 ? <AvatarCircle name={partnerAvatar.name} lang={partnerAvatar.lang} avatarUrl={partnerAvatar.url} />
-                : <div className="w-16 h-16 rounded-full border-4 border-white bg-stone-300" />
+                : <div className="w-20 h-20 rounded-full border-4 border-white bg-stone-300" />
               }
             </div>
           </div>
 
-          <div className="flex flex-col items-center gap-1">
-            <div className="flex items-center gap-1.5">
-              <span className="text-3xl">🔥</span>
-              <p className="text-4xl font-black text-neutral-900">{formatDuration(duration)}</p>
-            </div>
-            <p className="text-sm text-neutral-400">of practice with {partnerName}</p>
+          <div className="flex items-center gap-1.5">
+            <span className="text-3xl">🔥</span>
+            <p className="text-4xl font-black text-neutral-900">{formatDuration(duration)}</p>
           </div>
         </div>
 
