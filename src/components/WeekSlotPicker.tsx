@@ -221,7 +221,7 @@ export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, b
 
   return (
     <div
-      className="select-none"
+      className="select-none flex flex-col h-full"
       onPointerUp={() => setDragging(null)}
       onPointerLeave={() => setDragging(null)}
     >
@@ -295,7 +295,7 @@ export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, b
       </div>
 
       {/* Time pill grid */}
-      <div ref={scrollRef} className="overflow-y-auto max-h-[55vh]">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto">
         <div
           className="grid gap-2"
           style={{ gridTemplateColumns: `repeat(${visibleCount}, minmax(0, 1fr))` }}

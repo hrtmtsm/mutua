@@ -367,7 +367,7 @@ function SetAvailabilityInner() {
         </div>
 
         {/* Picker */}
-        <div className="flex-1 overflow-y-auto pb-4">
+        <div className="flex-1 overflow-hidden pb-4">
           <WeekSlotPicker
             timezone={timezone}
             partnerSlots={partnerSlots}
