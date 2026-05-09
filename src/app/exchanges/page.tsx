@@ -88,11 +88,11 @@ function SegmentControl({ tabs, active, onChange }: {
           onClick={() => onChange(t.id)}
           className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
             active === t.id
-              ? 'bg-[#171717] text-white'
+              ? 'bg-[#2B8FFF] text-white'
               : 'bg-stone-100 text-stone-500 hover:bg-stone-200'
           }`}
         >
-          {t.label}{t.count > 0 ? ` · ${t.count}` : ''}
+          {t.label}
         </button>
       ))}
     </div>
