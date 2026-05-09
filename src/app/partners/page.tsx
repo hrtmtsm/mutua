@@ -6,6 +6,7 @@ import AppShell from '@/components/AppShell';
 import { supabase } from '@/lib/supabase';
 import { LANG_AVATAR_COLOR } from '@/lib/constants';
 import { ArrowLeft } from 'lucide-react';
+import { markPop } from '@/lib/navigation';
 
 interface SessionEntry {
   partnerName: string;
@@ -186,7 +187,7 @@ export default function PartnersPage() {
     <AppShell>
       <main className="flex-1 max-w-2xl mx-auto w-full pb-10">
         <div className="flex items-center gap-3 px-6 py-4">
-          <button onClick={() => router.back()} className="text-stone-400 hover:text-neutral-700 transition-colors">
+          <button onClick={() => { markPop(); router.back(); }} className="text-stone-400 hover:text-neutral-700 transition-colors">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <h1 className="font-serif font-semibold text-xl text-[#171717]">Partner streaks</h1>

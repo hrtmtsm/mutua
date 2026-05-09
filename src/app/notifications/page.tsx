@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
+import { markPop } from '@/lib/navigation';
 import { supabase } from '@/lib/supabase';
 import { BottomNav } from '@/components/Sidebar';
 
@@ -50,7 +51,7 @@ export default function NotificationsPage() {
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <header className="sticky top-0 z-10 bg-white border-b border-stone-100 flex items-center gap-3 px-4 h-14 shrink-0">
-        <button onClick={() => router.back()} className="p-1.5 -ml-1.5 text-stone-400 hover:text-neutral-700 transition-colors">
+        <button onClick={() => { markPop(); router.back(); }} className="p-1.5 -ml-1.5 text-stone-400 hover:text-neutral-700 transition-colors">
           <ArrowLeft className="w-5 h-5" />
         </button>
         <span className="font-serif font-bold text-xl text-neutral-900">Notifications</span>

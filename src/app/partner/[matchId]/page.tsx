@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { LANG_FLAGS, LANG_AVATAR_COLOR } from '@/lib/constants';
 import AppShell from '@/components/AppShell';
 import { ArrowLeft, MessageCircle, Calendar } from 'lucide-react';
+import { markPop } from '@/lib/navigation';
 
 interface PartnerData {
   name: string;
@@ -125,7 +126,7 @@ export default function PartnerProfilePage() {
 
         {/* Top bar */}
         <div className="flex items-center justify-between px-6 py-4">
-          <button onClick={() => router.back()} className="text-stone-400 hover:text-neutral-700 transition-colors">
+          <button onClick={() => { markPop(); router.back(); }} className="text-stone-400 hover:text-neutral-700 transition-colors">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <button
