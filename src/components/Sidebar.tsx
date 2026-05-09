@@ -584,10 +584,22 @@ export default function TopNav() {
     <header className="sticky top-0 z-20 bg-white border-b border-stone-200/60">
       <div className="max-w-5xl mx-auto px-4 md:px-6 flex items-center h-14">
 
-        {/* Wordmark */}
-        <Link href="/app" className="font-serif font-bold text-xl tracking-tight text-neutral-900 shrink-0">
-          Mutua
-        </Link>
+        {/* Page title */}
+        <span className="font-serif font-bold text-xl tracking-tight text-neutral-900 shrink-0">
+          {(() => {
+            if (pathname === '/app' || pathname.startsWith('/app/')) return 'Home';
+            if (pathname === '/exchanges' || pathname.startsWith('/exchanges/')) return 'Exchanges';
+            if (pathname === '/history' || pathname.startsWith('/history/')) return 'Progress';
+            if (pathname === '/set-availability') return 'Schedule';
+            if (pathname.startsWith('/partner')) return 'Profile';
+            if (pathname.startsWith('/find-match')) return 'Find a Partner';
+            if (pathname.startsWith('/match-result')) return 'Match';
+            if (pathname.startsWith('/session')) return 'Session';
+            if (pathname.startsWith('/onboarding')) return 'Get Started';
+            if (pathname.startsWith('/auth')) return 'Sign In';
+            return 'Mutua';
+          })()}
+        </span>
 
         {/* Nav links — desktop only */}
         <nav className="hidden md:flex items-center gap-1 flex-1 ml-8">
