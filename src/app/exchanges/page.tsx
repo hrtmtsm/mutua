@@ -7,7 +7,7 @@ import { LANG_FLAGS, INTEREST_CATEGORIES, INTEREST_MIGRATION } from '@/lib/const
 import type { SavedPartner } from '@/lib/types';
 import { track } from '@/lib/analytics';
 import AppShell from '@/components/AppShell';
-import { PartnerCardShell, type PartnerCardData } from '@/components/PartnerCard';
+import { Avatar, PartnerCardShell, type PartnerCardData } from '@/components/PartnerCard';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -241,23 +241,68 @@ function UpcomingCardView({ card, onJoin, onReschedule, onViewProfile }: {
 
 // ── Past card ─────────────────────────────────────────────────────────────────
 
-function PastCardView({ card, onReschedule }: { card: PastCard; onReschedule: () => void }) {
-  const date = new Date(card.endedAt).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-  const time = new Date(card.endedAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+function PastCardView({ card, onReview, onReschedule }: {
+  card:         PastCard;
+  onReview:     () => void;
+  onReschedule: () => void;
+}) {
+  const [showOverflow, setShowOverflow] = useState(false);
+  const nativeFlag   = LANG_FLAGS[card.nativeLang]   ?? '';
+  const learningFlag = LANG_FLAGS[card.learningLang] ?? '';
+  const date = new Date(card.endedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
   return (
-    <PartnerCardShell partner={card}>
-      <div className="mb-4">
-        <p className="font-semibold text-[#171717] text-base">{date}</p>
-        <p className="text-sm text-stone-500 mt-0.5">{time} · {fmtDuration(card.durationSecs)}</p>
+    <div className="bg-white rounded-2xl border border-stone-200 px-5 py-4">
+      {/* Header row */}
+      <div className="flex items-center gap-3">
+        <Avatar name={card.name} lang={card.nativeLang} avatarUrl={card.avatarUrl} size="sm" />
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-[#171717] text-sm">{card.name}</p>
+          <div className="flex items-center gap-1 text-xs text-stone-400 mt-0.5">
+            <span>{nativeFlag} {card.nativeLang}</span>
+            <span>↔</span>
+            <span>{learningFlag} {card.learningLang}</span>
+            <span className="text-stone-300">·</span>
+            <span>{date}</span>
+          </div>
+        </div>
+        <div className="relative shrink-0">
+          <button
+            onClick={() => setShowOverflow(v => !v)}
+            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100 transition-colors text-stone-300"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <circle cx="8" cy="3" r="1.4"/><circle cx="8" cy="8" r="1.4"/><circle cx="8" cy="13" r="1.4"/>
+            </svg>
+          </button>
+          {showOverflow && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setShowOverflow(false)} />
+              <div className="absolute right-0 top-9 z-50 bg-white rounded-xl shadow-lg border border-stone-100 py-1 w-44 text-sm">
+                <button onClick={() => { setShowOverflow(false); onReview(); }}     className="w-full px-4 py-2.5 text-left text-neutral-700 hover:bg-stone-50">Review session</button>
+                <button onClick={() => { setShowOverflow(false); onReschedule(); }} className="w-full px-4 py-2.5 text-left text-neutral-700 hover:bg-stone-50">Schedule again</button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
-      <button
-        onClick={onReschedule}
-        className="px-5 py-3 btn-primary text-white text-sm font-semibold rounded-xl"
-      >
-        Schedule again →
-      </button>
-    </PartnerCardShell>
+
+      {/* Actions */}
+      <div className="flex gap-2 mt-4">
+        <button
+          onClick={onReview}
+          className="px-4 py-2.5 btn-primary text-white text-sm font-semibold rounded-xl"
+        >
+          Review session →
+        </button>
+        <button
+          onClick={onReschedule}
+          className="px-4 py-2.5 border border-stone-200 text-sm font-medium text-neutral-600 rounded-xl hover:bg-stone-50 transition-colors"
+        >
+          Schedule again
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -502,6 +547,7 @@ export default function ExchangesPage() {
                   <PastCardView
                     key={card.logId}
                     card={card}
+                    onReview={() => router.push('/session-review')}
                     onReschedule={() => {
                       localStorage.setItem('mutua_scheduling_partner', card.name);
                       router.push('/history');
