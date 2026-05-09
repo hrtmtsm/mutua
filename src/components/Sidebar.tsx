@@ -149,7 +149,7 @@ function MessagesList({
           <button
             key={c.matchId}
             onClick={() => onOpen(c.matchId, c.partnerName)}
-            className="w-full flex items-center gap-3 px-4 py-3 hover:bg-stone-50 transition-colors text-left border-b border-stone-50 last:border-0"
+            className="w-full flex items-center gap-3 px-5 py-4 hover:bg-stone-50 transition-colors text-left border-b border-stone-50 last:border-0"
           >
             {c.avatarUrl
               ? <img src={c.avatarUrl} alt={c.partnerName} className="w-9 h-9 rounded-full object-cover shrink-0" />
@@ -671,7 +671,7 @@ export default function TopNav() {
                     <button
                       key={tab}
                       onClick={() => setInboxTab(tab)}
-                      className={`flex-1 py-3 text-xs font-semibold transition-colors ${
+                      className={`flex-1 py-4 text-xs font-semibold transition-colors ${
                         inboxTab === tab
                           ? 'text-neutral-900 border-b-2 border-neutral-900'
                           : 'text-stone-400 hover:text-neutral-700'
