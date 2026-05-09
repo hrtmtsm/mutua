@@ -37,6 +37,7 @@ interface UpcomingCard extends PartnerCardData {
 interface PastCard extends PartnerCardData {
   logId:        string;
   partnerId:    string;
+  matchId:      string | null;
   durationSecs: number;
   endedAt:      string;
 }
@@ -421,9 +422,18 @@ export default function ExchangesPage() {
           sharedInterests: myInterests.filter(t => pt.includes(t)),
         };
       }
+      // Build a map from partnerId → matchId using already-fetched matches
+      const partnerMatchMap: Record<string, string> = {};
+      for (const m of matches) {
+        const isA = m.session_id_a === sid;
+        const pid = isA ? m.session_id_b : m.session_id_a;
+        partnerMatchMap[pid] = m.id;
+      }
+
       setPast(logs.map(l => ({
         logId:        l.id,
         partnerId:    l.partner_id,
+        matchId:      partnerMatchMap[l.partner_id] ?? null,
         name:         pastMap[l.partner_id]?.name || 'Partner',
         nativeLang:   myNativeLang,
         learningLang: pastMap[l.partner_id]?.nativeLang || '',
@@ -550,7 +560,9 @@ export default function ExchangesPage() {
                     onReview={() => router.push('/session-review')}
                     onReschedule={() => {
                       localStorage.setItem('mutua_scheduling_partner', card.name);
-                      router.push('/history');
+                      const params = new URLSearchParams({ schedulingState: 'pending_both' });
+                      if (card.matchId) params.set('matchId', card.matchId);
+                      router.push(`/set-availability?${params.toString()}`);
                     }}
                   />
                 ))
