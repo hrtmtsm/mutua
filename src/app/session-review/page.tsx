@@ -142,10 +142,13 @@ export default function SessionReviewPage() {
         </div>
 
         {/* Question */}
-        <div className="flex flex-col gap-3">
-          <p className="text-base font-semibold text-neutral-900 text-center">How was this session?</p>
+        <div className="flex flex-col gap-4">
+          <div className="text-center">
+            <p className="text-xl font-bold text-neutral-900">How was this session?</p>
+            <p className="text-sm text-stone-400 mt-1">Select all that apply</p>
+          </div>
 
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-3">
             {OPTIONS.map(opt => {
               const active = selected.has(opt.id);
               return (
