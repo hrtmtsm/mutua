@@ -6,6 +6,7 @@ import { ArrowLeft, Send } from 'lucide-react';
 import { supabase, getMessages, sendMessage, type Message } from '@/lib/supabase';
 import { LANG_AVATAR_COLOR } from '@/lib/constants';
 import { track } from '@/lib/analytics';
+import { markPop } from '@/lib/navigation';
 
 export default function ChatPage() {
   const router  = useRouter();
@@ -111,7 +112,7 @@ export default function ChatPage() {
     <div className="h-screen flex flex-col bg-white">
       {/* Header */}
       <header className="sticky top-0 z-10 bg-white border-b border-stone-100 flex items-center gap-3 px-4 h-14 shrink-0">
-        <button onClick={() => router.back()} className="p-1.5 -ml-1.5 text-stone-400 hover:text-neutral-700 transition-colors">
+        <button onClick={() => { markPop(); router.back(); }} className="p-1.5 -ml-1.5 text-stone-400 hover:text-neutral-700 transition-colors">
           <ArrowLeft className="w-5 h-5" />
         </button>
         {loading ? null : avatarUrl

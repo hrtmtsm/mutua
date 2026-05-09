@@ -2,47 +2,41 @@
 
 import { usePathname } from 'next/navigation';
 import { useLayoutEffect, useRef, useState } from 'react';
+import { consumePop, markPop } from '@/lib/navigation';
 
 const TAB_ROUTES = ['/app', '/exchanges', '/history', '/settings'];
 const isTab = (p: string) => TAB_ROUTES.some(r => p === r || p.startsWith(r + '/'));
 
-// Register BEFORE Next.js processes popstate (capture phase runs first).
-// This ensures _pendingPop is true when React re-renders with the new pathname.
-let _pendingPop = false;
+// Fallback: also catch browser back/forward button (not in-app arrow buttons).
+// popstate fires asynchronously, but this handles the hardware/gesture case.
 if (typeof window !== 'undefined') {
-  window.addEventListener('popstate', () => { _pendingPop = true; }, { capture: true });
+  window.addEventListener('popstate', () => markPop(), { capture: true });
 }
 
 export default function PageTransition({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const prevRef = useRef(pathname);
-  const shouldOverlayRef = useRef(false);
+  const prevPathnameRef = useRef(pathname);
   const [showOverlay, setShowOverlay] = useState(false);
 
-  // Compute direction synchronously during render so enterCls is correct
-  // on the very first paint (useEffect would be too late for CSS animations).
-  const prev = prevRef.current;
+  // Computed synchronously during render so the class applies on the first paint.
+  const prev = prevPathnameRef.current;
   const pathnameChanged = prev !== pathname;
   const isTabSwitch = isTab(prev) && isTab(pathname);
-  let isPop = false;
+  const isPop = pathnameChanged ? consumePop() : false;
 
   if (pathnameChanged) {
-    isPop = _pendingPop;
-    _pendingPop = false;
-    prevRef.current = pathname;
-    shouldOverlayRef.current = isPop && !isTabSwitch;
+    prevPathnameRef.current = pathname;
   }
 
-  // For pop: incoming page has no animation; a white overlay slides right instead.
-  // For push: incoming page slides in from the right.
+  // Push: new page slides in from right.
+  // Pop: no enter animation — white overlay slides out to reveal previous page.
   const enterCls = pathnameChanged && !isTabSwitch && !isPop ? 'page-push-in' : '';
 
-  // Show overlay before first paint so there's no flash of the new page.
   useLayoutEffect(() => {
-    if (shouldOverlayRef.current) {
-      shouldOverlayRef.current = false;
+    if (isPop && !isTabSwitch) {
       setShowOverlay(true);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
   return (

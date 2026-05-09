@@ -8,6 +8,7 @@ import TimezonePickerModal from '@/components/TimezonePickerModal';
 import WeekSlotPicker, { type SessionSlot } from '@/components/WeekSlotPicker';
 import { ArrowLeft } from 'lucide-react';
 import { Avatar } from '@/components/PartnerCard';
+import { markPop } from '@/lib/navigation';
 
 // ── Template helpers ───────────────────────────────────────────────────────────
 // Encode as dow*10000+minuteOfDay so we remember which specific days were chosen.
@@ -324,7 +325,7 @@ function SetAvailabilityInner() {
       {/* Mobile compact header */}
       <div className="md:hidden shrink-0 flex items-center gap-3 px-4 pt-safe pt-4 pb-3 border-b border-stone-100">
         <button
-          onClick={() => router.back()}
+          onClick={() => { markPop(); router.back(); }}
           className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-stone-100 transition-colors text-neutral-700"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -342,7 +343,7 @@ function SetAvailabilityInner() {
         <div className="pt-3 pb-2 shrink-0">
           {/* Desktop back + partner identity */}
           <button
-            onClick={() => router.back()}
+            onClick={() => { markPop(); router.back(); }}
             className="hidden md:flex items-center gap-1.5 text-sm text-stone-400 hover:text-neutral-900 transition-colors mb-6"
           >
             <ArrowLeft className="w-4 h-4" />
