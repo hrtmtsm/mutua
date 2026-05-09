@@ -81,8 +81,15 @@ export async function GET(req: NextRequest) {
     partnerEmail = match.session_id_a === sessionId ? match.email_b : match.email_a;
   }
 
-  const { data: usersData } = await db.auth.admin.listUsers({ perPage: 1000 });
-  const partner = (usersData?.users ?? []).find(u => u.email === partnerEmail);
+  // Fast email → auth UUID lookup via GoTrue admin REST (avoids loading all users)
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const serviceKey  = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  const searchRes   = await fetch(
+    `${supabaseUrl}/auth/v1/admin/users?page=1&per_page=50&filter=${encodeURIComponent(partnerEmail)}`,
+    { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
+  );
+  const searchData  = await searchRes.json().catch(() => ({}));
+  const partner     = (searchData.users ?? []).find((u: { email: string }) => u.email === partnerEmail);
   if (!partner) return NextResponse.json({ slots: [], projected: false });
 
   // Fetch all partner slots for this match (past + future)
