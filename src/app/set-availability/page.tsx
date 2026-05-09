@@ -318,20 +318,38 @@ function SetAvailabilityInner() {
 
   return (
     <div className="h-screen flex flex-col bg-white overflow-hidden">
-      <TopNav />
+      {/* Desktop nav only */}
+      <div className="hidden md:block"><TopNav /></div>
+
+      {/* Mobile compact header */}
+      <div className="md:hidden shrink-0 flex items-center gap-3 px-4 pt-safe pt-4 pb-3 border-b border-stone-100">
+        <button
+          onClick={() => router.back()}
+          className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-stone-100 transition-colors text-neutral-700"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+        <Avatar name={partnerName} lang={partnerNativeLang} avatarUrl={partnerAvatarUrl} size="sm" />
+        <div className="min-w-0">
+          <p className="font-bold text-base text-neutral-900 leading-tight truncate">{partnerName}</p>
+          <p className="text-xs text-stone-400">
+            {schedulingState === 'scheduled' ? 'Rescheduling a session' : 'Scheduling a session'}
+          </p>
+        </div>
+      </div>
 
       <div className="flex-1 flex flex-col overflow-hidden max-w-2xl mx-auto w-full px-6">
         <div className="pt-6 pb-4 shrink-0">
+          {/* Desktop back + partner identity */}
           <button
             onClick={() => router.back()}
-            className="flex items-center gap-1.5 text-sm text-stone-400 hover:text-neutral-900 transition-colors mb-6"
+            className="hidden md:flex items-center gap-1.5 text-sm text-stone-400 hover:text-neutral-900 transition-colors mb-6"
           >
             <ArrowLeft className="w-4 h-4" />
             Back
           </button>
 
-          {/* Partner identity */}
-          <div className="flex items-center gap-3 mb-4">
+          <div className="hidden md:flex items-center gap-3 mb-4">
             <Avatar name={partnerName} lang={partnerNativeLang} avatarUrl={partnerAvatarUrl} size="md" />
             <div>
               <p className="font-bold text-lg text-neutral-900 leading-tight">{partnerName}</p>
@@ -340,7 +358,8 @@ function SetAvailabilityInner() {
               </p>
             </div>
           </div>
-{partnerSlots.length > 0 && overlapCount > 0 && (
+
+          {partnerSlots.length > 0 && overlapCount > 0 && (
             <p className="text-sm text-stone-500 mt-1.5">
               {`You have ${overlapCount} overlapping slot${overlapCount > 1 ? 's' : ''} with ${partnerName}. Hit save to lock it in!`}
             </p>
