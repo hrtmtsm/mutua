@@ -125,13 +125,13 @@ export default function SessionReviewPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <img
               src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f525/512.gif"
               alt="🔥"
-              className="w-10 h-10"
+              className="w-6 h-6"
             />
-            <p className="text-5xl font-black text-neutral-900">{formatDuration(duration)}</p>
+            <p className="text-2xl font-black text-neutral-900">{formatDuration(duration)}</p>
           </div>
         </div>
 
@@ -139,7 +139,6 @@ export default function SessionReviewPage() {
         <div className="flex flex-col gap-4">
           <div className="text-center">
             <p className="text-xl font-bold text-neutral-900">How was this session?</p>
-            <p className="text-sm text-stone-400 mt-1">Pick one</p>
           </div>
 
           <div className="flex flex-col gap-3">
