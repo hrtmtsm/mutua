@@ -27,7 +27,7 @@ function AvatarCircle({ name, lang, avatarUrl }: { name: string; lang: string; a
   const initials = name.trim().slice(0, 2).toUpperCase();
   return (
     <div
-      className="w-28 h-28 rounded-full border-4 border-white overflow-hidden flex items-center justify-center font-black text-white text-2xl shrink-0"
+      className="w-20 h-20 rounded-full border-4 border-white overflow-hidden flex items-center justify-center font-black text-white text-xl shrink-0"
       style={{ backgroundColor: bg }}
     >
       {avatarUrl && !failed
@@ -120,13 +120,13 @@ export default function SessionReviewPage() {
             <div className="z-10">
               {myAvatar
                 ? <AvatarCircle name={myAvatar.name} lang={myAvatar.lang} avatarUrl={myAvatar.url} />
-                : <div className="w-28 h-28 rounded-full border-4 border-white bg-stone-200" />
+                : <div className="w-20 h-20 rounded-full border-4 border-white bg-stone-200" />
               }
             </div>
-            <div className="-ml-6">
+            <div className="-ml-5">
               {partnerAvatar
                 ? <AvatarCircle name={partnerAvatar.name} lang={partnerAvatar.lang} avatarUrl={partnerAvatar.url} />
-                : <div className="w-28 h-28 rounded-full border-4 border-white bg-stone-300" />
+                : <div className="w-20 h-20 rounded-full border-4 border-white bg-stone-300" />
               }
             </div>
           </div>
