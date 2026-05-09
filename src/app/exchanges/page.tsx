@@ -195,7 +195,7 @@ export default function ExchangesPage() {
           frequency:    m.practice_frequency ?? '',
           scheduledAt:  m.scheduled_at!,
           iAmA:         isA,
-          avatarUrl:    profile?.avatar_url ?? `${supabaseUrl}/storage/v1/object/public/avatars/${partnerSid}.jpg`,
+          avatarUrl:    profile?.avatar_url ?? null,
         };
       })
     );

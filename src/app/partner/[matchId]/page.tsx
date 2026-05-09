@@ -79,9 +79,6 @@ export default function PartnerProfilePage() {
       const baseName = isA
         ? (match.name_b ?? match.email_b?.split('@')[0] ?? 'Partner')
         : (match.name_a ?? match.email_a?.split('@')[0] ?? 'Partner');
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-      const storageAvatarUrl = `${supabaseUrl}/storage/v1/object/public/avatars/${partnerSessionId}.jpg`;
-
       setPartner({
         name:             profile?.name ?? baseName,
         nativeLang:       isA ? match.native_language_b : match.native_language_a,
@@ -93,7 +90,7 @@ export default function PartnerProfilePage() {
         bio:              profile?.bio            ?? '',
         schedulingState:  match.scheduling_state  ?? 'pending_both',
         scheduledAt:      match.scheduled_at      ?? null,
-        avatarUrl:        profile?.avatar_url     ?? storageAvatarUrl,
+        avatarUrl:        profile?.avatar_url     ?? null,
       });
 
       setLoading(false);

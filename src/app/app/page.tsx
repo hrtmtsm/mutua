@@ -255,12 +255,9 @@ export default function SessionPage() {
     const partnerInterests = normalizeTags(partnerProfile?.interests);
     const sharedInterests = myInterests.filter(t => partnerInterests.includes(t));
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const storageAvatarUrl = `${supabaseUrl}/storage/v1/object/public/avatars/${partnerSessionId}.jpg`;
-
     const card = partnerFromMatch(m, sid);
     if (partnerProfile?.name) card.name = partnerProfile.name;
-    card.avatarUrl = partnerProfile?.avatar_url ?? storageAvatarUrl;
+    card.avatarUrl = partnerProfile?.avatar_url ?? null;
     card.sharedInterests = sharedInterests;
     card.bio = partnerProfile?.bio ?? undefined;
 
@@ -351,8 +348,7 @@ export default function SessionPage() {
           if (p.avatar_url) myAvatarFromStorage = p.avatar_url;
         } catch { /* ignore */ }
       }
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-      setMyAvatarUrl(myAvatarFromStorage ?? `${supabaseUrl}/storage/v1/object/public/avatars/${sid}.jpg`);
+      setMyAvatarUrl(myAvatarFromStorage ?? null);
 
       // Sync name + interests from localStorage → DB so partner can see them
       if (storedProfile) {

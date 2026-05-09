@@ -171,7 +171,7 @@ export default function PartnersPage() {
       for (const row of (profileRows ?? [])) {
         map[row.session_id] = {
           name:      row.name ?? '',
-          avatarUrl: row.avatar_url ?? `${supabaseUrl}/storage/v1/object/public/avatars/${row.session_id}.jpg`,
+          avatarUrl: row.avatar_url ?? null,
           nativeLang: row.native_language ?? '',
           matchId:   matchMap[row.session_id] ?? null,
         };
