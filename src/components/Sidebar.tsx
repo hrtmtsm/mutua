@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { User, ArrowLeftRight, TrendingUp, Bell, ArrowLeft, Send, Settings, MessageSquarePlus, X, Users, Calendar } from 'lucide-react';
+import { User, ArrowLeftRight, TrendingUp, Bell, ArrowLeft, Send, Settings, MessageSquarePlus, X, Home, Calendar } from 'lucide-react';
 import { LANG_AVATAR_COLOR } from '@/lib/constants';
 import { supabase, getMessages, sendMessage, type Message } from '@/lib/supabase';
 import { track } from '@/lib/analytics';
@@ -11,8 +11,8 @@ import { track } from '@/lib/analytics';
 const BOTTOM_NAV = [
   {
     href: '/app',
-    label: 'Partners',
-    icon: Users,
+    label: 'Home',
+    icon: Home,
     match: ['/app', '/match-result', '/find-match', '/partners', '/partner'],
   },
   {
