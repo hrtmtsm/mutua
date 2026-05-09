@@ -366,15 +366,6 @@ function SetAvailabilityInner() {
           )}
         </div>
 
-        {/* Legend */}
-        {partnerSlots.length > 0 && (
-          <div className="shrink-0 flex items-center justify-center gap-4 pb-2 text-xs text-stone-500">
-            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-[#2B8FFF]/40 inline-block" />You</span>
-            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-amber-300/50 inline-block" />Partner</span>
-            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-emerald-400/50 inline-block" />Overlap</span>
-          </div>
-        )}
-
         {/* Picker */}
         <div className="flex-1 overflow-y-auto pb-4">
           <WeekSlotPicker

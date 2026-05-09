@@ -260,6 +260,21 @@ export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, b
         ))}
       </div>
 
+      {/* Legend above divider */}
+      {partnerSlots && partnerSlots.length > 0 && (
+        <div className="flex items-center justify-center gap-4 mt-3 mb-2 text-xs text-stone-500">
+          <span className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-sm bg-[#2B8FFF] inline-block" />You
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-sm bg-amber-200 inline-block" />Partner
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-sm bg-emerald-200 inline-block" />Overlap
+          </span>
+        </div>
+      )}
+
       {/* Divider + timezone */}
       <div className="border-t border-stone-200 mt-2 mb-2" />
       <div className="flex items-center gap-1.5 text-xs text-stone-500 mb-3">
@@ -330,33 +345,9 @@ export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, b
         </div>
       </div>
 
-      {/* Legend */}
-      {partnerSlots && partnerSlots.length > 0 && (
-        <div className="flex items-center justify-center gap-4 mt-4 text-xs text-stone-500">
-          <span className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-sm bg-[#2B8FFF] inline-block" />You
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-sm bg-amber-200 inline-block" />Partner
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-sm bg-emerald-200 inline-block" />Overlap
-          </span>
-        </div>
-      )}
-
-      {/* Hint / Clear */}
-      {selected.size === 0 ? (
+      {/* Hint */}
+      {selected.size === 0 && (
         <p className="text-xs text-stone-400 mt-3 text-center">Tap any slot to mark when you're free</p>
-      ) : (
-        <div className="flex justify-center mt-3">
-          <button
-            onClick={() => { setSelected(new Set()); onChange([]); }}
-            className="text-xs text-stone-400 hover:text-rose-500 transition-colors"
-          >
-            Clear all
-          </button>
-        </div>
       )}
     </div>
   );
