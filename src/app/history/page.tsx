@@ -683,7 +683,7 @@ export default function HistoryPage() {
       const map: Record<string, { name: string; avatarUrl: string | null; nativeLang: string; matchId: string | null }> = {};
       for (const row of profiles) {
         const avatarUrl = row.avatar_url
-          ?? `${supabaseUrl}/storage/v1/object/public/avatars/${row.session_id}.jpg`;
+          ?? null;
         map[row.session_id] = {
           name:       row.name ?? '',
           avatarUrl,
@@ -784,10 +784,7 @@ export default function HistoryPage() {
                       const initials = name.trim().slice(0, 2).toUpperCase();
                       return (
                         <div key={id} className="w-9 h-9 rounded-xl border-2 border-white overflow-hidden shrink-0" style={{ marginLeft: i > 0 ? -12 : 0, zIndex: shown.length - i }}>
-                          {live?.avatarUrl
-                            ? <img src={live.avatarUrl} alt={name} className="w-full h-full object-cover" />
-                            : <div className="w-full h-full flex items-center justify-center text-white text-xs font-black" style={{ backgroundColor: bg }}>{initials}</div>
-                          }
+                          <PartnerAvatar name={name} avatarUrl={live?.avatarUrl ?? null} nativeLang={live?.nativeLang ?? ''} />
                         </div>
                       );
                     })}
@@ -862,9 +859,11 @@ export default function HistoryPage() {
                 const name = live?.name || topPartner.partnerName;
                 const initials = name.trim().slice(0, 2).toUpperCase();
                 const bg = LANG_AVATAR_COLOR[live?.nativeLang ?? ''] ?? '#3b82f6';
-                return avatarUrl
-                  ? <img src={avatarUrl} alt={name} className="w-7 h-7 rounded-lg object-cover shrink-0" />
-                  : <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-black shrink-0" style={{ backgroundColor: bg }}>{initials}</div>;
+                return (
+                  <div className="w-7 h-7 rounded-lg overflow-hidden shrink-0">
+                    <PartnerAvatar name={name} avatarUrl={avatarUrl} nativeLang={live?.nativeLang ?? ''} />
+                  </div>
+                );
               })() : <span className="text-xl shrink-0">🤝</span>}
               <div>
                 <p className="font-black text-xl text-[#171717] leading-none">{topStreak > 0 ? topStreak : '–'}</p>
