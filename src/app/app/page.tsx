@@ -386,7 +386,7 @@ export default function SessionPage() {
           </div>
         ) : (() => {
           // Scheduled sessions live in Exchanges; missed/past ones in Progress
-          const visible = partners.filter(p => p.schedulingState !== 'scheduled');
+          const visible = partners.filter(p => p.schedulingState === 'pending_both');
 
           if (visible.length === 0) {
             return (
