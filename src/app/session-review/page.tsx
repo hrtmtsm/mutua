@@ -173,9 +173,10 @@ export default function SessionReviewPage() {
         <div className="flex flex-col gap-2">
           <button
             onClick={() => submit(false)}
-            className="w-full py-3.5 btn-primary text-white font-bold rounded-xl text-sm"
+            disabled={!selected && !note.trim()}
+            className="w-full py-3.5 btn-primary text-white font-bold rounded-xl text-sm disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            Done
+            Submit
           </button>
           <button
             onClick={() => submit(true)}
