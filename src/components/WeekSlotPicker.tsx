@@ -264,19 +264,17 @@ export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, b
       <div className="border-t border-stone-200 mb-3" />
 
       {/* Legend */}
-      {partnerSlots && partnerSlots.length > 0 && (
-        <div className="flex items-center gap-5 mb-2 text-xs text-stone-500">
-          <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-sm bg-[#2B8FFF] inline-block" />You
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-sm bg-amber-200 inline-block" />Partner
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-sm bg-emerald-200 inline-block" />Overlap
-          </span>
-        </div>
-      )}
+      <div className="flex items-center gap-5 mb-2 text-xs text-stone-500">
+        <span className="flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-sm bg-[#2B8FFF] inline-block" />You
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-sm bg-amber-200 inline-block" />Partner
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-sm bg-emerald-200 inline-block" />Overlap
+        </span>
+      </div>
 
       {/* Timezone */}
       <div className="flex items-center gap-1.5 text-xs text-stone-400 mb-4">
