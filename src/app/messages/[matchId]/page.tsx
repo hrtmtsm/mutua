@@ -101,8 +101,11 @@ export default function ChatPage() {
     }
   };
 
-  const ini = partnerName.trim().split(/\s+/).reduce((acc, p, i, arr) =>
-    i === 0 || i === arr.length - 1 ? acc + p[0].toUpperCase() : acc, '');
+  const ini = partnerName.trim()
+    ? partnerName.trim().split(/\s+/).filter(Boolean).map((p, i, arr) =>
+        i === 0 || i === arr.length - 1 ? p[0].toUpperCase() : ''
+      ).join('')
+    : '?';
 
   return (
     <div className="h-screen flex flex-col bg-white">
