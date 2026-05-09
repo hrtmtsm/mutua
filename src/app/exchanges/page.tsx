@@ -342,7 +342,7 @@ export default function ExchangesPage() {
         now - new Date(m.scheduled_at).getTime() <= 60 * 60 * 1000
       ) {
         upCards.push({ ...base, matchId: m.id, partnerId, scheduledAt: m.scheduled_at, iAmA: isA });
-      } else if (['pending_both','pending_a','pending_b','computing','no_overlap'].includes(m.scheduling_state ?? '')) {
+      } else if (['pending_a','pending_b','computing','no_overlap'].includes(m.scheduling_state ?? '')) {
         schedCards.push({ ...base, matchId: m.id, partnerId, schedulingState: m.scheduling_state!, iAmA: isA });
       }
     }
