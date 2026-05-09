@@ -1166,8 +1166,8 @@ export default function SessionPage() {
 
       {/* ── End confirmation modal ── */}
       {showEndConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center px-6 z-50">
-          <div className="bg-white rounded-2xl p-7 max-w-sm w-full text-center space-y-4 shadow-xl">
+        <div className="fixed inset-0 bg-black/50 flex items-end justify-center z-50">
+          <div className="bg-white rounded-t-2xl p-7 w-full max-w-lg text-center space-y-4 shadow-xl pb-10">
             <p className="text-xl font-bold text-neutral-900">End exchange?</p>
             <p className="text-sm text-neutral-500">Once you end, you won't be able to rejoin this session.</p>
             <div className="flex flex-col gap-2 pt-1">
