@@ -27,7 +27,7 @@ function AvatarCircle({ name, lang, avatarUrl }: { name: string; lang: string; a
   const initials = name.trim().slice(0, 2).toUpperCase();
   return (
     <div
-      className="w-20 h-20 rounded-full border-4 border-white overflow-hidden flex items-center justify-center font-black text-white text-xl shrink-0"
+      className="w-28 h-28 rounded-full border-4 border-white overflow-hidden flex items-center justify-center font-black text-white text-2xl shrink-0"
       style={{ backgroundColor: bg }}
     >
       {avatarUrl && !failed
@@ -120,20 +120,24 @@ export default function SessionReviewPage() {
             <div className="z-10">
               {myAvatar
                 ? <AvatarCircle name={myAvatar.name} lang={myAvatar.lang} avatarUrl={myAvatar.url} />
-                : <div className="w-20 h-20 rounded-full border-4 border-white bg-stone-200" />
+                : <div className="w-28 h-28 rounded-full border-4 border-white bg-stone-200" />
               }
             </div>
-            <div className="-ml-5">
+            <div className="-ml-6">
               {partnerAvatar
                 ? <AvatarCircle name={partnerAvatar.name} lang={partnerAvatar.lang} avatarUrl={partnerAvatar.url} />
-                : <div className="w-20 h-20 rounded-full border-4 border-white bg-stone-300" />
+                : <div className="w-28 h-28 rounded-full border-4 border-white bg-stone-300" />
               }
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5">
-            <span className="text-3xl">🔥</span>
-            <p className="text-4xl font-black text-neutral-900">{formatDuration(duration)}</p>
+          <div className="flex items-center gap-2">
+            <img
+              src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f525/512.gif"
+              alt="🔥"
+              className="w-10 h-10"
+            />
+            <p className="text-5xl font-black text-neutral-900">{formatDuration(duration)}</p>
           </div>
         </div>
 
