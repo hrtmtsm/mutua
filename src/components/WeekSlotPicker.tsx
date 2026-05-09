@@ -226,11 +226,11 @@ export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, b
       onPointerLeave={() => setDragging(null)}
     >
       {/* Navigation */}
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between mb-4">
         <button
           onClick={() => setDayOffset(o => o - 1)}
           disabled={!canPrev}
-          className="flex items-center gap-1 text-sm text-stone-400 hover:text-neutral-700 disabled:invisible transition-colors"
+          className="flex items-center gap-1 text-sm font-medium text-stone-400 hover:text-neutral-700 disabled:invisible transition-colors"
         >
           <ChevronLeft className="w-4 h-4" />
           Prev
@@ -238,49 +238,53 @@ export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, b
         <button
           onClick={() => setDayOffset(o => o + 1)}
           disabled={!canNext}
-          className="flex items-center gap-1 text-sm text-stone-400 hover:text-neutral-700 disabled:invisible transition-colors"
+          className="flex items-center gap-1 text-sm font-medium text-stone-400 hover:text-neutral-700 disabled:invisible transition-colors"
         >
-          Next 7 days
+          Next
           <ChevronRight className="w-4 h-4" />
         </button>
       </div>
 
       {/* Day headers */}
       <div
-        className="grid gap-1.5 mb-1"
+        className="grid gap-2 mb-4"
         style={{ gridTemplateColumns: `repeat(${visibleCount}, minmax(0, 1fr))` }}
       >
         {visibleDays.map((day, i) => (
           <div key={i} className="text-center">
-            <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wide">
+            <p className="text-[11px] font-semibold text-stone-400 uppercase tracking-widest">
               {visibleCount <= 3 ? DAY_FULL[day.getDay()] : DAY_SHORT[day.getDay()]}
             </p>
-            <p className="text-xs font-bold text-neutral-700 mt-0.5">{day.getMonth() + 1}/{day.getDate()}</p>
+            <p className="text-sm font-bold text-neutral-800 mt-0.5">{day.getMonth() + 1}/{day.getDate()}</p>
           </div>
         ))}
       </div>
 
-      {/* Divider + legend + timezone */}
-      <div className="border-t border-stone-200 mt-1 mb-2" />
+      {/* Divider */}
+      <div className="border-t border-stone-200 mb-3" />
+
+      {/* Legend */}
       {partnerSlots && partnerSlots.length > 0 && (
-        <div className="flex items-center gap-4 mb-1.5 text-xs text-stone-500">
+        <div className="flex items-center gap-5 mb-2 text-xs text-stone-500">
           <span className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-sm bg-[#2B8FFF] inline-block" />You
+            <span className="w-2.5 h-2.5 rounded-sm bg-[#2B8FFF] inline-block" />You
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-sm bg-amber-200 inline-block" />Partner
+            <span className="w-2.5 h-2.5 rounded-sm bg-amber-200 inline-block" />Partner
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-sm bg-emerald-200 inline-block" />Overlap
+            <span className="w-2.5 h-2.5 rounded-sm bg-emerald-200 inline-block" />Overlap
           </span>
         </div>
       )}
-      <div className="flex items-center gap-1.5 text-xs text-stone-500 mb-2">
+
+      {/* Timezone */}
+      <div className="flex items-center gap-1.5 text-xs text-stone-400 mb-4">
         <span>
           In your time zone,{' '}
-          <span className="font-medium text-neutral-700">{timezone.replace(/_/g, ' ')}</span>
+          <span className="font-semibold text-neutral-600">{timezone.replace(/_/g, ' ')}</span>
           {' '}
-          <span className="text-stone-400">
+          <span>
             (GMT{(() => {
               const off = new Intl.DateTimeFormat('en', { timeZone: timezone, timeZoneName: 'shortOffset' }).formatToParts(new Date()).find(p => p.type === 'timeZoneName')?.value ?? '';
               return off.replace('GMT', '') || '+0:00';
@@ -288,14 +292,14 @@ export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, b
           </span>
         </span>
         {onTimezoneChange && (
-          <button onClick={onTimezoneChange} className="text-[#2B8FFF] underline ml-1">Change</button>
+          <button onClick={onTimezoneChange} className="text-[#2B8FFF] font-medium hover:underline ml-1">Change</button>
         )}
       </div>
 
       {/* Time pill grid */}
       <div ref={scrollRef} className="overflow-y-auto max-h-[55vh]">
         <div
-          className="grid gap-1.5"
+          className="grid gap-2"
           style={{ gridTemplateColumns: `repeat(${visibleCount}, minmax(0, 1fr))` }}
         >
           {TIME_ROWS.map(({ label, minuteOfDay }) =>
@@ -307,11 +311,11 @@ export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, b
               const overlap = active && partner;
 
               const cls = blocked
-                ? 'bg-stone-100 text-stone-300 cursor-not-allowed border-transparent'
+                ? 'bg-stone-50 text-stone-300 cursor-not-allowed border-stone-100'
                 : overlap
-                ? 'bg-emerald-100 border-emerald-300 text-emerald-700 font-semibold'
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-700 font-semibold'
                 : active
-                ? 'bg-[#2B8FFF] border-[#2B8FFF] text-white font-semibold'
+                ? 'bg-[#2B8FFF] border-[#2B8FFF] text-white font-semibold shadow-sm'
                 : partner
                 ? 'bg-amber-50 border-amber-200 text-amber-600'
                 : 'bg-white border-stone-200 text-stone-500 hover:border-[#2B8FFF] hover:text-[#2B8FFF] hover:bg-blue-50';
@@ -320,7 +324,7 @@ export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, b
                 return (
                   <div
                     key={`${di}-${minuteOfDay}`}
-                    className={`rounded-xl py-2 text-center text-[11px] border ${cls}`}
+                    className={`rounded-lg py-2.5 text-center text-xs border ${cls}`}
                   >
                     {label}
                   </div>
@@ -333,7 +337,7 @@ export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, b
                   onPointerDown={e => handlePointerDown(e, di, minuteOfDay)}
                   onPointerEnter={e => handlePointerEnter(e, di, minuteOfDay)}
                   onClick={() => handleClick(di, minuteOfDay)}
-                  className={`rounded-xl py-2 text-center text-[11px] border transition-colors ${cls}`}
+                  className={`rounded-lg py-2.5 text-center text-xs border transition-colors ${cls}`}
                 >
                   {label}
                 </button>
