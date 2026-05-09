@@ -23,8 +23,6 @@ function SessionReviewInner() {
   const [matchId,     setMatchId]     = useState<string | null>(null);
   const [userId,      setUserId]      = useState<string | null>(null);
   const [partnerId,   setPartnerId]   = useState<string | null>(null);
-  const [loading,     setLoading]     = useState(false);
-
   useEffect(() => {
     const qPartner = searchParams.get('partner');
     if (qPartner) {
@@ -44,19 +42,15 @@ function SessionReviewInner() {
     if (streakRaw) setStreak(JSON.parse(streakRaw).count ?? 0);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  async function handleRematch(goToSchedule: boolean) {
+  function handleRematch(goToSchedule: boolean) {
     track('rematch_requested', { partner_name: partnerName, go_to_schedule: goToSchedule });
-    setLoading(true);
-    try {
-      if (matchId && userId && partnerId) {
-        await fetch('/api/rematch', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ matchId, userId, partnerId }),
-        });
-      }
-    } catch { /* ignore — still navigate */ }
-    setLoading(false);
+    if (matchId && userId && partnerId) {
+      fetch('/api/rematch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ matchId, userId, partnerId }),
+      }).catch(() => {});
+    }
     router.push(goToSchedule ? '/set-availability' : '/app');
   }
 
@@ -88,15 +82,13 @@ function SessionReviewInner() {
           <div className="flex gap-2 mt-4">
             <button
               onClick={() => handleRematch(false)}
-              disabled={loading}
-              className="flex-1 py-3 btn-primary text-white font-bold rounded-xl text-sm disabled:opacity-50"
+              className="flex-1 py-3 btn-primary text-white font-bold rounded-xl text-sm"
             >
               Sounds good
             </button>
             <button
               onClick={() => handleRematch(true)}
-              disabled={loading}
-              className="flex-1 py-3 border border-stone-200 text-stone-500 font-medium rounded-xl text-sm hover:bg-stone-100 transition-colors disabled:opacity-50"
+              className="flex-1 py-3 border border-stone-200 text-stone-500 font-medium rounded-xl text-sm hover:bg-stone-100 transition-colors"
             >
               Update schedule
             </button>
