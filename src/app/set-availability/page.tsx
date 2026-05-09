@@ -339,7 +339,7 @@ function SetAvailabilityInner() {
       </div>
 
       <div className="flex-1 flex flex-col overflow-hidden max-w-2xl mx-auto w-full px-6">
-        <div className="pt-5 pb-3 shrink-0">
+        <div className="pt-3 pb-2 shrink-0">
           {/* Desktop back + partner identity */}
           <button
             onClick={() => router.back()}

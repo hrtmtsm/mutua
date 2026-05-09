@@ -242,7 +242,7 @@ export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, b
           {visibleDays.map((day, i) => (
             <div key={i} className="text-center">
               <p className="text-[11px] font-semibold text-stone-400 uppercase tracking-widest">
-                {visibleCount <= 3 ? DAY_FULL[day.getDay()] : DAY_SHORT[day.getDay()]}
+                {DAY_SHORT[day.getDay()]}
               </p>
               <p className="text-sm font-bold text-neutral-800 mt-0.5">{day.getMonth() + 1}/{day.getDate()}</p>
             </div>
@@ -262,7 +262,7 @@ export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, b
       <div className="border-t border-stone-200 mb-3" />
 
       {/* Legend */}
-      <div className="flex items-center gap-5 mb-2 text-xs text-stone-500">
+      <div className="flex items-center gap-3 mb-2 text-xs text-stone-500">
         <span className="flex items-center gap-1.5">
           <span className="w-2.5 h-2.5 rounded-sm bg-[#2B8FFF] inline-block" />You
         </span>
