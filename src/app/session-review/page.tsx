@@ -9,7 +9,7 @@ import { LANG_AVATAR_COLOR } from '@/lib/constants';
 const OPTIONS = [
   { id: 'technical',  label: 'Technical issues' },
   { id: 'topics',     label: 'Ran out of things to say' },
-  { id: 'nervous',    label: 'Felt nervous' },
+  { id: 'no_practice', label: "Didn't get to practice my language" },
   { id: 'no_show',    label: "My partner didn't show up :(" },
   { id: 'nothing',    label: 'Nothing, it was great!' },
 ];
