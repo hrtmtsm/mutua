@@ -375,7 +375,7 @@ export default function SessionPage() {
 
   return (
     <AppShell>
-      <main className="flex-1 px-6 py-10 max-w-3xl mx-auto w-full space-y-6">
+      <main className="flex-1 px-6 pt-5 pb-10 md:py-10 max-w-3xl mx-auto w-full space-y-6">
 
         <h1 className="hidden md:block font-serif font-semibold text-2xl text-[#171717]">Your partners</h1>
 
