@@ -987,32 +987,29 @@ export default function HistoryPage() {
                   </p>
                   <div className="flex gap-2 mt-4">
                     <button
-                      disabled={rematchState === 'loading'}
-                      onClick={async () => {
-                        const mySid = localStorage.getItem('mutua_session_id') ?? '';
+                      onClick={() => {
                         const matchId = scheduleModal?.matchId;
-                        const partnerId = scheduleModal?.partnerId;
-                        if (!mySid || !partnerId || !matchId) {
-                          setRematchState('sent'); return;
-                        }
-                        setRematchState('loading');
-                        try {
-                          const res = await fetch('/api/rematch', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ matchId, userId: mySid, partnerId }),
-                          });
-                          const json = await res.json();
-                          setRematchState(json.matched ? 'matched' : 'sent');
-                        } catch {
-                          setRematchState('sent');
-                        }
+                        const params = new URLSearchParams({ schedulingState: 'pending_both' });
+                        if (matchId) params.set('matchId', matchId);
+                        localStorage.setItem('mutua_scheduling_partner', name);
+                        setScheduleModal(null);
+                        router.push(`/set-availability?${params.toString()}`);
                       }}
-                      className="flex-1 py-3 btn-primary text-white font-bold rounded-xl text-sm disabled:opacity-50"
+                      className="flex-1 py-3 btn-primary text-white font-bold rounded-xl text-sm"
                     >
-                      {rematchState === 'loading' ? 'Sending…' : 'Sounds good'}
+                      Sounds good
                     </button>
-                    <button onClick={() => router.push('/set-availability')} className="flex-1 py-3 border border-stone-200 bg-white text-stone-500 font-medium rounded-xl text-sm hover:bg-stone-100 transition-colors">
+                    <button
+                      onClick={() => {
+                        const matchId = scheduleModal?.matchId;
+                        const params = new URLSearchParams({ schedulingState: 'pending_both' });
+                        if (matchId) params.set('matchId', matchId);
+                        localStorage.setItem('mutua_scheduling_partner', name);
+                        setScheduleModal(null);
+                        router.push(`/set-availability?${params.toString()}`);
+                      }}
+                      className="flex-1 py-3 border border-stone-200 bg-white text-stone-500 font-medium rounded-xl text-sm hover:bg-stone-100 transition-colors"
+                    >
                       Update schedule
                     </button>
                   </div>
