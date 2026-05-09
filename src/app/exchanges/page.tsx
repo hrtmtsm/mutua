@@ -88,7 +88,7 @@ function SegmentControl({ tabs, active, onChange }: {
           onClick={() => onChange(t.id)}
           className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
             active === t.id
-              ? 'bg-[#2B8FFF] text-white'
+              ? 'bg-sky-50 text-[#2B8FFF]'
               : 'bg-stone-100 text-stone-500 hover:bg-stone-200'
           }`}
         >
