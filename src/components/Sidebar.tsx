@@ -662,7 +662,7 @@ export default function TopNav() {
 
           {/* Dropdown */}
           {inboxOpen && (
-            <div className="absolute top-14 right-0 w-[420px] bg-white border border-stone-200 rounded-2xl shadow-xl overflow-hidden z-30">
+            <div className="absolute top-14 right-10 w-[420px] bg-white border border-stone-200 rounded-2xl shadow-xl overflow-hidden z-30">
 
               {/* Tabs — hidden when in chat view */}
               {msgView === 'list' && (
