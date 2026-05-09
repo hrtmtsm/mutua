@@ -504,7 +504,6 @@ export default function SessionPage() {
       duration:    durationMins,
       date:        new Date().toISOString(),
     };
-    localStorage.setItem('mutua_last_session', JSON.stringify({ ...sessionEntry, duration: seconds, matchId: matchId ?? null }));
     const history = JSON.parse(localStorage.getItem('mutua_history') ?? '[]');
     history.unshift(sessionEntry);
     localStorage.setItem('mutua_history', JSON.stringify(history.slice(0, 50)));
@@ -534,7 +533,7 @@ export default function SessionPage() {
     });
 
     localStorage.removeItem('mutua_match');
-    router.push('/session-review');
+    router.push('/app');
   }, [router, seconds, match]);
 
   const handleSwitchTurn = useCallback(() => {
