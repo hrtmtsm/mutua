@@ -310,6 +310,11 @@ export default function TopNav() {
   const { pathname, initials, name, avatarBg, avatarUrl, hasUnread, setHasUnread, hasRematchBadge } = useNavState();
   const [inboxOpen, setInboxOpen] = useState(false);
   const [inboxTab, setInboxTab]   = useState<'notifications' | 'messages'>('notifications');
+
+  useEffect(() => {
+    document.body.style.overflow = inboxOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [inboxOpen]);
   const [msgView, setMsgView]     = useState<'list' | 'chat'>('list');
   const inboxRef = useRef<HTMLDivElement>(null);
 
