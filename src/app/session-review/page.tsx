@@ -22,6 +22,7 @@ function formatDuration(s: number) {
 export default function SessionReviewPage() {
   const router = useRouter();
   const [selected,    setSelected]    = useState<Set<string>>(new Set());
+  const [note,        setNote]        = useState('');
   const [duration,    setDuration]    = useState(0);
   const [partnerName, setPartnerName] = useState('your partner');
   const [matchId,     setMatchId]     = useState<string | null>(null);
@@ -52,15 +53,17 @@ export default function SessionReviewPage() {
     });
   }
 
-  function handleDone() {
-    track('session_feedback', {
-      friction:     Array.from(selected),
-      partner_name: partnerName,
-      duration_secs: duration,
-      match_id:     matchId,
-    });
+  function submit(skipped: boolean) {
+    if (!skipped) {
+      track('session_feedback', {
+        tags:         Array.from(selected),
+        note:         note.trim(),
+        partner_name: partnerName,
+        duration_secs: duration,
+        match_id:     matchId,
+      });
+    }
 
-    // Fire-and-forget rematch
     if (matchId && userId && partnerId) {
       fetch('/api/rematch', {
         method:  'POST',
@@ -74,7 +77,7 @@ export default function SessionReviewPage() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center px-6 py-10">
-      <div className="w-full max-w-sm flex flex-col gap-8">
+      <div className="w-full max-w-sm flex flex-col gap-7">
 
         {/* Duration */}
         <div className="flex flex-col items-center gap-2 text-center">
@@ -85,7 +88,9 @@ export default function SessionReviewPage() {
 
         {/* Question */}
         <div className="flex flex-col gap-3">
-          <p className="text-base font-semibold text-neutral-900 text-center">What held you back today?</p>
+          <p className="text-base font-semibold text-neutral-900 text-center">How was this session?</p>
+
+          {/* Chips */}
           <div className="flex flex-col gap-2">
             {OPTIONS.map(opt => {
               const active = selected.has(opt.id);
@@ -104,15 +109,32 @@ export default function SessionReviewPage() {
               );
             })}
           </div>
+
+          {/* Free-text */}
+          <textarea
+            value={note}
+            onChange={e => setNote(e.target.value)}
+            placeholder="Anything else you want to share? (optional)"
+            rows={3}
+            className="w-full px-4 py-3 rounded-xl border border-stone-200 text-sm text-neutral-700 placeholder:text-stone-400 resize-none focus:outline-none focus:ring-2 focus:ring-[#2B8FFF]/30"
+          />
         </div>
 
-        {/* Done */}
-        <button
-          onClick={handleDone}
-          className="w-full py-3.5 btn-primary text-white font-bold rounded-xl text-sm"
-        >
-          Done
-        </button>
+        {/* Actions */}
+        <div className="flex flex-col gap-2">
+          <button
+            onClick={() => submit(false)}
+            className="w-full py-3.5 btn-primary text-white font-bold rounded-xl text-sm"
+          >
+            Done
+          </button>
+          <button
+            onClick={() => submit(true)}
+            className="w-full py-2 text-sm text-stone-400 hover:text-stone-600 transition-colors"
+          >
+            Skip
+          </button>
+        </div>
 
       </div>
     </div>
