@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase, getMatchesBySessionId, type Match } from '@/lib/supabase';
+import { supabase, getMatchesBySessionId } from '@/lib/supabase';
 import { LANG_FLAGS, LANG_AVATAR_COLOR } from '@/lib/constants';
 import type { SavedPartner } from '@/lib/types';
 import { track } from '@/lib/analytics';
@@ -10,23 +10,29 @@ import AppShell from '@/components/AppShell';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-interface PartnerInfo {
+type Tab = 'upcoming' | 'scheduling' | 'past';
+
+interface SchedulingCard {
+  matchId: string;
+  partnerId: string;
   name: string;
   nativeLang: string;
   learningLang: string;
   avatarUrl: string | null;
-}
-
-interface SchedulingCard extends PartnerInfo {
-  matchId: string;
-  partnerId: string;
   schedulingState: string;
   iAmA: boolean;
+  goal: string;
+  commStyle: string;
+  frequency: string;
 }
 
-interface UpcomingCard extends PartnerInfo {
+interface UpcomingCard {
   matchId: string;
   partnerId: string;
+  name: string;
+  nativeLang: string;
+  learningLang: string;
+  avatarUrl: string | null;
   scheduledAt: string;
   goal: string;
   commStyle: string;
@@ -39,6 +45,7 @@ interface PastCard {
   partnerId: string;
   name: string;
   nativeLang: string;
+  learningLang: string;
   avatarUrl: string | null;
   durationSecs: number;
   endedAt: string;
@@ -46,13 +53,15 @@ interface PastCard {
 
 // ── Avatar ────────────────────────────────────────────────────────────────────
 
-function Avatar({ name, lang, avatarUrl, size = 'md' }: { name: string; lang: string; avatarUrl?: string | null; size?: 'sm' | 'md' }) {
+function Avatar({ name, lang, avatarUrl }: { name: string; lang: string; avatarUrl?: string | null }) {
   const bg = LANG_AVATAR_COLOR[lang] ?? '#3b82f6';
   const [failed, setFailed] = useState(false);
-  const initials = (() => { const p = name.trim().split(/\s+/); return (p.length >= 2 ? p[0][0] + p[p.length - 1][0] : name.trim().slice(0, 2)).toUpperCase(); })();
-  const sz = size === 'sm' ? 'w-10 h-10 text-sm' : 'w-14 h-14 text-lg';
+  const initials = (() => {
+    const p = name.trim().split(/\s+/);
+    return (p.length >= 2 ? p[0][0] + p[p.length - 1][0] : name.trim().slice(0, 2)).toUpperCase();
+  })();
   return (
-    <div style={{ backgroundColor: bg }} className={`${sz} rounded-full flex items-center justify-center font-black text-white shrink-0 overflow-hidden relative`}>
+    <div style={{ backgroundColor: bg }} className="w-14 h-14 rounded-full flex items-center justify-center font-black text-white text-lg shrink-0 overflow-hidden relative">
       <span className="select-none">{initials}</span>
       {avatarUrl && !failed && (
         <img src={avatarUrl} alt={name} className="absolute inset-0 w-full h-full object-cover" onError={() => setFailed(true)} />
@@ -61,14 +70,17 @@ function Avatar({ name, lang, avatarUrl, size = 'md' }: { name: string; lang: st
   );
 }
 
-// ── Scheduling card ───────────────────────────────────────────────────────────
+// ── Chip ─────────────────────────────────────────────────────────────────────
 
-function schedulingLabel(state: string, iAmA: boolean, iNeedToAct: boolean): { status: string; cta: string | null } {
-  if (state === 'no_overlap')   return { status: 'No overlap found', cta: 'Try different times →' };
-  if (state === 'computing')    return { status: 'Finding a time...', cta: null };
-  if (iNeedToAct)               return { status: 'Set your availability', cta: 'Set availability →' };
-  return { status: 'Waiting for them', cta: null };
+function Chip({ label }: { label: string }) {
+  return (
+    <span className="inline-flex items-center px-3 py-1 rounded-full bg-stone-100 text-stone-600 text-xs font-medium">
+      {label}
+    </span>
+  );
 }
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function needsMyAction(state: string, iAmA: boolean): boolean {
   if (state === 'pending_both') return true;
@@ -77,42 +89,100 @@ function needsMyAction(state: string, iAmA: boolean): boolean {
   return false;
 }
 
+function isJoinable(scheduledAt: string, now: number): boolean {
+  const t = new Date(scheduledAt).getTime();
+  return (t - now) <= 30 * 60 * 1000 && (now - t) <= 60 * 60 * 1000;
+}
+
+function fmtDuration(secs: number) {
+  const m = Math.floor(secs / 60);
+  return m > 0 ? `${m}m` : `${secs}s`;
+}
+
+// ── Segment control ───────────────────────────────────────────────────────────
+
+function SegmentControl({ tabs, active, onChange }: {
+  tabs: { id: Tab; label: string; count: number }[];
+  active: Tab;
+  onChange: (t: Tab) => void;
+}) {
+  return (
+    <div className="flex bg-stone-100 rounded-xl p-1 gap-1">
+      {tabs.map(t => (
+        <button
+          key={t.id}
+          onClick={() => onChange(t.id)}
+          className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${
+            active === t.id
+              ? 'bg-white shadow-sm text-[#171717]'
+              : 'text-stone-400 hover:text-stone-600'
+          }`}
+        >
+          {t.label}{t.count > 0 ? ` · ${t.count}` : ''}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ── Scheduling card ───────────────────────────────────────────────────────────
+
 function SchedulingCard({ card, onSetAvailability }: { card: SchedulingCard; onSetAvailability: () => void }) {
   const iNeedToAct = needsMyAction(card.schedulingState, card.iAmA);
-  const { status, cta } = schedulingLabel(card.schedulingState, card.iAmA, iNeedToAct);
   const nativeFlag   = LANG_FLAGS[card.nativeLang]   ?? '';
   const learningFlag = LANG_FLAGS[card.learningLang] ?? '';
 
+  const statusLine =
+    card.schedulingState === 'no_overlap'  ? 'No overlap found — try different times' :
+    card.schedulingState === 'computing'   ? 'Finding a time that works...' :
+    iNeedToAct                             ? "Set your availability to find a time" :
+                                             "Waiting for them to set availability";
+
+  const ctaLabel =
+    card.schedulingState === 'no_overlap'  ? 'Try different times →' :
+    iNeedToAct                             ? 'Set availability →' :
+                                             null;
+
+  const chips = [card.goal, card.commStyle, card.frequency].filter(Boolean);
+
   return (
-    <div className="bg-white border border-stone-200 rounded-2xl px-5 py-4 flex items-center gap-4">
-      <Avatar name={card.name} lang={card.nativeLang} avatarUrl={card.avatarUrl} />
-      <div className="flex-1 min-w-0">
-        <p className="font-semibold text-[#171717] text-base truncate">{card.name}</p>
-        <div className="flex items-center gap-1 text-xs text-stone-400 mt-0.5">
-          <span>{nativeFlag} {card.nativeLang}</span>
-          <span className="text-stone-300">↔</span>
-          <span>{learningFlag} {card.learningLang}</span>
+    <div className="bg-white rounded-2xl border border-stone-200 px-5 pt-5 pb-5">
+      <div className="flex items-start gap-4">
+        <Avatar name={card.name} lang={card.nativeLang} avatarUrl={card.avatarUrl} />
+        <div className="flex-1 min-w-0">
+          <p className="font-bold text-[#171717] text-lg leading-tight truncate">{card.name}</p>
+          <div className="flex items-center gap-1 text-sm text-stone-400 mt-0.5">
+            <span>{nativeFlag} {card.nativeLang}</span>
+            <span className="text-stone-300 mx-0.5">↔</span>
+            <span>{learningFlag} {card.learningLang}</span>
+          </div>
         </div>
-        <p className="text-xs text-stone-400 mt-1">{status}</p>
       </div>
-      {cta && (
+
+      <p className="text-sm text-stone-500 mt-4 leading-relaxed">{statusLine}</p>
+
+      {chips.length > 0 && (
+        <div className="mt-3">
+          <p className="text-xs text-stone-400 mb-2">In common</p>
+          <div className="flex flex-wrap gap-2">
+            {chips.map(c => <Chip key={c} label={c} />)}
+          </div>
+        </div>
+      )}
+
+      {ctaLabel && (
         <button
           onClick={onSetAvailability}
-          className="shrink-0 px-3 py-2 btn-primary text-white text-xs font-semibold rounded-xl whitespace-nowrap"
+          className="mt-4 px-4 py-3 btn-primary text-white text-sm font-semibold rounded-xl"
         >
-          {cta}
+          {ctaLabel}
         </button>
       )}
     </div>
   );
 }
 
-// ── Upcoming card (ticket) ────────────────────────────────────────────────────
-
-function isJoinable(scheduledAt: string, now: number): boolean {
-  const t = new Date(scheduledAt).getTime();
-  return (t - now) <= 30 * 60 * 1000 && (now - t) <= 60 * 60 * 1000;
-}
+// ── Upcoming card ─────────────────────────────────────────────────────────────
 
 function UpcomingCard({
   card,
@@ -148,59 +218,75 @@ function UpcomingCard({
     : isSoon   ? { label: '● Starting soon', cls: 'bg-amber-50 text-amber-600' }
     :            { label: 'Upcoming',         cls: 'bg-blue-50 text-blue-600' };
 
+  const chips = [card.goal, card.commStyle, card.frequency].filter(Boolean);
+
   return (
-    <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden">
-      <div className="px-6 pt-5 pb-4 border-b border-dashed border-stone-200">
-        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold mb-3 ${statusPill.cls}`}>
-          {statusPill.label}
-        </span>
-        <div className="flex items-center gap-4">
-          <Avatar name={card.name} lang={card.nativeLang} avatarUrl={card.avatarUrl} />
-          <div className="flex-1 min-w-0">
-            <p className="font-serif font-bold text-[#171717] text-2xl leading-tight">{card.name}</p>
-            <div className="flex items-center gap-1.5 mt-1 text-sm text-stone-400">
-              <span>{nativeFlag} {card.nativeLang}</span>
-              <span className="text-stone-300">↔</span>
-              <span>{learningFlag} {card.learningLang}</span>
-            </div>
+    <div className="bg-white rounded-2xl border border-stone-200 px-5 pt-5 pb-5">
+      {/* Header */}
+      <div className="flex items-start gap-4">
+        <Avatar name={card.name} lang={card.nativeLang} avatarUrl={card.avatarUrl} />
+        <div className="flex-1 min-w-0">
+          <p className="font-bold text-[#171717] text-lg leading-tight truncate">{card.name}</p>
+          <div className="flex items-center gap-1 text-sm text-stone-400 mt-0.5">
+            <span>{nativeFlag} {card.nativeLang}</span>
+            <span className="text-stone-300 mx-0.5">↔</span>
+            <span>{learningFlag} {card.learningLang}</span>
           </div>
-          <div className="relative shrink-0">
-            <button onClick={() => setShowOverflow(v => !v)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100 transition-colors text-stone-300">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                <circle cx="8" cy="3" r="1.4"/><circle cx="8" cy="8" r="1.4"/><circle cx="8" cy="13" r="1.4"/>
-              </svg>
-            </button>
-            {showOverflow && (
-              <>
-                <div className="fixed inset-0 z-40" onClick={() => setShowOverflow(false)} />
-                <div className="absolute right-0 top-9 z-50 bg-white rounded-xl shadow-lg border border-stone-100 py-1 w-44 text-sm">
-                  <button onClick={() => { setShowOverflow(false); onViewProfile(); }} className="w-full px-4 py-2.5 text-left text-neutral-700 hover:bg-stone-50">View profile</button>
-                  <button onClick={() => { setShowOverflow(false); window.dispatchEvent(new CustomEvent('mutua:open-chat', { detail: { matchId: card.matchId } })); }} className="w-full px-4 py-2.5 text-left text-neutral-700 hover:bg-stone-50">Say hi 👋</button>
-                  <button onClick={() => { setShowOverflow(false); onReschedule(); }} className="w-full px-4 py-2.5 text-left text-neutral-700 hover:bg-stone-50">Reschedule</button>
-                </div>
-              </>
-            )}
-          </div>
+        </div>
+        <div className="relative shrink-0">
+          <button
+            onClick={() => setShowOverflow(v => !v)}
+            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100 transition-colors text-stone-300"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <circle cx="8" cy="3" r="1.4"/><circle cx="8" cy="8" r="1.4"/><circle cx="8" cy="13" r="1.4"/>
+            </svg>
+          </button>
+          {showOverflow && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setShowOverflow(false)} />
+              <div className="absolute right-0 top-9 z-50 bg-white rounded-xl shadow-lg border border-stone-100 py-1 w-44 text-sm">
+                <button onClick={() => { setShowOverflow(false); onViewProfile(); }} className="w-full px-4 py-2.5 text-left text-neutral-700 hover:bg-stone-50">View profile</button>
+                <button onClick={() => { setShowOverflow(false); window.dispatchEvent(new CustomEvent('mutua:open-chat', { detail: { matchId: card.matchId } })); }} className="w-full px-4 py-2.5 text-left text-neutral-700 hover:bg-stone-50">Say hi</button>
+                <button onClick={() => { setShowOverflow(false); onReschedule(); }} className="w-full px-4 py-2.5 text-left text-neutral-700 hover:bg-stone-50">Reschedule</button>
+              </div>
+            </>
+          )}
         </div>
       </div>
-      <div className="px-6 py-5">
-        <p className="text-xs text-stone-400 font-medium mb-1">{sessionPassed ? 'Session passed' : 'Session time'}</p>
-        <p className="font-serif font-bold text-[#171717] text-2xl leading-snug">{dateLine}</p>
-        <p className="text-lg font-semibold text-stone-500 mt-0.5">{timeLine}</p>
-        <div className="flex gap-2 mt-5">
-          <button
-            onClick={() => window.dispatchEvent(new CustomEvent('mutua:open-chat', { detail: { matchId: card.matchId } }))}
-            className="px-4 py-3 border border-stone-200 bg-white text-sm text-neutral-500 font-medium rounded-xl hover:bg-stone-50 transition-colors"
-          >
-            Say hi 👋
-          </button>
-          <button
-            onClick={sessionPassed ? onReschedule : onJoin}
-            className="px-5 py-3 btn-primary text-white text-sm font-semibold rounded-xl"
-          >
-            {sessionPassed ? 'Reschedule →' : isLive ? 'Join now →' : 'Start exchange →'}
-          </button>
+
+      {/* Status + date */}
+      <div className="mt-4">
+        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${statusPill.cls}`}>
+          {statusPill.label}
+        </span>
+        <p className="font-semibold text-[#171717] text-base mt-2">{dateLine}</p>
+        <p className="text-sm text-stone-500 mt-0.5">{timeLine}</p>
+      </div>
+
+      {chips.length > 0 && (
+        <div className="mt-4">
+          <p className="text-xs text-stone-400 mb-2">In common</p>
+          <div className="flex flex-wrap gap-2">
+            {chips.map(c => <Chip key={c} label={c} />)}
+          </div>
         </div>
+      )}
+
+      {/* Actions */}
+      <div className="flex gap-2 mt-4">
+        <button
+          onClick={() => window.dispatchEvent(new CustomEvent('mutua:open-chat', { detail: { matchId: card.matchId } }))}
+          className="px-4 py-3 border border-stone-200 bg-white text-sm text-neutral-500 font-medium rounded-xl hover:bg-stone-50 transition-colors"
+        >
+          Say hi
+        </button>
+        <button
+          onClick={sessionPassed ? onReschedule : onJoin}
+          className="px-5 py-3 btn-primary text-white text-sm font-semibold rounded-xl"
+        >
+          {sessionPassed ? 'Reschedule →' : isLive ? 'Join now →' : 'Start exchange →'}
+        </button>
       </div>
     </div>
   );
@@ -209,32 +295,36 @@ function UpcomingCard({
 // ── Past card ─────────────────────────────────────────────────────────────────
 
 function PastCard({ card, onReschedule }: { card: PastCard; onReschedule: () => void }) {
-  const mins = Math.round(card.durationSecs / 60);
-  const date = new Date(card.endedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const nativeFlag   = LANG_FLAGS[card.nativeLang]   ?? '';
+  const learningFlag = LANG_FLAGS[card.learningLang] ?? '';
+  const date = new Date(card.endedAt).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  const time = new Date(card.endedAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
   return (
-    <div className="bg-white border border-stone-200 rounded-2xl px-5 py-4 flex items-center gap-4">
-      <Avatar name={card.name} lang={card.nativeLang} avatarUrl={card.avatarUrl} size="sm" />
-      <div className="flex-1 min-w-0">
-        <p className="font-semibold text-[#171717] text-sm truncate">{card.name}</p>
-        <p className="text-xs text-stone-400 mt-0.5">{date} · {mins > 0 ? `${mins}m` : `${card.durationSecs}s`}</p>
+    <div className="bg-white rounded-2xl border border-stone-200 px-5 pt-5 pb-5">
+      <div className="flex items-start gap-4">
+        <Avatar name={card.name} lang={card.nativeLang} avatarUrl={card.avatarUrl} />
+        <div className="flex-1 min-w-0">
+          <p className="font-bold text-[#171717] text-lg leading-tight truncate">{card.name}</p>
+          <div className="flex items-center gap-1 text-sm text-stone-400 mt-0.5">
+            <span>{nativeFlag} {card.nativeLang}</span>
+            <span className="text-stone-300 mx-0.5">↔</span>
+            <span>{learningFlag} {card.learningLang}</span>
+          </div>
+        </div>
       </div>
+
+      <div className="mt-4">
+        <p className="font-semibold text-[#171717] text-base">{date}</p>
+        <p className="text-sm text-stone-500 mt-0.5">{time} · {fmtDuration(card.durationSecs)}</p>
+      </div>
+
       <button
         onClick={onReschedule}
-        className="shrink-0 px-3 py-2 border border-stone-200 text-xs font-medium text-neutral-600 rounded-xl hover:bg-stone-50 transition-colors"
+        className="mt-4 px-4 py-3 border border-stone-200 bg-white text-sm text-neutral-600 font-medium rounded-xl hover:bg-stone-50 transition-colors"
       >
-        Schedule again
+        Schedule again →
       </button>
-    </div>
-  );
-}
-
-// ── Section header ────────────────────────────────────────────────────────────
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="space-y-3">
-      <p className="text-xs font-semibold text-stone-400 uppercase tracking-wide">{title}</p>
-      {children}
     </div>
   );
 }
@@ -244,16 +334,28 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 export default function ExchangesPage() {
   const router = useRouter();
   const [sessionId,  setSessionId]  = useState<string | null>(null);
+  const [myNativeLang, setMyNativeLang] = useState('');
   const [scheduling, setScheduling] = useState<SchedulingCard[]>([]);
   const [upcoming,   setUpcoming]   = useState<UpcomingCard[]>([]);
   const [past,       setPast]       = useState<PastCard[]>([]);
   const [loading,    setLoading]    = useState(true);
+  const [activeTab,  setActiveTab]  = useState<Tab>('upcoming');
 
   const load = useCallback(async (sid: string) => {
     const now = Date.now();
+
+    // Fetch user's own native language for Past card display
+    const { data: myProfile } = await supabase
+      .from('profiles')
+      .select('native_language')
+      .eq('session_id', sid)
+      .maybeSingle();
+    const myLang = myProfile?.native_language ?? '';
+    setMyNativeLang(myLang);
+
     const matches = await getMatchesBySessionId(sid);
 
-    // Fetch partner profiles in one batch
+    // Batch fetch partner profiles
     const partnerIds = matches.map(m => m.session_id_a === sid ? m.session_id_b : m.session_id_a);
     const { data: profiles } = await supabase
       .from('profiles')
@@ -268,15 +370,17 @@ export default function ExchangesPage() {
     const upCards: UpcomingCard[]      = [];
 
     for (const m of matches) {
-      const isA       = m.session_id_a === sid;
-      const partnerId = isA ? m.session_id_b : m.session_id_a;
-      const prof      = profileMap[partnerId];
-      const name      = prof?.name || (isA ? (m.name_b ?? 'Partner') : (m.name_a ?? 'Partner'));
+      const isA        = m.session_id_a === sid;
+      const partnerId  = isA ? m.session_id_b : m.session_id_a;
+      const prof       = profileMap[partnerId];
+      const name       = prof?.name || (isA ? (m.name_b ?? 'Partner') : (m.name_a ?? 'Partner'));
       const nativeLang   = isA ? (m.native_language_b ?? '') : (m.native_language_a ?? '');
       const learningLang = isA ? (m.native_language_a ?? '') : (m.native_language_b ?? '');
 
-      if (m.scheduling_state === 'scheduled' && m.scheduled_at &&
-          now - new Date(m.scheduled_at).getTime() <= 60 * 60 * 1000) {
+      if (
+        m.scheduling_state === 'scheduled' && m.scheduled_at &&
+        now - new Date(m.scheduled_at).getTime() <= 60 * 60 * 1000
+      ) {
         upCards.push({
           matchId: m.id, partnerId, name,
           nativeLang, learningLang,
@@ -294,6 +398,9 @@ export default function ExchangesPage() {
           avatarUrl:       prof?.avatarUrl ?? null,
           schedulingState: m.scheduling_state!,
           iAmA: isA,
+          goal:      m.goal ?? '',
+          commStyle: m.comm_style ?? '',
+          frequency: m.practice_frequency ?? '',
         });
       }
     }
@@ -316,16 +423,17 @@ export default function ExchangesPage() {
         .from('profiles')
         .select('session_id, name, avatar_url, native_language')
         .in('session_id', pastPartnerIds);
-      const pastProfileMap: Record<string, { name: string; avatarUrl: string | null; nativeLang: string }> = {};
+      const pastMap: Record<string, { name: string; avatarUrl: string | null; nativeLang: string }> = {};
       for (const p of pastProfiles ?? []) {
-        pastProfileMap[p.session_id] = { name: p.name ?? '', avatarUrl: p.avatar_url ?? null, nativeLang: p.native_language ?? '' };
+        pastMap[p.session_id] = { name: p.name ?? '', avatarUrl: p.avatar_url ?? null, nativeLang: p.native_language ?? '' };
       }
       setPast(logs.map(l => ({
         logId:        l.id,
         partnerId:    l.partner_id,
-        name:         pastProfileMap[l.partner_id]?.name || 'Partner',
-        nativeLang:   pastProfileMap[l.partner_id]?.nativeLang || '',
-        avatarUrl:    pastProfileMap[l.partner_id]?.avatarUrl ?? null,
+        name:         pastMap[l.partner_id]?.name || 'Partner',
+        nativeLang:   myLang,
+        learningLang: pastMap[l.partner_id]?.nativeLang || '',
+        avatarUrl:    pastMap[l.partner_id]?.avatarUrl ?? null,
         durationSecs: l.duration_secs,
         endedAt:      l.ended_at,
       })));
@@ -338,6 +446,14 @@ export default function ExchangesPage() {
     setSessionId(sid);
     load(sid).finally(() => setLoading(false));
   }, [router, load]);
+
+  // Auto-select first non-empty tab after load
+  useEffect(() => {
+    if (loading) return;
+    if (upcoming.length > 0)   setActiveTab('upcoming');
+    else if (scheduling.length > 0) setActiveTab('scheduling');
+    else if (past.length > 0)  setActiveTab('past');
+  }, [loading, upcoming.length, scheduling.length, past.length]);
 
   useEffect(() => {
     if (!sessionId) return;
@@ -373,9 +489,15 @@ export default function ExchangesPage() {
 
   const isEmpty = !loading && scheduling.length === 0 && upcoming.length === 0 && past.length === 0;
 
+  const tabs: { id: Tab; label: string; count: number }[] = [
+    { id: 'upcoming',   label: 'Upcoming',   count: upcoming.length },
+    { id: 'scheduling', label: 'Scheduling', count: scheduling.length },
+    { id: 'past',       label: 'Past',       count: past.length },
+  ];
+
   return (
     <AppShell>
-      <main className="flex-1 px-6 py-10 max-w-3xl mx-auto w-full space-y-8">
+      <main className="flex-1 px-6 py-10 max-w-3xl mx-auto w-full space-y-6">
         <h1 className="font-serif font-semibold text-2xl text-[#171717]">Exchanges</h1>
 
         {loading ? (
@@ -389,9 +511,13 @@ export default function ExchangesPage() {
           </div>
         ) : (
           <>
-            {upcoming.length > 0 && (
-              <Section title="Upcoming">
-                {upcoming.map(card => (
+            <SegmentControl tabs={tabs} active={activeTab} onChange={setActiveTab} />
+
+            <div className="space-y-4">
+              {activeTab === 'upcoming' && (
+                upcoming.length === 0 ? (
+                  <p className="text-sm text-stone-400 text-center py-8">No upcoming sessions.</p>
+                ) : upcoming.map(card => (
                   <UpcomingCard
                     key={card.matchId}
                     card={card}
@@ -399,36 +525,36 @@ export default function ExchangesPage() {
                     onReschedule={() => handleReschedule(card.matchId, card.name, 'scheduled')}
                     onViewProfile={() => router.push(`/partner/${card.matchId}`)}
                   />
-                ))}
-              </Section>
-            )}
+                ))
+              )}
 
-            {scheduling.length > 0 && (
-              <Section title="Scheduling">
-                {scheduling.map(card => (
+              {activeTab === 'scheduling' && (
+                scheduling.length === 0 ? (
+                  <p className="text-sm text-stone-400 text-center py-8">No sessions being scheduled.</p>
+                ) : scheduling.map(card => (
                   <SchedulingCard
                     key={card.matchId}
                     card={card}
                     onSetAvailability={() => handleReschedule(card.matchId, card.name, card.schedulingState)}
                   />
-                ))}
-              </Section>
-            )}
+                ))
+              )}
 
-            {past.length > 0 && (
-              <Section title="Past">
-                {past.map(card => (
+              {activeTab === 'past' && (
+                past.length === 0 ? (
+                  <p className="text-sm text-stone-400 text-center py-8">No past sessions yet.</p>
+                ) : past.map(card => (
                   <PastCard
                     key={card.logId}
                     card={card}
                     onReschedule={() => {
                       localStorage.setItem('mutua_scheduling_partner', card.name);
-                      router.push(`/history`);
+                      router.push('/history');
                     }}
                   />
-                ))}
-              </Section>
-            )}
+                ))
+              )}
+            </div>
           </>
         )}
       </main>
