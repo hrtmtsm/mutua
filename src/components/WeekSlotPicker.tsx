@@ -226,7 +226,7 @@ export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, b
       onPointerLeave={() => setDragging(null)}
     >
       {/* Navigation */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-2">
         <button
           onClick={() => setDayOffset(o => o - 1)}
           disabled={!canPrev}
@@ -247,7 +247,7 @@ export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, b
 
       {/* Day headers */}
       <div
-        className="grid gap-1.5 mb-2"
+        className="grid gap-1.5 mb-1"
         style={{ gridTemplateColumns: `repeat(${visibleCount}, minmax(0, 1fr))` }}
       >
         {visibleDays.map((day, i) => (
@@ -260,9 +260,10 @@ export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, b
         ))}
       </div>
 
-      {/* Legend above divider */}
+      {/* Divider + legend + timezone */}
+      <div className="border-t border-stone-200 mt-1 mb-2" />
       {partnerSlots && partnerSlots.length > 0 && (
-        <div className="flex items-center justify-center gap-4 mt-3 mb-2 text-xs text-stone-500">
+        <div className="flex items-center gap-4 mb-1.5 text-xs text-stone-500">
           <span className="flex items-center gap-1.5">
             <span className="w-3 h-3 rounded-sm bg-[#2B8FFF] inline-block" />You
           </span>
@@ -274,10 +275,7 @@ export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, b
           </span>
         </div>
       )}
-
-      {/* Divider + timezone */}
-      <div className="border-t border-stone-200 mt-2 mb-2" />
-      <div className="flex items-center gap-1.5 text-xs text-stone-500 mb-3">
+      <div className="flex items-center gap-1.5 text-xs text-stone-500 mb-2">
         <span>
           In your time zone,{' '}
           <span className="font-medium text-neutral-700">{timezone.replace(/_/g, ' ')}</span>
