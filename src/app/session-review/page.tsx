@@ -21,13 +21,16 @@ function formatDuration(s: number) {
   return `${m}m ${sec}s`;
 }
 
-function AvatarCircle({ name, lang, avatarUrl }: { name: string; lang: string; avatarUrl: string | null }) {
+function AvatarCircle({ name, lang, avatarUrl, size = 'md' }: { name: string; lang: string; avatarUrl: string | null; size?: 'sm' | 'md' }) {
   const [failed, setFailed] = useState(false);
   const bg = LANG_AVATAR_COLOR[lang] ?? '#3b82f6';
   const initials = name.trim().slice(0, 2).toUpperCase();
+  const cls = size === 'sm'
+    ? 'w-12 h-12 border-2 text-sm'
+    : 'w-20 h-20 border-4 text-xl';
   return (
     <div
-      className="w-20 h-20 rounded-full border-4 border-white overflow-hidden flex items-center justify-center font-black text-white text-xl shrink-0"
+      className={`${cls} rounded-full border-white overflow-hidden flex items-center justify-center font-black text-white shrink-0`}
       style={{ backgroundColor: bg }}
     >
       {avatarUrl && !failed
@@ -107,34 +110,6 @@ export default function SessionReviewPage() {
     <div className="min-h-screen bg-white flex flex-col items-center justify-center px-6 py-10">
       <div className="w-full max-w-sm flex flex-col gap-7">
 
-        {/* Avatars + duration */}
-        <div className="flex flex-col items-center gap-4 text-center">
-          {/* Overlapping avatars */}
-          <div className="flex items-center justify-center">
-            <div className="z-10">
-              {myAvatar
-                ? <AvatarCircle name={myAvatar.name} lang={myAvatar.lang} avatarUrl={myAvatar.url} />
-                : <div className="w-20 h-20 rounded-full border-4 border-white bg-stone-200" />
-              }
-            </div>
-            <div className="-ml-5">
-              {partnerAvatar
-                ? <AvatarCircle name={partnerAvatar.name} lang={partnerAvatar.lang} avatarUrl={partnerAvatar.url} />
-                : <div className="w-20 h-20 rounded-full border-4 border-white bg-stone-300" />
-              }
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <img
-              src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f525/512.gif"
-              alt="🔥"
-              className="w-10 h-10"
-            />
-            <p className="text-5xl font-black text-neutral-900">{formatDuration(duration)}</p>
-          </div>
-        </div>
-
         {/* Question */}
         <div className="flex flex-col gap-4">
           <div className="text-center">
@@ -168,6 +143,28 @@ export default function SessionReviewPage() {
             rows={3}
             className="w-full px-4 py-3 rounded-xl border border-stone-200 text-sm text-neutral-700 placeholder:text-stone-400 resize-none focus:outline-none focus:border-[#2B8FFF]"
           />
+        </div>
+
+        {/* Avatars + duration — smaller, secondary */}
+        <div className="flex items-center justify-center gap-4">
+          <div className="flex items-center">
+            <div className="z-10">
+              {myAvatar
+                ? <AvatarCircle name={myAvatar.name} lang={myAvatar.lang} avatarUrl={myAvatar.url} size="sm" />
+                : <div className="w-12 h-12 rounded-full border-2 border-white bg-stone-200" />
+              }
+            </div>
+            <div className="-ml-3">
+              {partnerAvatar
+                ? <AvatarCircle name={partnerAvatar.name} lang={partnerAvatar.lang} avatarUrl={partnerAvatar.url} size="sm" />
+                : <div className="w-12 h-12 rounded-full border-2 border-white bg-stone-300" />
+              }
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <img src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f525/512.gif" alt="🔥" className="w-6 h-6" />
+            <p className="text-2xl font-black text-neutral-900">{formatDuration(duration)}</p>
+          </div>
         </div>
 
         {/* Actions */}
