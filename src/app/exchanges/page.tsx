@@ -80,15 +80,15 @@ function SegmentControl({ tabs, active, onChange }: {
   onChange: (t: Tab) => void;
 }) {
   return (
-    <div className="flex bg-stone-100 rounded-xl p-1 gap-1">
+    <div className="flex gap-2">
       {tabs.map(t => (
         <button
           key={t.id}
           onClick={() => onChange(t.id)}
-          className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${
+          className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
             active === t.id
-              ? 'bg-white shadow-sm text-[#171717]'
-              : 'text-stone-400 hover:text-stone-600'
+              ? 'bg-[#171717] text-white'
+              : 'bg-stone-100 text-stone-500 hover:bg-stone-200'
           }`}
         >
           {t.label}{t.count > 0 ? ` · ${t.count}` : ''}
