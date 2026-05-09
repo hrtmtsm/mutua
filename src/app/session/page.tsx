@@ -532,8 +532,9 @@ export default function SessionPage() {
       match_id:       matchId,
     });
 
+    localStorage.setItem('mutua_last_session', JSON.stringify({ ...sessionEntry, duration: seconds, matchId: matchId ?? null, partnerId }));
     localStorage.removeItem('mutua_match');
-    router.push('/app');
+    router.push('/session-review');
   }, [router, seconds, match]);
 
   const handleSwitchTurn = useCallback(() => {
