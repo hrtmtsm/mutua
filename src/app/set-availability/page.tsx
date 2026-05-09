@@ -364,16 +364,6 @@ function SetAvailabilityInner() {
               {`You have ${overlapCount} overlapping slot${overlapCount > 1 ? 's' : ''} with ${partnerName}. Hit save to lock it in!`}
             </p>
           )}
-
-          {/* Timezone row */}
-          <div className="mt-3 flex items-center gap-2 text-xs text-stone-600">
-            <span>
-              <strong>{timezone.replace(/_/g, ' ')}</strong>
-              {' · '}
-              {new Date().toLocaleTimeString('en-US', { timeZone: timezone, hour: '2-digit', minute: '2-digit', hour12: true })}
-            </span>
-            <button onClick={() => setShowTzSelect(true)} className="text-[#2B8FFF] underline">Change</button>
-          </div>
         </div>
 
         {/* Legend */}
@@ -393,6 +383,7 @@ function SetAvailabilityInner() {
             initialSlots={initialSlots}
             blockedSlots={blockedSlots}
             onChange={setSlots}
+            onTimezoneChange={() => setShowTzSelect(true)}
           />
         </div>
       </div>
