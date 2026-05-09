@@ -343,16 +343,11 @@ function SetAvailabilityInner() {
           <h1 className="font-serif font-black text-2xl text-neutral-900">
             When are you free this week?
           </h1>
-          <p className="text-sm text-stone-500 mt-1.5">
-            {partnerSlots.length > 0
-              ? overlapCount > 0
-                ? `You have ${overlapCount} overlapping slot${overlapCount > 1 ? 's' : ''} with ${partnerName}. Hit save to lock it in!`
-                : partnerProjected
-                  ? `Showing ${partnerName}'s typical availability (they haven't submitted for this week yet). Pick overlapping slots and we'll confirm once they do.`
-                  : `${partnerName}'s free times are highlighted — tap slots that overlap to find a shared window.`
-              : `Tap blocks when you're free. We'll match your times with ${partnerName}'s and book automatically.`
-            }
-          </p>
+          {partnerSlots.length > 0 && overlapCount > 0 && (
+            <p className="text-sm text-stone-500 mt-1.5">
+              {`You have ${overlapCount} overlapping slot${overlapCount > 1 ? 's' : ''} with ${partnerName}. Hit save to lock it in!`}
+            </p>
+          )}
 
           {/* Timezone row */}
           <div className="mt-3 flex items-center gap-2 text-xs text-stone-600">
