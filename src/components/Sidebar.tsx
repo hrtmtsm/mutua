@@ -152,8 +152,8 @@ function MessagesList({
             className="w-full flex items-center gap-3 px-4 py-3 hover:bg-stone-50 transition-colors text-left border-b border-stone-50 last:border-0"
           >
             {c.avatarUrl
-              ? <img src={c.avatarUrl} alt={c.partnerName} className="w-9 h-9 rounded-xl object-cover shrink-0" />
-              : <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: c.avatarBg }}><span className="text-xs font-black text-white">{ini}</span></div>
+              ? <img src={c.avatarUrl} alt={c.partnerName} className="w-9 h-9 rounded-full object-cover shrink-0" />
+              : <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: c.avatarBg }}><span className="text-xs font-black text-white">{ini}</span></div>
             }
             <div className="flex-1 min-w-0">
               <p className={`text-sm leading-tight ${hasUnreadMsg ? 'font-bold text-neutral-900' : 'font-semibold text-neutral-900'}`}>{c.partnerName}</p>
@@ -253,8 +253,8 @@ function MessageChat({
           <ArrowLeft className="w-4 h-4" />
         </button>
         {avatarUrl
-          ? <img src={avatarUrl} alt={partnerName} className="w-7 h-7 rounded-lg object-cover shrink-0" />
-          : <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: avatarBg }}><span className="text-[10px] font-black text-white">{initials}</span></div>
+          ? <img src={avatarUrl} alt={partnerName} className="w-7 h-7 rounded-full object-cover shrink-0" />
+          : <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: avatarBg }}><span className="text-[10px] font-black text-white">{initials}</span></div>
         }
         <p className="text-sm font-semibold text-neutral-900">{partnerName}</p>
       </div>
