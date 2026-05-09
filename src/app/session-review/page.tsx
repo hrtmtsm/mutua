@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { track } from '@/lib/analytics';
-import { supabase } from '@/lib/supabase';
+import { supabase, isConfigured } from '@/lib/supabase';
 import { LANG_AVATAR_COLOR } from '@/lib/constants';
 
 const OPTIONS = [
@@ -92,6 +92,16 @@ export default function SessionReviewPage() {
         duration_secs: duration,
         match_id:      matchId,
       });
+      if (isConfigured && userId) {
+        supabase.from('session_feedback').insert({
+          match_id:      matchId,
+          user_id:       userId,
+          partner_id:    partnerId,
+          tag:           selected,
+          note:          note.trim() || null,
+          duration_secs: duration,
+        }).then(() => {});
+      }
     }
     if (matchId && userId && partnerId) {
       fetch('/api/rematch', {
