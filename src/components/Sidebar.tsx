@@ -635,7 +635,7 @@ export default function TopNav() {
         <div className="flex-1 md:hidden" />
 
         {/* Right side: bell + avatar */}
-        <div className="flex items-center gap-3 shrink-0" ref={inboxRef}>
+        <div className="relative flex items-center gap-3 shrink-0" ref={inboxRef}>
 
           {/* Bell */}
           <button
@@ -662,7 +662,7 @@ export default function TopNav() {
 
           {/* Dropdown */}
           {inboxOpen && (
-            <div className="absolute top-14 right-10 w-[420px] bg-white border border-stone-200 rounded-2xl shadow-xl overflow-hidden z-30">
+            <div className="absolute top-12 right-0 w-80 bg-white border border-stone-200 rounded-2xl shadow-xl overflow-hidden z-30">
 
               {/* Tabs — hidden when in chat view */}
               {msgView === 'list' && (
