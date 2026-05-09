@@ -312,8 +312,17 @@ export default function TopNav() {
   const [inboxTab, setInboxTab]   = useState<'notifications' | 'messages'>('notifications');
 
   useEffect(() => {
-    document.body.style.overflow = inboxOpen ? 'hidden' : '';
-    return () => { document.body.style.overflow = ''; };
+    if (inboxOpen) {
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    };
   }, [inboxOpen]);
   const [msgView, setMsgView]     = useState<'list' | 'chat'>('list');
   const inboxRef = useRef<HTMLDivElement>(null);
@@ -667,6 +676,8 @@ export default function TopNav() {
 
           {/* Dropdown */}
           {inboxOpen && (
+            <>
+            <div className="fixed inset-0 z-20" onClick={() => { setInboxOpen(false); setMsgView('list'); }} />
             <div className="absolute top-12 right-0 w-[420px] bg-white border border-stone-200 rounded-2xl shadow-xl overflow-hidden z-30">
 
               {/* Tabs — hidden when in chat view */}
@@ -777,6 +788,7 @@ export default function TopNav() {
                 />
               )}
             </div>
+            </>
           )}
 
           {/* Profile avatar + dropdown */}
