@@ -13,6 +13,8 @@ const OPTIONS = [
   { id: 'nothing',    label: 'Nothing, it was great!' },
 ];
 
+const NO_SHOW_THRESHOLD = 120; // seconds
+
 function formatDuration(s: number) {
   const m = Math.floor(s / 60);
   const sec = s % 60;
@@ -152,6 +154,18 @@ export default function SessionReviewPage() {
           </div>
 
           <div className="flex flex-col gap-3">
+            {duration < NO_SHOW_THRESHOLD && (
+              <button
+                onClick={() => toggle('no_show')}
+                className={`w-full px-4 py-3.5 rounded-xl border text-sm font-medium text-left transition-colors ${
+                  selected === 'no_show'
+                    ? 'border-red-400 bg-red-50 text-red-500'
+                    : 'bg-white border-stone-200 text-neutral-700 hover:border-red-300'
+                }`}
+              >
+                My partner didn&apos;t show up :(
+              </button>
+            )}
             {OPTIONS.map(opt => {
               const active = selected === opt.id;
               return (
