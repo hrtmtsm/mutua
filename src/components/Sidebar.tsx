@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { User, ArrowLeftRight, TrendingUp, Bell, ArrowLeft, Send, Settings, MessageSquarePlus, X, Home, Calendar, MessageCircle } from 'lucide-react';
 import { LANG_AVATAR_COLOR } from '@/lib/constants';
 import { supabase, getMessages, sendMessage, type Message } from '@/lib/supabase';
@@ -362,6 +363,10 @@ export default function TopNav() {
   useEffect(() => {
     const handler = (e: Event) => {
       const mid = (e as CustomEvent).detail?.matchId ?? null;
+      if (window.innerWidth < 768) {
+        router.push(mid ? `/messages/${mid}` : '/messages');
+        return;
+      }
       setRequestedMatchId(mid);
       setInboxOpen(true);
       setInboxTab('messages');
@@ -369,7 +374,7 @@ export default function TopNav() {
     };
     window.addEventListener('mutua:open-chat', handler);
     return () => window.removeEventListener('mutua:open-chat', handler);
-  }, []);
+  }, [router]);
 
   // All conversations for the list view
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -928,9 +933,11 @@ export default function TopNav() {
 
 export function BottomNav() {
   const { pathname, hasRematchBadge } = useNavState();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
-  return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-20 bg-white border-t border-stone-200/60 flex items-center">
+  const nav = (
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-stone-200/60 flex items-center">
       {BOTTOM_NAV.map(({ href, label, icon: Icon, match }) => {
         const active = match.some(p => pathname === p || pathname.startsWith(p + '/'));
         const showDot = href === '/history' && hasRematchBadge;
@@ -954,4 +961,7 @@ export function BottomNav() {
       })}
     </nav>
   );
+
+  if (!mounted) return null;
+  return createPortal(nav, document.body);
 }
