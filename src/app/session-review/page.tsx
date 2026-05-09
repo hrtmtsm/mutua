@@ -40,7 +40,7 @@ function AvatarCircle({ name, lang, avatarUrl }: { name: string; lang: string; a
 
 export default function SessionReviewPage() {
   const router = useRouter();
-  const [selected,      setSelected]      = useState<Set<string>>(new Set());
+  const [selected,      setSelected]      = useState<string | null>(null);
   const [note,          setNote]          = useState('');
   const [duration,      setDuration]      = useState(0);
   const [partnerName,   setPartnerName]   = useState('your partner');
@@ -80,19 +80,13 @@ export default function SessionReviewPage() {
   }, []);
 
   function toggle(id: string) {
-    setSelected(prev => {
-      const next = new Set(prev);
-      if (id === 'nothing') return next.has('nothing') ? new Set() : new Set(['nothing']);
-      next.delete('nothing');
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
+    setSelected(prev => prev === id ? null : id);
   }
 
   function submit(skipped: boolean) {
     if (!skipped) {
       track('session_feedback', {
-        tags:          Array.from(selected),
+        tag:           selected,
         note:          note.trim(),
         partner_name:  partnerName,
         duration_secs: duration,
@@ -145,12 +139,12 @@ export default function SessionReviewPage() {
         <div className="flex flex-col gap-4">
           <div className="text-center">
             <p className="text-xl font-bold text-neutral-900">How was this session?</p>
-            <p className="text-sm text-stone-400 mt-1">Select all that apply</p>
+            <p className="text-sm text-stone-400 mt-1">Pick one</p>
           </div>
 
           <div className="flex flex-col gap-3">
             {OPTIONS.map(opt => {
-              const active = selected.has(opt.id);
+              const active = selected === opt.id;
               return (
                 <button
                   key={opt.id}
