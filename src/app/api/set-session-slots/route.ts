@@ -72,9 +72,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'not your match' }, { status: 403 });
     }
     iAmA = match.session_id_a === sessionId;
-    const myEmail = iAmA ? match.email_a : match.email_b;
-    const { data: usersData } = await db.auth.admin.listUsers({ perPage: 1000 });
-    const authUser = (usersData?.users ?? []).find(u => u.email === myEmail);
+    const myEmail    = iAmA ? match.email_a : match.email_b;
+    const sUrl       = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const sKey       = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+    const lookupRes  = await fetch(
+      `${sUrl}/auth/v1/admin/users?page=1&per_page=50&filter=${encodeURIComponent(myEmail)}`,
+      { headers: { apikey: sKey, Authorization: `Bearer ${sKey}` } },
+    );
+    const lookupData = await lookupRes.json().catch(() => ({}));
+    const authUser   = (lookupData.users ?? []).find((u: { email: string }) => u.email === myEmail);
     if (!authUser) return NextResponse.json({ error: 'auth user not found — please sign in via email link' }, { status: 401 });
     authUserId = authUser.id;
   }
@@ -119,10 +125,17 @@ async function runSessionSlotScheduler(matchId: string, db: ReturnType<typeof ad
   const { data: match } = await db.from('matches').select('email_a, email_b').eq('id', matchId).single();
   if (!match) throw new Error('match not found');
 
-  const { data: usersData } = await db.auth.admin.listUsers({ perPage: 1000 });
-  const users  = usersData?.users ?? [];
-  const authA  = users.find(u => u.email === match.email_a);
-  const authB  = users.find(u => u.email === match.email_b);
+  const sUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const sKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  async function findAuthUser(email: string) {
+    const res  = await fetch(
+      `${sUrl}/auth/v1/admin/users?page=1&per_page=50&filter=${encodeURIComponent(email)}`,
+      { headers: { apikey: sKey, Authorization: `Bearer ${sKey}` } },
+    );
+    const data = await res.json().catch(() => ({}));
+    return (data.users ?? []).find((u: { email: string }) => u.email === email) ?? null;
+  }
+  const [authA, authB] = await Promise.all([findAuthUser(match.email_a), findAuthUser(match.email_b)]);
   if (!authA || !authB) throw new Error('users not found');
 
   const [{ data: slotsA }, { data: slotsB }] = await Promise.all([
