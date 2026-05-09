@@ -3,10 +3,11 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase, getMatchesBySessionId, type Match, type SchedulingState } from '@/lib/supabase';
-import { LANG_FLAGS, LANG_AVATAR_COLOR, INTEREST_CATEGORIES, INTEREST_MIGRATION } from '@/lib/constants';
+import { INTEREST_CATEGORIES, INTEREST_MIGRATION } from '@/lib/constants';
 import type { SavedPartner } from '@/lib/types';
 import { track } from '@/lib/analytics';
 import AppShell from '@/components/AppShell';
+import { Avatar, PartnerCardShell } from '@/components/PartnerCard';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -29,26 +30,6 @@ interface PartnerCard {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-function Avatar({ name, lang, avatarUrl, size = 'md' }: { name: string; lang: string; avatarUrl?: string | null; size?: 'sm' | 'md' | 'lg' }) {
-  const bg  = LANG_AVATAR_COLOR[lang] ?? '#3b82f6';
-  const cls = size === 'lg' ? 'w-20 h-20 text-2xl' : size === 'sm' ? 'w-10 h-10 text-sm' : 'w-12 h-12 text-base';
-  const [imgFailed, setImgFailed] = useState(false);
-  const initials = (() => { const p = name.trim().split(/\s+/); return (p.length >= 2 ? p[0][0] + p[p.length - 1][0] : name.trim().slice(0, 2)).toUpperCase(); })();
-  return (
-    <div style={{ backgroundColor: bg }} className={`${cls} rounded-full flex items-center justify-center font-black text-white shrink-0 overflow-hidden relative`}>
-      <span className="select-none">{initials}</span>
-      {avatarUrl && !imgFailed && (
-        <img
-          src={avatarUrl}
-          alt={name}
-          className="absolute inset-0 w-full h-full object-cover"
-          onError={() => setImgFailed(true)}
-        />
-      )}
-    </div>
-  );
-}
 
 function fmtScheduledAt(iso: string): string {
   return new Date(iso).toLocaleDateString('en-US', {
@@ -106,11 +87,8 @@ function SchedulingCard({
   myName?:         string;
   myAvatarUrl?:    string | null;
 }) {
-  const nativeFlag   = LANG_FLAGS[partner.nativeLang]   ?? '';
-  const learningFlag = LANG_FLAGS[partner.learningLang] ?? '';
   const router = useRouter();
 
-  const [showNotYet,  setShowNotYet]  = useState(false);
   const [showOverflow, setShowOverflow] = useState(false);
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
@@ -128,95 +106,52 @@ function SchedulingCard({
     (s === 'pending_b' && partner.iAmA);
 
 
-  // ── All other states: full card ────────────────────────────────────────────
-  const pills = [partner.goal, partner.commStyle, partner.frequency, ...partner.sharedInterests].filter(Boolean).slice(0, 4);
+  const overflowMenu = (
+    <>
+      <button onClick={() => setShowOverflow(v => !v)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100 transition-colors text-stone-300">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <circle cx="8" cy="3" r="1.4"/><circle cx="8" cy="8" r="1.4"/><circle cx="8" cy="13" r="1.4"/>
+        </svg>
+      </button>
+      {showOverflow && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setShowOverflow(false)} />
+          <div className="absolute right-0 top-9 z-50 bg-white rounded-xl shadow-lg border border-stone-100 py-1 w-44 text-sm">
+            <button onClick={() => { setShowOverflow(false); onViewProfile(); }} className="w-full px-4 py-2.5 text-left text-neutral-700 hover:bg-stone-50">View profile</button>
+          </div>
+        </>
+      )}
+    </>
+  );
 
   return (
-    <div className="overflow-hidden bg-white rounded-2xl border border-stone-200">
-
-      {/* Identity block */}
-      <div className="px-7 pt-6 pb-0 flex items-center gap-4">
-        <button onClick={onViewProfile} className="shrink-0">
-          <Avatar name={partner.name} lang={partner.nativeLang} avatarUrl={partner.avatarUrl} size="lg" />
-        </button>
-        <button onClick={onViewProfile} className="flex-1 min-w-0 text-left">
-          <p className="font-serif font-bold text-[#171717] text-2xl leading-tight truncate">{partner.name}</p>
-          <div className="flex items-center gap-1.5 mt-1 text-sm text-stone-400 min-w-0">
-            <span className="truncate">{nativeFlag} {partner.nativeLang}</span>
-            <span className="shrink-0">↔</span>
-            <span className="truncate">{learningFlag} {partner.learningLang}</span>
-          </div>
-        </button>
-        <div className="relative shrink-0 self-start">
-          <button onClick={() => setShowOverflow(v => !v)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100 transition-colors text-stone-300">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-              <circle cx="8" cy="3" r="1.4"/><circle cx="8" cy="8" r="1.4"/><circle cx="8" cy="13" r="1.4"/>
-            </svg>
-          </button>
-          {showOverflow && (
-            <>
-              <div className="fixed inset-0 z-40" onClick={() => setShowOverflow(false)} />
-              <div className="absolute right-0 top-9 z-50 bg-white rounded-xl shadow-lg border border-stone-100 py-1 w-44 text-sm">
-                <button onClick={() => { setShowOverflow(false); onViewProfile(); }} className="w-full px-4 py-2.5 text-left text-neutral-700 hover:bg-stone-50">View profile</button>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Context block — bio */}
-      {partner.bio && (
-        <div className="px-7 mt-4">
-          <p className="text-sm text-neutral-700 leading-relaxed">{partner.bio}</p>
-        </div>
-      )}
-
-      {/* Signals block — max 4, read as structured data */}
-      {pills.length > 0 && (
-        <div className="px-7 mt-4">
-          <p className="text-xs text-stone-400 font-medium mb-2">In common</p>
-          <div className="flex flex-wrap gap-1.5">
-            {pills.map((v, i) => (
-              <span key={i} className="px-3 py-1 bg-stone-100 text-sm font-medium text-stone-600 rounded-full">{v}</span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Action block */}
-      <div className="px-7 mt-6 pb-7 space-y-2">
-        {/* Button — always blue, disabled when no action needed */}
+    <PartnerCardShell
+      partner={{
+        name: partner.name, nativeLang: partner.nativeLang, learningLang: partner.learningLang,
+        avatarUrl: partner.avatarUrl, bio: partner.bio,
+        goal: partner.goal, commStyle: partner.commStyle, frequency: partner.frequency,
+        sharedInterests: partner.sharedInterests,
+      }}
+      onViewProfile={onViewProfile}
+      topRight={overflowMenu}
+    >
+      <div className="space-y-2">
         <button
           onClick={iNeedToSet || s === 'no_overlap' ? onBookExchange : undefined}
           disabled={waitingOnPartner || s === 'computing'}
           className="px-5 py-3 btn-primary text-white text-sm font-semibold rounded-xl disabled:opacity-50 disabled:cursor-default"
         >
-          {s === 'no_overlap'                          ? 'Update your times →'  :
-           waitingOnPartner                            ? 'Scheduling…'          :
-           s === 'computing'                           ? 'Scheduling…'          :
-           s === 'pending_both'                        ? 'Pick a time to meet →':
-                                                        'Update your times →'}
+          {s === 'no_overlap'  ? 'Update your times →'   :
+           waitingOnPartner    ? 'Scheduling…'            :
+           s === 'computing'   ? 'Scheduling…'            :
+           s === 'pending_both'? 'Pick a time to meet →' :
+                                 'Update your times →'}
         </button>
-
-        {/* Inline notification — small status text below button */}
-        {waitingOnPartner && (
-          <p className="text-xs text-stone-400">
-            Waiting on {partner.name} to pick their times.
-          </p>
-        )}
-        {s === 'computing' && (
-          <p className="text-xs text-stone-400">
-            Finding a time that works for both of you…
-          </p>
-        )}
-        {s === 'no_overlap' && (
-          <p className="text-xs text-stone-400">
-            No overlap found. Update your times and we'll try again.
-          </p>
-        )}
+        {waitingOnPartner && <p className="text-xs text-stone-400">Waiting on {partner.name} to pick their times.</p>}
+        {s === 'computing'    && <p className="text-xs text-stone-400">Finding a time that works for both of you…</p>}
+        {s === 'no_overlap'   && <p className="text-xs text-stone-400">No overlap found. Update your times and we'll try again.</p>}
       </div>
-
-    </div>
+    </PartnerCardShell>
   );
 }
 
