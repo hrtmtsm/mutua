@@ -377,9 +377,6 @@ export default function SessionPage() {
     <AppShell>
       <main className="flex-1 px-6 py-10 max-w-3xl mx-auto w-full space-y-6">
 
-        {/* Context header */}
-        <h1 className="font-serif font-semibold text-2xl text-[#171717]">Your partners</h1>
-
         {loading ? (
           <div className="flex justify-center py-12">
             <div className="w-6 h-6 border-2 border-[#2B8FFF] border-t-transparent rounded-full animate-spin" />

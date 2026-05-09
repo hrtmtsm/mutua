@@ -760,9 +760,7 @@ export default function HistoryPage() {
     <AppShell>
       <main className="flex-1 px-6 py-10 max-w-3xl mx-auto w-full space-y-6">
 
-        {/* Page title — matches Exchanges page */}
         <div>
-          <h1 className="font-serif font-semibold text-2xl text-[#171717]">Progress</h1>
           <p className="text-sm text-stone-400 mt-1">
             {thisWeekDone ? 'Your exchange is going well.' : 'Keep your exchange going.'}
           </p>
