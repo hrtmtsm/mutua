@@ -218,7 +218,7 @@ export async function getMatchesBySessionId(sessionId: string): Promise<Match[]>
     .or(`session_id_a.eq.${sessionId},session_id_b.eq.${sessionId}`)
     .neq('scheduling_state', 'archived')
     .order('created_at', { ascending: false })
-    .limit(5);
+    .limit(8);
   if (error) throw error;
   return (data ?? []) as Match[];
 }

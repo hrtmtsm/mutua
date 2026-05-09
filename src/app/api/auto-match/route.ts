@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const MAX_MATCHES = 5;
+const MAX_MATCHES = 8;
 
 // ── Scoring ───────────────────────────────────────────────────────────────────
 
