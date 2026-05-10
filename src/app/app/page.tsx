@@ -136,26 +136,28 @@ function SchedulingCard({
       topRight={overflowMenu}
     >
       <div className="space-y-2">
-        <button
-          onClick={iNeedToSet || s === 'no_overlap' ? onBookExchange : undefined}
-          disabled={waitingOnPartner || s === 'computing'}
-          className="px-5 py-3 btn-primary text-white text-sm font-semibold rounded-xl disabled:opacity-50 disabled:cursor-default"
-        >
-          {s === 'no_overlap'  ? 'Update your times →'   :
-           waitingOnPartner    ? 'Scheduling…'            :
-           s === 'computing'   ? 'Scheduling…'            :
-           s === 'pending_both'? 'Schedule exchange →'   :
-                                 'Update your times →'}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent('mutua:open-chat', { detail: { matchId: partner.matchId } }))}
+            className="px-5 py-3 border border-stone-200 text-sm font-semibold rounded-xl text-neutral-700 hover:bg-stone-50 transition-colors shrink-0"
+          >
+            Say hi 👋
+          </button>
+          <button
+            onClick={iNeedToSet || s === 'no_overlap' ? onBookExchange : undefined}
+            disabled={waitingOnPartner || s === 'computing'}
+            className="flex-1 px-5 py-3 btn-primary text-white text-sm font-semibold rounded-xl disabled:opacity-50 disabled:cursor-default"
+          >
+            {s === 'no_overlap'  ? 'Update your times →'  :
+             waitingOnPartner    ? 'Scheduling…'           :
+             s === 'computing'   ? 'Scheduling…'           :
+             s === 'pending_both'? 'Start exchange →'     :
+                                   'Update your times →'}
+          </button>
+        </div>
         {waitingOnPartner && <p className="text-xs text-stone-400">Waiting on {partner.name} to pick their times.</p>}
         {s === 'computing'    && <p className="text-xs text-stone-400">Finding a time that works for both of you…</p>}
         {s === 'no_overlap'   && <p className="text-xs text-stone-400">No overlap found. Update your times and we'll try again.</p>}
-        <button
-          onClick={() => window.dispatchEvent(new CustomEvent('mutua:open-chat', { detail: { matchId: partner.matchId } }))}
-          className="text-sm text-stone-400 hover:text-neutral-700 transition-colors"
-        >
-          Say hi 👋
-        </button>
       </div>
     </PartnerCardShell>
   );
