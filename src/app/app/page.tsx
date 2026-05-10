@@ -377,7 +377,7 @@ export default function SessionPage() {
     <AppShell>
       <main className="flex-1 px-6 pt-2 pb-10 md:py-10 max-w-3xl mx-auto w-full space-y-6">
 
-        <h1 className="hidden md:block font-serif font-semibold text-2xl text-[#171717]">Your partners</h1>
+        <h1 className="hidden md:block font-serif font-semibold text-2xl text-[#171717]">Home</h1>
 
         {loading ? (
           <div className="flex justify-center py-12">
