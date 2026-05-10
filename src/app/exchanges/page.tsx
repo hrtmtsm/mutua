@@ -166,6 +166,7 @@ function SchedulingCardView({ card, onSetAvailability, onViewProfile }: {
           {ctaLabel}
         </button>
         {waitingOnPartner && <p className="text-xs text-stone-400">Waiting on {card.name} to pick their times.</p>}
+        {iNeedToAct && s !== 'pending_both' && <p className="text-xs text-stone-400">Your partner picked their times — now it's your turn.</p>}
         {s === 'computing'  && <p className="text-xs text-stone-400">Finding a time that works for both of you…</p>}
         {s === 'no_overlap' && <p className="text-xs text-stone-400">No overlap found. Update your times and we'll try again.</p>}
       </div>
