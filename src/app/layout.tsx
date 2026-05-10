@@ -29,8 +29,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${GeistSans.variable} ${sora.variable}`}>
-      <body className="font-sans text-neutral-900 antialiased overflow-x-hidden bg-white">
-        <PostHogProvider><BanGate><PageTransition>{children}</PageTransition></BanGate></PostHogProvider>
+      <body className="font-sans text-neutral-900 antialiased bg-white">
+        <div className="overflow-hidden w-full">
+          <PostHogProvider><BanGate><PageTransition>{children}</PageTransition></BanGate></PostHogProvider>
+        </div>
       </body>
     </html>
   );
