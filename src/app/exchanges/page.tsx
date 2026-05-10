@@ -191,6 +191,7 @@ function UpcomingCardView({ card, onJoin, onReschedule, onViewProfile }: {
   onViewProfile: () => void;
 }) {
   const [now, setNow] = useState(Date.now());
+  const [showNotYet, setShowNotYet] = useState(false);
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 60_000);
     return () => clearInterval(t);
@@ -239,12 +240,28 @@ function UpcomingCardView({ card, onJoin, onReschedule, onViewProfile }: {
           Say hi
         </button>
         <button
-          onClick={sessionPassed ? onReschedule : onJoin}
+          onClick={sessionPassed ? onReschedule : isLive ? onJoin : () => setShowNotYet(true)}
           className="flex-1 px-5 py-3 btn-primary text-white text-sm font-semibold rounded-xl"
         >
-          {sessionPassed ? 'Reschedule →' : isLive ? 'Join now →' : 'View details →'}
+          {sessionPassed ? 'Reschedule →' : isLive ? 'Join now →' : 'Start exchange →'}
         </button>
       </div>
+
+      {/* Not yet modal */}
+      {showNotYet && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-6" onClick={() => setShowNotYet(false)}>
+          <div className="bg-white rounded-2xl px-6 py-6 w-full max-w-sm text-center space-y-2" onClick={e => e.stopPropagation()}>
+            <p className="text-2xl">⏳</p>
+            <p className="font-bold text-neutral-900 text-base">Not yet!</p>
+            <p className="text-sm text-stone-400 leading-relaxed">
+              Your session with {card.name} is on <span className="font-semibold text-neutral-700">{dateLine} at {timeLine}</span>. You'll be able to join 30 minutes before.
+            </p>
+            <button onClick={() => setShowNotYet(false)} className="mt-2 w-full py-3 btn-primary text-white text-sm font-semibold rounded-xl">
+              Got it
+            </button>
+          </div>
+        </div>
+      )}
     </PartnerCardShell>
   );
 }
