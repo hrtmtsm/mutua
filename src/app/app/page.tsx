@@ -136,7 +136,7 @@ function SchedulingCard({
       topRight={overflowMenu}
     >
       <div className="space-y-2">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full">
           <button
             onClick={() => window.dispatchEvent(new CustomEvent('mutua:open-chat', { detail: { matchId: partner.matchId } }))}
             className="px-5 py-3 border border-stone-200 text-sm font-semibold rounded-xl text-neutral-700 hover:bg-stone-50 transition-colors shrink-0"
@@ -148,10 +148,10 @@ function SchedulingCard({
             disabled={waitingOnPartner || s === 'computing'}
             className="flex-1 px-5 py-3 btn-primary text-white text-sm font-semibold rounded-xl disabled:opacity-50 disabled:cursor-default"
           >
-            {s === 'no_overlap'  ? 'Update your times →'  :
-             waitingOnPartner    ? 'Scheduling…'           :
-             s === 'computing'   ? 'Scheduling…'           :
-             s === 'pending_both'? 'Start exchange →'     :
+            {s === 'no_overlap'  ? 'Update your times →'    :
+             waitingOnPartner    ? 'Scheduling…'             :
+             s === 'computing'   ? 'Scheduling…'             :
+             s === 'pending_both'? 'Schedule exchange →'    :
                                    'Update your times →'}
           </button>
         </div>
