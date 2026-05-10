@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { GeistSans } from 'geist/font/sans';
 import { Sora } from 'next/font/google';
 import './globals.css';
@@ -17,6 +17,13 @@ export const metadata: Metadata = {
   title: 'Mutua — Language exchange with purpose',
   description:
     'Answer 5 questions. Get matched with a language partner who complements you.',
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
