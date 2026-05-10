@@ -647,13 +647,9 @@ export default function TopNav() {
         }, payload => {
           const msg = payload.new as Message;
           if (msg.match_id !== match.id) return;
+          // Own messages are already shown optimistically — only add partner messages
+          if (msg.sender_id === sessionId) return;
           setMessages(prev => {
-            const idx = prev.findIndex(m => m.id.startsWith('optimistic-') && m.sender_id === msg.sender_id && m.text === msg.text);
-            if (idx !== -1) {
-              const next = [...prev];
-              next[idx] = msg;
-              return next;
-            }
             if (prev.some(m => m.id === msg.id)) return prev;
             return [...prev, msg];
           });
