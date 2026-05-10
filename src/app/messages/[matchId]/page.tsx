@@ -117,7 +117,7 @@ export default function ChatPage() {
   return (
     <div className="h-screen flex flex-col bg-white">
       {/* Header */}
-      <header className="fixed top-14 left-0 right-0 z-10 bg-white border-b border-stone-100 flex items-center gap-3 px-4 h-14 shrink-0">
+      <header className="fixed top-0 left-0 right-0 z-10 bg-white border-b border-stone-100 flex items-center gap-3 px-4 h-14 shrink-0">
         <button onClick={() => { markPop(); router.back(); }} className="p-1.5 -ml-1.5 text-stone-400 hover:text-neutral-700 transition-colors">
           <ArrowLeft className="w-5 h-5" />
         </button>
@@ -129,7 +129,7 @@ export default function ChatPage() {
       </header>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2 mt-28">
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2 mt-14">
         {loading ? (
           <div className="flex justify-center py-16">
             <div className="w-5 h-5 border-2 border-[#2B8FFF] border-t-transparent rounded-full animate-spin" />
