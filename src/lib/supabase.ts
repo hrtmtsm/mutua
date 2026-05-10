@@ -172,6 +172,55 @@ export interface Message {
   created_at: string;
 }
 
+export type NotificationType =
+  | 'matched'
+  | 'partner_availability'
+  | 'scheduled'
+  | 'no_overlap'
+  | 'session_soon'
+  | 'new_message';
+
+export interface AppNotification {
+  id:           string;
+  session_id:   string;
+  match_id:     string | null;
+  type:         NotificationType;
+  actor_name:   string | null;
+  actor_avatar: string | null;
+  body:         string;
+  link:         string | null;
+  seen:         boolean;
+  created_at:   string;
+}
+
+export async function getNotifications(sessionId: string): Promise<AppNotification[]> {
+  if (!isConfigured) return [];
+  const { data, error } = await supabase
+    .from('notifications')
+    .select('*')
+    .eq('session_id', sessionId)
+    .order('created_at', { ascending: false })
+    .limit(50);
+  if (error) throw error;
+  return (data ?? []) as AppNotification[];
+}
+
+export async function markNotificationsSeen(sessionId: string): Promise<void> {
+  if (!isConfigured) return;
+  await supabase
+    .from('notifications')
+    .update({ seen: true })
+    .eq('session_id', sessionId)
+    .eq('seen', false);
+}
+
+export async function createNotification(
+  n: Omit<AppNotification, 'id' | 'created_at'>
+): Promise<void> {
+  if (!isConfigured) return;
+  await supabase.from('notifications').insert(n);
+}
+
 export async function getMessages(matchId: string): Promise<Message[]> {
   if (!isConfigured) return [];
   const { data, error } = await supabase
