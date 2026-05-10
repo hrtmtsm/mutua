@@ -115,7 +115,7 @@ export default function ChatPage() {
     : '?';
 
   return (
-    <div className="flex flex-col bg-white" style={{ height: '100dvh' }}>
+    <div className="flex flex-col bg-white" style={{ height: '100svh' }}>
       {/* Header */}
       <header className="shrink-0 bg-white border-b border-stone-100 flex items-center gap-3 px-4 h-14">
         <button onClick={() => { markPop(); router.back(); }} className="p-1.5 -ml-1.5 text-stone-400 hover:text-neutral-700 transition-colors">
