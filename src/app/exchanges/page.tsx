@@ -158,7 +158,7 @@ function SchedulingCardView({ card, onSetAvailability, onViewProfile }: {
       topRight={<OverflowMenu items={[{ label: 'View profile', onClick: onViewProfile }]} />}
     >
       <div className="space-y-2">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-fit">
           <button
             onClick={() => window.dispatchEvent(new CustomEvent('mutua:open-chat', { detail: { matchId: card.matchId } }))}
             className="px-5 py-3 border border-stone-200 text-sm font-semibold rounded-xl text-neutral-700 hover:bg-stone-50 transition-colors shrink-0"
@@ -232,7 +232,7 @@ function UpcomingCardView({ card, onJoin, onReschedule, onViewProfile }: {
         <p className="text-sm text-stone-500 mt-0.5">{timeLine}</p>
       </div>
       {/* Actions */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 w-fit">
         <button
           onClick={() => window.dispatchEvent(new CustomEvent('mutua:open-chat', { detail: { matchId: card.matchId } }))}
           className="px-4 py-3 border border-stone-200 bg-white text-sm text-neutral-500 font-medium rounded-xl hover:bg-stone-50 transition-colors shrink-0"

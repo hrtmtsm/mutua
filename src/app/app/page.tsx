@@ -136,7 +136,7 @@ function SchedulingCard({
       topRight={overflowMenu}
     >
       <div className="space-y-2">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-fit">
           <button
             onClick={() => window.dispatchEvent(new CustomEvent('mutua:open-chat', { detail: { matchId: partner.matchId } }))}
             className="px-5 py-3 border border-stone-200 text-sm font-semibold rounded-xl text-neutral-700 hover:bg-stone-50 transition-colors shrink-0"
