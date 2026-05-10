@@ -62,7 +62,19 @@ export default function ChatPage() {
         .channel(`chat:${matchId}`)
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
           const msg = payload.new as Message;
-          if (msg.match_id === matchId) setMessages(prev => [...prev, msg]);
+          if (msg.match_id !== matchId) return;
+          setMessages(prev => {
+            // Replace matching optimistic message with the real one
+            const idx = prev.findIndex(m => m.id.startsWith('optimistic-') && m.sender_id === msg.sender_id && m.text === msg.text);
+            if (idx !== -1) {
+              const next = [...prev];
+              next[idx] = msg;
+              return next;
+            }
+            // Avoid true duplicates
+            if (prev.some(m => m.id === msg.id)) return prev;
+            return [...prev, msg];
+          });
         })
         .subscribe();
       return () => { supabase.removeChannel(ch); };
