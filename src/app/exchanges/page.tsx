@@ -158,7 +158,7 @@ function SchedulingCardView({ card, onSetAvailability, onViewProfile }: {
       topRight={<OverflowMenu items={[{ label: 'View profile', onClick: onViewProfile }]} />}
     >
       <div className="space-y-2">
-        <div className="flex items-center gap-2 w-full">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => window.dispatchEvent(new CustomEvent('mutua:open-chat', { detail: { matchId: card.matchId } }))}
             className="px-5 py-3 border border-stone-200 text-sm font-semibold rounded-xl text-neutral-700 hover:bg-stone-50 transition-colors shrink-0"
@@ -168,7 +168,7 @@ function SchedulingCardView({ card, onSetAvailability, onViewProfile }: {
           <button
             onClick={iNeedToAct || s === 'no_overlap' ? onSetAvailability : undefined}
             disabled={waitingOnPartner || s === 'computing'}
-            className="flex-1 px-5 py-3 btn-primary text-white text-sm font-semibold rounded-xl disabled:opacity-50 disabled:cursor-default"
+            className="px-5 py-3 btn-primary text-white text-sm font-semibold rounded-xl disabled:opacity-50 disabled:cursor-default"
           >
             {ctaLabel}
           </button>
@@ -232,7 +232,7 @@ function UpcomingCardView({ card, onJoin, onReschedule, onViewProfile }: {
         <p className="text-sm text-stone-500 mt-0.5">{timeLine}</p>
       </div>
       {/* Actions */}
-      <div className="flex gap-2 w-full">
+      <div className="flex gap-2">
         <button
           onClick={() => window.dispatchEvent(new CustomEvent('mutua:open-chat', { detail: { matchId: card.matchId } }))}
           className="px-4 py-3 border border-stone-200 bg-white text-sm text-neutral-500 font-medium rounded-xl hover:bg-stone-50 transition-colors shrink-0"
@@ -241,7 +241,7 @@ function UpcomingCardView({ card, onJoin, onReschedule, onViewProfile }: {
         </button>
         <button
           onClick={sessionPassed ? onReschedule : isLive ? onJoin : () => setShowNotYet(true)}
-          className="flex-1 px-5 py-3 btn-primary text-white text-sm font-semibold rounded-xl"
+          className="px-5 py-3 btn-primary text-white text-sm font-semibold rounded-xl"
         >
           {sessionPassed ? 'Reschedule →' : isLive ? 'Join now →' : 'Start exchange →'}
         </button>
