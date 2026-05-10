@@ -148,7 +148,7 @@ function SchedulingCardView({ card, onSetAvailability, onViewProfile }: {
     s === 'no_overlap'  ? 'Update your times →'    :
     waitingOnPartner    ? 'Scheduling…'             :
     s === 'computing'   ? 'Scheduling…'             :
-    s === 'pending_both'? 'Pick a time to meet →'  :
+    s === 'pending_both'? 'Schedule exchange →'     :
                           'Update your times →';
 
   return (
@@ -169,6 +169,12 @@ function SchedulingCardView({ card, onSetAvailability, onViewProfile }: {
         {iNeedToAct && s !== 'pending_both' && <p className="text-xs text-stone-400">Your partner picked their times — now it's your turn.</p>}
         {s === 'computing'  && <p className="text-xs text-stone-400">Finding a time that works for both of you…</p>}
         {s === 'no_overlap' && <p className="text-xs text-stone-400">No overlap found. Update your times and we'll try again.</p>}
+        <button
+          onClick={() => window.dispatchEvent(new CustomEvent('mutua:open-chat', { detail: { matchId: card.matchId } }))}
+          className="text-sm text-stone-400 hover:text-neutral-700 transition-colors"
+        >
+          Say hi 👋
+        </button>
       </div>
     </PartnerCardShell>
   );
