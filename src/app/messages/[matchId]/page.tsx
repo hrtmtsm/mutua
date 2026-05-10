@@ -115,9 +115,9 @@ export default function ChatPage() {
     : '?';
 
   return (
-    <div className="h-screen flex flex-col bg-white">
+    <div className="flex flex-col bg-white" style={{ height: '100dvh' }}>
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-10 bg-white border-b border-stone-100 flex items-center gap-3 px-4 h-14 shrink-0">
+      <header className="shrink-0 bg-white border-b border-stone-100 flex items-center gap-3 px-4 h-14">
         <button onClick={() => { markPop(); router.back(); }} className="p-1.5 -ml-1.5 text-stone-400 hover:text-neutral-700 transition-colors">
           <ArrowLeft className="w-5 h-5" />
         </button>
@@ -129,7 +129,7 @@ export default function ChatPage() {
       </header>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2 mt-14">
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2">
         {loading ? (
           <div className="flex justify-center py-16">
             <div className="w-5 h-5 border-2 border-[#2B8FFF] border-t-transparent rounded-full animate-spin" />
@@ -152,7 +152,7 @@ export default function ChatPage() {
       {error && <p className="px-4 pb-1 text-xs text-rose-500 shrink-0">{error}</p>}
 
       {/* Compose */}
-      <div className="shrink-0 px-4 py-3 border-t border-stone-100 flex gap-2 items-center bg-white pb-safe">
+      <div className="shrink-0 px-4 py-3 border-t border-stone-100 flex gap-2 items-center bg-white" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
         <input
           ref={inputRef}
           type="text"
