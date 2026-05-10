@@ -41,6 +41,7 @@ function useNavState() {
   const [sessionId, setSessionId] = useState('');
   const [hasUnread, setHasUnreadState] = useState(false);
   const [hasRematchBadge, setHasRematchBadge] = useState(false);
+  const [hasExchangesBadge, setHasExchangesBadge] = useState(false);
 
   const refreshProfile = () => {
     const raw = localStorage.getItem('mutua_profile');
@@ -101,8 +102,39 @@ function useNavState() {
     return () => clearInterval(t);
   }, [pathname]);
 
+  // Poll for actionable scheduling state changes; clear badge when on exchanges
+  const ACTIONABLE_STATES = ['scheduled', 'no_overlap', 'pending_a', 'pending_b'];
+  useEffect(() => {
+    if (pathname === '/exchanges' || pathname.startsWith('/exchanges/')) {
+      setHasExchangesBadge(false);
+      return;
+    }
+    const sid = localStorage.getItem('mutua_session_id');
+    if (!sid) return;
+
+    const check = async () => {
+      const { data: matches } = await supabase
+        .from('matches')
+        .select('id, scheduling_state, session_id_a, session_id_b')
+        .or(`session_id_a.eq.${sid},session_id_b.eq.${sid}`)
+        .neq('scheduling_state', 'archived');
+
+      let hasBadge = false;
+      for (const m of matches ?? []) {
+        if (!ACTIONABLE_STATES.includes(m.scheduling_state)) continue;
+        const lastSeen = localStorage.getItem(`mutua_last_seen_exchanges_${m.id}`);
+        if (lastSeen !== m.scheduling_state) { hasBadge = true; break; }
+      }
+      setHasExchangesBadge(hasBadge);
+    };
+
+    check();
+    const t = setInterval(check, 15_000);
+    return () => clearInterval(t);
+  }, [pathname]);
+
   const setHasUnread = (v: boolean) => setHasUnreadState(v);
-  return { pathname, initials, name, avatarBg, avatarUrl, sessionId, hasUnread, setHasUnread, hasRematchBadge };
+  return { pathname, initials, name, avatarBg, avatarUrl, sessionId, hasUnread, setHasUnread, hasRematchBadge, hasExchangesBadge };
 }
 
 // ── Thread list ───────────────────────────────────────────────────────────────
@@ -932,7 +964,7 @@ export default function TopNav() {
 }
 
 export function BottomNav() {
-  const { pathname, hasRematchBadge } = useNavState();
+  const { pathname, hasRematchBadge, hasExchangesBadge } = useNavState();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
@@ -940,7 +972,7 @@ export function BottomNav() {
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-stone-200/60 flex items-center">
       {BOTTOM_NAV.map(({ href, label, icon: Icon, match }) => {
         const active = match.some(p => pathname === p || pathname.startsWith(p + '/'));
-        const showDot = href === '/history' && hasRematchBadge;
+        const showDot = (href === '/history' && hasRematchBadge) || (href === '/exchanges' && hasExchangesBadge);
         return (
           <Link
             key={href}
