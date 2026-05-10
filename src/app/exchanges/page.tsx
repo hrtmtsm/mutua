@@ -471,6 +471,19 @@ export default function ExchangesPage() {
     return () => document.removeEventListener('visibilitychange', onVisible);
   }, [sessionId, load]);
 
+  // Clear exchanges badge when page is visited
+  useEffect(() => {
+    if (!sessionId || loading) return;
+    const ACTIONABLE = ['scheduled', 'no_overlap', 'pending_a', 'pending_b'];
+    const allCards = [...upcoming, ...scheduling];
+    for (const card of allCards) {
+      const state = 'scheduledAt' in card ? 'scheduled' : card.schedulingState;
+      if (ACTIONABLE.includes(state)) {
+        localStorage.setItem(`mutua_last_seen_exchanges_${card.matchId}`, state);
+      }
+    }
+  }, [sessionId, loading, upcoming, scheduling]);
+
   const handleJoin = (card: UpcomingCard) => {
     track('session_join_clicked', { partner_name: card.name, match_id: card.matchId });
     const savedPartner: SavedPartner = {
