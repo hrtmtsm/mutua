@@ -130,11 +130,14 @@ export async function POST(request: Request) {
     if (me.practice_frequency && me.practice_frequency === partner.practice_frequency)
       reasons.push(`Both want to practice ${me.practice_frequency.toLowerCase()}`);
 
-    const { error: insertErr } = await admin.from('matches').insert({
+    const name_a = me.name        ?? me.email?.split('@')[0]        ?? null;
+    const name_b = partner.name   ?? partner.email?.split('@')[0]   ?? null;
+
+    const { data: newMatch, error: insertErr } = await admin.from('matches').insert({
       session_id_a:       me.session_id,
       session_id_b:       partner.session_id,
-      name_a:             me.name        ?? me.email?.split('@')[0]        ?? null,
-      name_b:             partner.name   ?? partner.email?.split('@')[0]   ?? null,
+      name_a,
+      name_b,
       email_a:            me.email,
       email_b:            partner.email,
       native_language_a:  me.native_language,
@@ -145,11 +148,37 @@ export async function POST(request: Request) {
       score:              matchScore,
       reasons,
       scheduling_state:   'pending_both',
-    });
+    }).select('id').single();
 
     if (insertErr) {
       errors.push({ email: partner.email, error: insertErr.message });
       continue;
+    }
+
+    // In-app "matched" notification for both users
+    if (newMatch?.id) {
+      Promise.allSettled([
+        admin.from('notifications').insert({
+          session_id:   me.session_id,
+          match_id:     newMatch.id,
+          type:         'matched',
+          actor_name:   name_b,
+          actor_avatar: null,
+          body:         `You've been matched with ${name_b ?? 'a new partner'}!`,
+          link:         '/exchanges',
+          seen:         false,
+        }),
+        admin.from('notifications').insert({
+          session_id:   partner.session_id,
+          match_id:     newMatch.id,
+          type:         'matched',
+          actor_name:   name_a,
+          actor_avatar: null,
+          body:         `You've been matched with ${name_a ?? 'a new partner'}!`,
+          link:         '/exchanges',
+          seen:         false,
+        }),
+      ]).catch(() => {});
     }
 
     created.push({ emailA: me.email, emailB: partner.email, score: matchScore });
