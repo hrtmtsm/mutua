@@ -100,6 +100,20 @@ function adminClient() {
   );
 }
 
+async function insertNotification(
+  db: ReturnType<typeof adminClient>,
+  n: {
+    session_id:   string;
+    match_id:     string;
+    type:         string;
+    actor_name:   string | null;
+    body:         string;
+    link:         string;
+  },
+) {
+  await db.from('notifications').insert({ ...n, actor_avatar: null, seen: false });
+}
+
 export async function POST(request: Request) {
   const token = request.headers.get('authorization')?.replace('Bearer ', '');
   if (!token) {
@@ -221,6 +235,20 @@ export async function POST(request: Request) {
       // Only this side ready — move to pending_a or pending_b so partner sees the CTA
       const pendingState = iAmA ? 'pending_b' : 'pending_a';
       Object.assign(updatePayload, { scheduling_state: pendingState });
+
+      // In-app notification: tell the waiting partner it's their turn
+      {
+        const actorName    = iAmA ? (m.name_a ?? null) : (m.name_b ?? null);
+        const recipientSid = iAmA ? m.session_id_b : m.session_id_a;
+        insertNotification(db, {
+          session_id: recipientSid,
+          match_id:   m.id,
+          type:       'partner_availability',
+          actor_name: actorName,
+          body:       `${actorName ?? 'Your partner'} picked their times. Now it's your turn!`,
+          link:       '/exchanges',
+        }).catch(() => {});
+      }
 
       // Nudge the partner who hasn't set availability yet.
       // Only fire on the first transition (pending_both → pending_*) to avoid spam.
@@ -367,6 +395,50 @@ export async function POST(request: Request) {
     }
   };
 
+  const sendSchedulerNotifications = async (matchId: string, state: 'scheduled' | 'no_overlap') => {
+    const m = matchDataMap.get(matchId);
+    if (!m) return;
+    if (state === 'scheduled') {
+      await Promise.allSettled([
+        insertNotification(db2, {
+          session_id: m.session_id_a,
+          match_id:   matchId,
+          type:       'scheduled',
+          actor_name: m.name_b ?? null,
+          body:       `Your session with ${m.name_b ?? 'your partner'} is confirmed!`,
+          link:       '/exchanges',
+        }),
+        insertNotification(db2, {
+          session_id: m.session_id_b,
+          match_id:   matchId,
+          type:       'scheduled',
+          actor_name: m.name_a ?? null,
+          body:       `Your session with ${m.name_a ?? 'your partner'} is confirmed!`,
+          link:       '/exchanges',
+        }),
+      ]);
+    } else {
+      await Promise.allSettled([
+        insertNotification(db2, {
+          session_id: m.session_id_a,
+          match_id:   matchId,
+          type:       'no_overlap',
+          actor_name: m.name_b ?? null,
+          body:       `No shared time found with ${m.name_b ?? 'your partner'}. Update your availability.`,
+          link:       '/set-availability',
+        }),
+        insertNotification(db2, {
+          session_id: m.session_id_b,
+          match_id:   matchId,
+          type:       'no_overlap',
+          actor_name: m.name_a ?? null,
+          body:       `No shared time found with ${m.name_a ?? 'your partner'}. Update your availability.`,
+          link:       '/set-availability',
+        }),
+      ]);
+    }
+  };
+
   await Promise.allSettled(
     matchesToSchedule.map(async (matchId) => {
       try {
@@ -374,8 +446,10 @@ export async function POST(request: Request) {
         schedulerResults[matchId] = result.state + (result.slot ? ` @ ${result.slot.start.toISOString()}` : '');
         if (result.state !== 'scheduled') {
           await db2.from('matches').update({ scheduling_state: result.state }).eq('id', matchId);
+          sendSchedulerNotifications(matchId, result.state as 'no_overlap').catch(() => {});
         } else if (result.slot) {
           sendSessionScheduledEmails(matchId, result.slot.start.toISOString());
+          sendSchedulerNotifications(matchId, 'scheduled').catch(() => {});
         }
       } catch (err: any) {
         // Retry once on slot conflict, otherwise fall back to no_overlap
@@ -384,12 +458,15 @@ export async function POST(request: Request) {
           schedulerResults[matchId] = 'retry:' + result.state + (result.slot ? ` @ ${result.slot.start.toISOString()}` : '');
           if (result.state !== 'scheduled') {
             await db2.from('matches').update({ scheduling_state: result.state }).eq('id', matchId);
+            sendSchedulerNotifications(matchId, result.state as 'no_overlap').catch(() => {});
           } else if (result.slot) {
             sendSessionScheduledEmails(matchId, result.slot.start.toISOString());
+            sendSchedulerNotifications(matchId, 'scheduled').catch(() => {});
           }
         } catch (err2) {
           schedulerResults[matchId] = 'error:' + String(err2);
           await db2.from('matches').update({ scheduling_state: 'no_overlap' }).eq('id', matchId);
+          sendSchedulerNotifications(matchId, 'no_overlap').catch(() => {});
           console.error('[set-availability] scheduler failed for', matchId, err);
         }
       }

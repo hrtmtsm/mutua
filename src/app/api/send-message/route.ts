@@ -39,14 +39,34 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: insertErr.message }, { status: 500 });
   }
 
-  if (!EMAILS_ENABLED) return NextResponse.json({ ok: true });
-
-  // Load match to find recipient
-  const { data: match } = await db
+  // Load match for both email notifications and in-app notification
+  const { data: matchForNotif } = await db
     .from('matches')
     .select('email_a, email_b, name_a, name_b, session_id_a, session_id_b, last_message_notify_at')
     .eq('id', matchId)
     .single();
+
+  if (matchForNotif) {
+    const isSenderA      = matchForNotif.session_id_a === senderId;
+    const senderNameN    = isSenderA ? (matchForNotif.name_a ?? 'Partner') : (matchForNotif.name_b ?? 'Partner');
+    const recipientSid   = isSenderA ? matchForNotif.session_id_b : matchForNotif.session_id_a;
+
+    // Insert in-app notification for the recipient (fire-and-forget)
+    void db.from('notifications').insert({
+      session_id:   recipientSid,
+      match_id:     matchId,
+      type:         'new_message',
+      actor_name:   senderNameN,
+      actor_avatar: null,
+      body:         `${senderNameN} sent you a message.`,
+      link:         `/messages/${matchId}`,
+      seen:         false,
+    });
+  }
+
+  if (!EMAILS_ENABLED) return NextResponse.json({ ok: true });
+
+  const match = matchForNotif;
   if (!match) return NextResponse.json({ ok: true });
 
   // Cooldown — don't spam if they're actively chatting
