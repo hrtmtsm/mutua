@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { User, ArrowLeftRight, TrendingUp, Bell, ArrowLeft, Send, Settings, MessageSquarePlus, X, Home, Calendar, MessageCircle } from 'lucide-react';
 import { LANG_AVATAR_COLOR } from '@/lib/constants';
-import { supabase, getMessages, sendMessage, type Message } from '@/lib/supabase';
+import { supabase, getMessages, sendMessage, getNotifications, markNotificationsSeen, type Message, type AppNotification } from '@/lib/supabase';
 import { track } from '@/lib/analytics';
 
 const BOTTOM_NAV = [
@@ -467,6 +467,22 @@ export default function TopNav() {
     loadConversations();
   }, [inboxOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Load real notifications from DB when notifications tab is active
+  useEffect(() => {
+    if (!inboxOpen || inboxTab !== 'notifications') return;
+    const sid = localStorage.getItem('mutua_session_id');
+    if (!sid) return;
+    setNotifsLoading(true);
+    getNotifications(sid).then(notifs => {
+      setDesktopNotifs(notifs);
+      setNotifsLoading(false);
+      markNotificationsSeen(sid).then(() => {
+        localStorage.removeItem('mutua_unread_notification');
+        setHasUnread(!!localStorage.getItem('mutua_unread_message'));
+      });
+    }).catch(() => setNotifsLoading(false));
+  }, [inboxOpen, inboxTab]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Shared message state loaded once when inbox opens
   const [matchId, setMatchId]               = useState<string | null>(null);
   const [partnerName, setPartnerName]       = useState('Partner');
@@ -476,6 +492,8 @@ export default function TopNav() {
   const [partnerAvatarBg, setPartnerAvatarBg] = useState('#171717');
   const [partnerAvatarUrl, setPartnerAvatarUrl] = useState<string | null>(null);
   const currentSchedStateRef                = useRef<string | null>(null);
+  const [desktopNotifs, setDesktopNotifs]   = useState<AppNotification[]>([]);
+  const [notifsLoading, setNotifsLoading]   = useState(false);
 
   // Always-on: watch for scheduling updates + new messages → set unread dot
   useEffect(() => {
@@ -780,51 +798,42 @@ export default function TopNav() {
                   avatarUrl={partnerAvatarUrl}
                 />
               ) : inboxTab === 'notifications' ? (
-                <div className="px-4 py-4 space-y-2">
-                  {scheduleState === 'scheduled' && (
-                    <button
-                      onClick={() => { setInboxOpen(false); window.location.href = '/exchanges'; }}
-                      className="w-full flex items-start gap-3 p-3 bg-white border border-stone-100 rounded-xl hover:bg-stone-50 transition-colors text-left"
-                    >
-                      <span className="text-base mt-0.5">📅</span>
-                      <div>
-                        <p className="text-xs font-semibold text-neutral-900">Session scheduled</p>
-                        <p className="text-xs text-stone-500 mt-0.5">Your first session with {partnerName} has been confirmed. Tap to view →</p>
-                      </div>
-                    </button>
-                  )}
-                  {scheduleState === 'computing' && (
-                    <div className="flex items-start gap-3 p-3 bg-white border border-stone-100 rounded-xl">
-                      <span className="text-base mt-0.5">🔍</span>
-                      <div>
-                        <p className="text-xs font-semibold text-neutral-900">Finding a time</p>
-                        <p className="text-xs text-stone-500 mt-0.5">We're matching your availability with {partnerName}.</p>
-                      </div>
+                <div className="overflow-y-auto max-h-[320px]">
+                  {notifsLoading ? (
+                    <div className="flex justify-center py-10">
+                      <div className="w-4 h-4 border-2 border-[#2B8FFF] border-t-transparent rounded-full animate-spin" />
                     </div>
-                  )}
-                  {scheduleState === 'no_overlap' && (
-                    <div className="flex items-start gap-3 p-3 bg-white border border-stone-100 rounded-xl">
-                      <span className="text-base mt-0.5">⚠️</span>
-                      <div>
-                        <p className="text-xs font-semibold text-neutral-900">No overlapping times</p>
-                        <p className="text-xs text-stone-500 mt-0.5">Update your availability so we can find a slot with {partnerName}.</p>
-                      </div>
+                  ) : desktopNotifs.length === 0 ? (
+                    <div className="py-10 text-center px-4">
+                      <p className="text-sm font-semibold text-neutral-900 mb-1">No notifications yet</p>
+                      <p className="text-xs text-stone-400 leading-relaxed">We'll let you know when something happens.</p>
                     </div>
-                  )}
-                  {(scheduleState === 'pending_a' || scheduleState === 'pending_b' || scheduleState === 'pending_both') && (
-                    <div className="flex items-start gap-3 p-3 bg-white border border-stone-100 rounded-xl">
-                      <span className="text-base mt-0.5">🕐</span>
-                      <div>
-                        <p className="text-xs font-semibold text-neutral-900">Session rescheduled</p>
-                        <p className="text-xs text-stone-500 mt-0.5">Waiting on availability to find a new time with {partnerName}.</p>
-                      </div>
-                    </div>
-                  )}
-                  {!scheduleState && (
-                    <div className="py-4 text-center">
-                      <p className="text-sm font-semibold text-neutral-900 mb-1">No notifications</p>
-                      <p className="text-xs text-stone-400 leading-relaxed">We'll let you know when your session is confirmed.</p>
-                    </div>
+                  ) : (
+                    desktopNotifs.map(n => {
+                      const ini = n.actor_name
+                        ? n.actor_name.trim().split(/\s+/).map((p, i, a) => i === 0 || i === a.length - 1 ? p[0] : '').join('').toUpperCase()
+                        : '?';
+                      const diff = Date.now() - new Date(n.created_at).getTime();
+                      const m = Math.floor(diff / 60000);
+                      const ago = m < 1 ? 'just now' : m < 60 ? `${m}m ago` : m < 1440 ? `${Math.floor(m/60)}h ago` : `${Math.floor(m/1440)}d ago`;
+                      return (
+                        <button
+                          key={n.id}
+                          onClick={() => { setInboxOpen(false); if (n.link) window.location.href = n.link; }}
+                          className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-stone-50 active:bg-stone-100 transition-colors text-left border-b border-stone-100 last:border-0"
+                        >
+                          {n.actor_avatar
+                            ? <img src={n.actor_avatar} alt={n.actor_name ?? ''} className="w-9 h-9 rounded-full object-cover shrink-0" />
+                            : <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-white text-xs font-black bg-[#171717]">{ini}</div>
+                          }
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-xs leading-snug ${!n.seen ? 'font-semibold text-neutral-900' : 'font-medium text-neutral-700'}`}>{n.body}</p>
+                            <p className="text-[10px] text-stone-400 mt-0.5">{ago}</p>
+                          </div>
+                          {!n.seen && <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" />}
+                        </button>
+                      );
+                    })
                   )}
                 </div>
               ) : (
