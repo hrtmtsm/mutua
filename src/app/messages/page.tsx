@@ -36,9 +36,8 @@ export default function MessagesPage() {
     async function load() {
       const { data: matches } = await supabase
         .from('matches')
-        .select('id, name_a, name_b, session_id_a, session_id_b, native_language_a, native_language_b')
+        .select('id, name_a, name_b, session_id_a, session_id_b, native_language_a, native_language_b, scheduling_state')
         .or(`session_id_a.eq.${sessionId},session_id_b.eq.${sessionId}`)
-        .neq('scheduling_state', 'archived')
         .order('created_at', { ascending: false });
 
       if (!matches?.length) { setLoading(false); return; }
