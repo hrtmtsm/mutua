@@ -641,6 +641,7 @@ export default function HistoryPage() {
     const loadSessions = async () => {
       let merged = [...localParsed];
       if (mySid) {
+        // Completed sessions
         const { data: logs } = await supabase
           .from('session_logs')
           .select('partner_id, duration_secs, ended_at')
@@ -648,15 +649,39 @@ export default function HistoryPage() {
           .order('ended_at', { ascending: false });
         if (logs && logs.length > 0) {
           const remoteEntries: SessionEntry[] = logs.map(l => ({
-            partnerName: '',   // filled in later from live profiles
+            partnerName: '',
             partnerId:   l.partner_id,
             duration:    Math.round(l.duration_secs / 60),
             date:        l.ended_at,
           }));
-          // Deduplicate by date+partnerId — prefer remote (has correct duration)
           const seen = new Set(remoteEntries.map(e => `${e.partnerId}:${e.date.slice(0, 10)}`));
           const localOnly = localParsed.filter(e => !seen.has(`${e.partnerId}:${e.date.slice(0, 10)}`));
           merged = [...remoteEntries, ...localOnly].sort((a, b) => b.date.localeCompare(a.date));
+        }
+
+        // Archived matches with a scheduled_at = missed sessions
+        const { data: archivedMatches } = await supabase
+          .from('matches')
+          .select('id, session_id_a, session_id_b, scheduled_at')
+          .or(`session_id_a.eq.${mySid},session_id_b.eq.${mySid}`)
+          .eq('scheduling_state', 'archived')
+          .not('scheduled_at', 'is', null);
+
+        if (archivedMatches && archivedMatches.length > 0) {
+          const missedEntries: SessionEntry[] = archivedMatches.map(m => {
+            const partnerId = m.session_id_a === mySid ? m.session_id_b : m.session_id_a;
+            return {
+              partnerName: '',
+              partnerId,
+              duration:    0,
+              date:        m.scheduled_at,
+              missed:      true,
+            };
+          });
+          // Don't add if already in merged (e.g. completed sessions from same match)
+          const existingKeys = new Set(merged.map(e => `${e.partnerId}:${e.date.slice(0, 10)}`));
+          const newMissed = missedEntries.filter(e => !existingKeys.has(`${e.partnerId}:${e.date.slice(0, 10)}`));
+          merged = [...merged, ...newMissed].sort((a, b) => b.date.localeCompare(a.date));
         }
       }
 
