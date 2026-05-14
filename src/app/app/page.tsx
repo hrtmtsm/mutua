@@ -27,6 +27,7 @@ interface PartnerCard {
   avatarUrl:        string | null;
   sharedInterests:  string[];
   bio?:             string;
+  timezone?:        string;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -130,7 +131,7 @@ function SchedulingCard({
         name: partner.name, nativeLang: partner.nativeLang, learningLang: partner.learningLang,
         avatarUrl: partner.avatarUrl, bio: partner.bio,
         goal: partner.goal, commStyle: partner.commStyle, frequency: partner.frequency,
-        sharedInterests: partner.sharedInterests,
+        sharedInterests: partner.sharedInterests, timezone: partner.timezone,
       }}
       onViewProfile={onViewProfile}
       topRight={overflowMenu}
@@ -239,7 +240,17 @@ export default function SessionPage() {
       const matches = await getMatchesBySessionId(sid);
       if (matches.length === 0) return false;
       const cards = await Promise.all(matches.map(m => buildCard(m, sid)));
-      setPartners(cards);
+
+      // Batch-fetch partner timezones
+      const partnerIds = matches.map(m => m.session_id_a === sid ? m.session_id_b : m.session_id_a);
+      const tzMap: Record<string, string> = await fetch('/api/get-partner-timezones', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionIds: partnerIds }),
+      }).then(r => r.ok ? r.json() : {}).catch(() => ({}));
+
+      const cardsWithTz = cards.map((card, i) => ({ ...card, timezone: tzMap[partnerIds[i]] }));
+      setPartners(cardsWithTz);
       track('match_card_viewed', { match_count: cards.length, partner_names: cards.map(c => c.name) });
       return true;
     } catch (err) {

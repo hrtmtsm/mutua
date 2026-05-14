@@ -1,7 +1,28 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { LANG_FLAGS, LANG_AVATAR_COLOR } from '@/lib/constants';
+
+function usePartnerLocalTime(timezone: string | undefined) {
+  const [display, setDisplay] = useState('');
+  useEffect(() => {
+    if (!timezone) { setDisplay(''); return; }
+    const update = () => {
+      try {
+        const now = new Date();
+        const time = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: timezone });
+        const abbr = now.toLocaleTimeString('en-US', { timeZoneName: 'short', timeZone: timezone }).split(' ').pop() ?? '';
+        setDisplay(`${abbr} · ${time}`);
+      } catch {
+        setDisplay('');
+      }
+    };
+    update();
+    const t = setInterval(update, 60_000);
+    return () => clearInterval(t);
+  }, [timezone]);
+  return display;
+}
 
 export interface PartnerCardData {
   name:            string;
@@ -13,6 +34,7 @@ export interface PartnerCardData {
   commStyle:       string;
   frequency:       string;
   sharedInterests: string[];
+  timezone?:       string;
 }
 
 export function Avatar({
@@ -54,6 +76,7 @@ export function PartnerCardShell({
 }) {
   const nativeFlag   = LANG_FLAGS[partner.nativeLang]   ?? '';
   const learningFlag = LANG_FLAGS[partner.learningLang] ?? '';
+  const localTime    = usePartnerLocalTime(partner.timezone);
   const pills = [partner.goal, partner.commStyle, partner.frequency, ...partner.sharedInterests]
     .filter(Boolean).slice(0, 4);
 
@@ -72,6 +95,9 @@ export function PartnerCardShell({
             <span className="shrink-0">↔</span>
             <span className="truncate">{learningFlag} {partner.learningLang}</span>
           </div>
+          {localTime && (
+            <p className="text-xs text-stone-400 mt-0.5">{localTime}</p>
+          )}
         </button>
         {topRight && <div className="relative shrink-0 self-start">{topRight}</div>}
       </div>
