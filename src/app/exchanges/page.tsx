@@ -367,16 +367,10 @@ export default function ExchangesPage() {
 
     // Batch fetch all partner profiles (including bio + interests) + their timezones
     const partnerIds = matches.map(m => m.session_id_a === sid ? m.session_id_b : m.session_id_a);
-    const [{ data: profiles }, tzResult] = await Promise.all([
-      supabase.from('profiles').select('session_id, name, avatar_url, native_language, bio, interests').in('session_id', partnerIds),
-      fetch('/api/get-partner-timezones', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionIds: partnerIds }),
-      }).then(r => r.ok ? r.json() : {}),
-    ]);
+    const { data: profiles } = await supabase
+      .from('profiles').select('session_id, name, avatar_url, native_language, bio, interests').in('session_id', partnerIds);
 
-    const timezoneMap: Record<string, string> = tzResult ?? {};
+    const timezoneMap: Record<string, string> = {}; // filled in background below
 
     const allTags = INTEREST_CATEGORIES.flatMap(c => c.tags);
     const profileMap: Record<string, {
@@ -429,6 +423,18 @@ export default function ExchangesPage() {
     upCards.sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime());
     setScheduling(schedCards);
     setUpcoming(upCards);
+
+    // Fetch timezones in background and merge into cards
+    if (partnerIds.length > 0) {
+      fetch('/api/get-partner-timezones', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionIds: partnerIds }),
+      }).then(r => r.ok ? r.json() : {}).then((tzMap: Record<string, string>) => {
+        setScheduling(prev => prev.map(c => tzMap[c.partnerId] ? { ...c, timezone: tzMap[c.partnerId] } : c));
+        setUpcoming(prev => prev.map(c => tzMap[c.partnerId] ? { ...c, timezone: tzMap[c.partnerId] } : c));
+      }).catch(() => {});
+    }
 
     // Past — from session_logs
     const { data: logs } = await supabase
