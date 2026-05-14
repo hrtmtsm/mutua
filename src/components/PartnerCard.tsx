@@ -90,14 +90,14 @@ export function PartnerCardShell({
         </button>
         <button onClick={onViewProfile} className="flex-1 min-w-0 text-left" type="button">
           <p className="font-serif font-bold text-[#171717] text-2xl leading-tight truncate">{partner.name}</p>
+          {localTime && (
+            <p className="text-xs text-stone-400 mt-0.5">{localTime}</p>
+          )}
           <div className="flex items-center gap-1.5 mt-1 text-sm text-stone-400 min-w-0">
             <span className="truncate">{nativeFlag} {partner.nativeLang}</span>
             <span className="shrink-0">↔</span>
             <span className="truncate">{learningFlag} {partner.learningLang}</span>
           </div>
-          {localTime && (
-            <p className="text-xs text-stone-400 mt-0.5">{localTime}</p>
-          )}
         </button>
         {topRight && <div className="relative shrink-0 self-start">{topRight}</div>}
       </div>
