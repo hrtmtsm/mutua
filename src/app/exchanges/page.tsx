@@ -365,12 +365,18 @@ export default function ExchangesPage() {
 
     const matches = await getMatchesBySessionId(sid);
 
-    // Batch fetch all partner profiles (including bio + interests)
+    // Batch fetch all partner profiles (including bio + interests) + their timezones
     const partnerIds = matches.map(m => m.session_id_a === sid ? m.session_id_b : m.session_id_a);
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('session_id, name, avatar_url, native_language, bio, interests')
-      .in('session_id', partnerIds);
+    const [{ data: profiles }, tzResult] = await Promise.all([
+      supabase.from('profiles').select('session_id, name, avatar_url, native_language, bio, interests').in('session_id', partnerIds),
+      fetch('/api/get-partner-timezones', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionIds: partnerIds }),
+      }).then(r => r.ok ? r.json() : {}),
+    ]);
+
+    const timezoneMap: Record<string, string> = tzResult ?? {};
 
     const allTags = INTEREST_CATEGORIES.flatMap(c => c.tags);
     const profileMap: Record<string, {
@@ -407,6 +413,7 @@ export default function ExchangesPage() {
         commStyle:       m.comm_style ?? '',
         frequency:       m.practice_frequency ?? '',
         sharedInterests: prof?.sharedInterests ?? [],
+        timezone:        timezoneMap[partnerId],
       };
 
       if (
