@@ -9,6 +9,7 @@ import WeekSlotPicker, { type SessionSlot } from '@/components/WeekSlotPicker';
 import { ArrowLeft } from 'lucide-react';
 import { Avatar } from '@/components/PartnerCard';
 import { markPop } from '@/lib/navigation';
+import { track } from '@/lib/analytics';
 
 // ── Template helpers ───────────────────────────────────────────────────────────
 // Encode as dow*10000+minuteOfDay so we remember which specific days were chosen.
@@ -281,6 +282,13 @@ function SetAvailabilityInner() {
     }
 
     setResult(data);
+
+    const schedulerEntry = matchId ? (data.schedulerResults?.[matchId] ?? '') : '';
+    if (schedulerEntry.startsWith('scheduled') || schedulerEntry.startsWith('retry:scheduled')) {
+      const isoMatch = schedulerEntry.match(/@ (.+)$/);
+      track('session_scheduled', { match_id: matchId, scheduled_at: isoMatch?.[1] ?? null });
+    }
+
     // Save day-of-week + time pattern for reuse across partners
     try {
       const unique = encodeTemplateSlots(futureSlots, timezone);
