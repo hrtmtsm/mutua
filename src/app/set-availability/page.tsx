@@ -370,9 +370,7 @@ function SetAvailabilityInner() {
 
           {partnerSlots.length > 0 && overlapCount > 0 && (
             <p className="text-sm text-stone-500 mt-1.5">
-              {partnerProjected
-                ? `These are ${partnerName}'s usual times. Save yours and we'll confirm once they set their availability.`
-                : `You have ${overlapCount} overlapping slot${overlapCount > 1 ? 's' : ''} with ${partnerName}. Hit save to lock it in!`}
+              {`You have ${overlapCount} overlapping slot${overlapCount > 1 ? 's' : ''} with ${partnerName}. Hit save to lock it in!`}
             </p>
           )}
         </div>
@@ -428,7 +426,7 @@ function SetAvailabilityInner() {
               disabled={saving || cancelling || slots.length === 0 || !matchId}
               className="w-full py-3.5 btn-primary text-white font-bold text-sm rounded-xl disabled:opacity-40 disabled:pointer-events-none"
             >
-              {saving ? 'Saving...' : slots.length > 0 ? (overlapCount > 0 && !partnerProjected ? 'Lock it in →' : 'Save times →') : 'Tap slots above to continue'}
+              {saving ? 'Saving...' : slots.length > 0 ? (overlapCount > 0 ? 'Lock it in →' : 'Save times →') : 'Tap slots above to continue'}
             </button>
 
             {schedulingState === 'scheduled' && matchId && (
