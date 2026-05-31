@@ -1,50 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-// Project a DOW+minute template into the next 7 days (UTC)
-function buildSlotsFromTemplate(templateValues: number[]): { startsAt: string }[] {
-  const now = new Date();
-  const out: { startsAt: string }[] = [];
-  const isNewFormat = templateValues.some(v => v >= 10000);
-
-  if (isNewFormat) {
-    for (const val of templateValues) {
-      const dow = Math.floor(val / 10000);
-      const min = val % 10000;
-      for (let i = 1; i <= 7; i++) {
-        const d = new Date(now);
-        d.setUTCDate(now.getUTCDate() + i);
-        if (d.getUTCDay() === dow) {
-          d.setUTCHours(Math.floor(min / 60), min % 60, 0, 0);
-          out.push({ startsAt: d.toISOString() });
-          break;
-        }
-      }
-    }
-  } else {
-    // Legacy: expand to all 7 days
-    for (let i = 1; i <= 7; i++) {
-      const d = new Date(now);
-      d.setUTCDate(now.getUTCDate() + i);
-      for (const min of templateValues) {
-        const slot = new Date(d);
-        slot.setUTCHours(Math.floor(min / 60), min % 60, 0, 0);
-        out.push({ startsAt: slot.toISOString() });
-      }
-    }
-  }
-  return out;
-}
-
-// Derive a DOW+minute template from a list of past UTC timestamps
-function deriveTemplateFromPastSlots(pastSlots: { starts_at: string }[]): number[] {
-  const vals = pastSlots.map(s => {
-    const d = new Date(s.starts_at);
-    return d.getUTCDay() * 10000 + d.getUTCHours() * 60 + d.getUTCMinutes();
-  });
-  return [...new Set(vals)];
-}
-
 export async function GET(req: NextRequest) {
   const token     = req.headers.get('authorization')?.replace('Bearer ', '');
   const matchId   = req.nextUrl.searchParams.get('matchId');
@@ -111,37 +67,6 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  // No future slots — try slot_template from their profile
-  const partnerSessionId = match.session_id_a === sessionId ? match.session_id_b : match.session_id_a;
-  let templateValues: number[] | null = null;
-
-  // Try by email first, then session_id
-  if (partnerEmail) {
-    const { data: profile } = await db
-      .from('profiles')
-      .select('slot_template')
-      .eq('email', partnerEmail)
-      .maybeSingle();
-    templateValues = profile?.slot_template ?? null;
-  }
-  if (!templateValues?.length && partnerSessionId) {
-    const { data: profile } = await db
-      .from('profiles')
-      .select('slot_template')
-      .eq('session_id', partnerSessionId)
-      .maybeSingle();
-    templateValues = profile?.slot_template ?? null;
-  }
-
-  // If still nothing, derive from their past submitted slots
-  if (!templateValues?.length && (allSlots ?? []).length > 0) {
-    templateValues = deriveTemplateFromPastSlots(allSlots!);
-  }
-
-  if (!templateValues?.length) {
-    return NextResponse.json({ slots: [], projected: false });
-  }
-
-  const projected = buildSlotsFromTemplate(templateValues);
-  return NextResponse.json({ slots: projected, projected: true });
+  // No future slots — partner hasn't submitted for this match yet
+  return NextResponse.json({ slots: [], projected: false });
 }
