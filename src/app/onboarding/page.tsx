@@ -157,6 +157,7 @@ export default function OnboardingPage() {
     const { data: authData, error: signUpErr } = await supabase.auth.signUp({
       email:    trimmedEmail,
       password,
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
     });
 
     if (signUpErr) {
@@ -171,7 +172,7 @@ export default function OnboardingPage() {
     try {
       const res = await fetch('/api/resolve-session', {
         method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(authData.session?.access_token ? { Authorization: `Bearer ${authData.session.access_token}` } : {}) },
         body:    JSON.stringify({ email: trimmedEmail }),
       });
       const data = await res.json();
@@ -200,7 +201,7 @@ export default function OnboardingPage() {
     try {
       const res = await fetch('/api/save-profile', {
         method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(authData.session?.access_token ? { Authorization: `Bearer ${authData.session.access_token}` } : {}) },
         body:    JSON.stringify(profile),
       });
       if (!res.ok) throw new Error(await res.text());
@@ -215,8 +216,8 @@ export default function OnboardingPage() {
         email:                profile.email!,
         native_language:      profile.native_language,
         target_language:      profile.learning_language,
-        goal:                 profile.goal,
-        communication_style:  profile.comm_style,
+        goal:                 profile.goal ?? '',
+        communication_style:  profile.comm_style ?? '',
         practice_frequency:   profile.practice_frequency,
       });
     } catch (err) { console.error('saveToWaitlist error:', err); }

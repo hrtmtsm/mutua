@@ -38,8 +38,13 @@ const STARTERS: Record<Goal, string[]> = {
   ],
 };
 
-export function getStarters(goal: Goal): string[] {
-  const pool = [...STARTERS[goal]].sort(() => Math.random() - 0.5);
+// Goal is unset for minimal-signup profiles — fall back to a mix across all
+// goal categories rather than crashing or guessing which one they'd pick.
+const ALL_STARTERS = Object.values(STARTERS).flat();
+
+export function getStarters(goal: Goal | null | undefined): string[] {
+  const source = goal ? STARTERS[goal] : ALL_STARTERS;
+  const pool = [...source].sort(() => Math.random() - 0.5);
   return pool.slice(0, 3);
 }
 

@@ -18,8 +18,8 @@ const DEMO_NAMES: Record<string, string[]> = {
 export function scoreMatch(user: UserProfile, candidate: UserProfile): number {
   let score = 60;
 
-  if (user.comm_style === candidate.comm_style) score += 20;
-  if (user.goal === candidate.goal) score += 15;
+  if (user.comm_style && user.comm_style === candidate.comm_style) score += 20;
+  if (user.goal       && user.goal       === candidate.goal)       score += 15;
 
   // frequency match (preferred) — fall back to legacy availability if neither has frequency
   if (user.practice_frequency && candidate.practice_frequency) {
@@ -41,11 +41,11 @@ export function buildReasons(user: UserProfile, partner: UserProfile): string[] 
     `Learning ${partner.learning_language} — your native language`,
   ];
 
-  if (user.goal === partner.goal) {
+  if (user.goal && user.goal === partner.goal) {
     reasons.push(`Same goal: ${user.goal}`);
   }
 
-  if (user.comm_style === partner.comm_style) {
+  if (user.comm_style && user.comm_style === partner.comm_style) {
     reasons.push(`Both prefer ${user.comm_style.toLowerCase()}`);
   }
 

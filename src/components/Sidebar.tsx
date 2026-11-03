@@ -1,6 +1,8 @@
 'use client';
 
 import Link from 'next/link';
+import { defaultAvatarFor } from '@/lib/glyphAvatars';
+import { ThemeSwitcher, useTheme } from './ThemeProvider';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -12,13 +14,13 @@ import { track } from '@/lib/analytics';
 const BOTTOM_NAV = [
   {
     href: '/app',
-    label: 'Home',
+    label: 'Exchange',
     icon: Home,
     match: ['/app', '/match-result', '/find-match', '/partners', '/partner'],
   },
   {
     href: '/exchanges',
-    label: 'Exchanges',
+    label: 'Log',
     icon: ArrowLeftRight,
     match: ['/exchanges', '/session-confirmed', '/session-schedule', '/pre-session', '/session'],
   },
@@ -37,7 +39,7 @@ function useNavState() {
   const [initials, setInitials]   = useState('');
   const [name,     setName]       = useState('');
   const [avatarBg, setAvatarBg]   = useState('#171717');
-  const [avatarUrl, setAvatarUrl] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState(defaultAvatarFor('guest'));
   const [sessionId, setSessionId] = useState('');
   const [hasUnread, setHasUnreadState] = useState(false);
   const [hasRematchBadge, setHasRematchBadge] = useState(false);
@@ -56,7 +58,7 @@ function useNavState() {
       setName(n);
       const lang: string = profile.native_language ?? '';
       setAvatarBg(LANG_AVATAR_COLOR[lang] ?? '#171717');
-      setAvatarUrl(profile.avatar_url ?? '');
+      setAvatarUrl(profile.avatar_url || defaultAvatarFor(profile.session_id || 'guest'));
       setSessionId(profile.session_id ?? '');
     }
     setHasUnreadState(
@@ -342,6 +344,9 @@ function MessageChat({
 export default function TopNav() {
   const router = useRouter();
   const { pathname, initials, name, avatarBg, avatarUrl, hasUnread, setHasUnread, hasRematchBadge } = useNavState();
+  const { theme } = useTheme();
+  const immersive = theme === 'night';
+  const navIconColor = immersive ? 'text-white/60 hover:text-white' : 'text-stone-400 hover:text-neutral-700';
   const [inboxOpen, setInboxOpen] = useState(false);
   const [inboxTab, setInboxTab]   = useState<'notifications' | 'messages'>('notifications');
 
@@ -662,19 +667,21 @@ export default function TopNav() {
 
   return (
     <>
-    <header className="sticky top-0 z-20 bg-white border-b border-stone-200/60">
+    <header className={`sticky top-0 z-20 ${immersive ? 'bg-[#040a17]' : 'bg-white'}`}>
       <div className="max-w-5xl mx-auto px-4 md:px-6 flex items-center h-14">
 
-        {/* Desktop: Mutua logo */}
-        <Link href="/app" className="hidden md:block font-serif font-bold text-xl tracking-tight text-neutral-900 shrink-0">
+        {/* Desktop: Mutua logo — same wordmark font as the landing page (/) */}
+        <Link href="/app" className={`hidden md:block text-xl shrink-0 ${immersive ? 'text-white' : 'text-neutral-900'}`}
+          style={{ fontFamily: 'var(--font-logo), Figtree, sans-serif', fontWeight: 900, letterSpacing: '-0.045em' }}>
           Mutua
         </Link>
 
         {/* Mobile: page title */}
-        <span className="md:hidden font-serif font-bold text-xl tracking-tight text-neutral-900 shrink-0">
+        <span className={`md:hidden text-xl shrink-0 ${immersive ? 'text-white' : 'text-neutral-900'}`}
+          style={{ fontFamily: 'var(--font-logo), Figtree, sans-serif', fontWeight: 900, letterSpacing: '-0.045em' }}>
           {(() => {
-            if (pathname === '/app' || pathname.startsWith('/app/')) return 'Home';
-            if (pathname === '/exchanges' || pathname.startsWith('/exchanges/')) return 'Exchanges';
+            if (pathname === '/app' || pathname.startsWith('/app/')) return 'Exchange';
+            if (pathname === '/exchanges' || pathname.startsWith('/exchanges/')) return 'Log';
             if (pathname === '/history' || pathname.startsWith('/history/')) return 'Progress';
             if (pathname === '/set-availability') return 'Schedule';
             if (pathname === '/notifications') return 'Notifications';
@@ -699,7 +706,9 @@ export default function TopNav() {
                 key={href}
                 href={href}
                 className={`relative flex items-center gap-2 px-4 py-1.5 text-sm font-semibold transition-colors rounded-full ${
-                  active ? 'text-neutral-900' : 'text-stone-400 hover:text-neutral-700'
+                  immersive
+                    ? active ? 'text-white' : 'text-white/55 hover:text-white'
+                    : active ? 'text-neutral-900' : 'text-stone-400 hover:text-neutral-700'
                 }`}
               >
                 <span className="relative">
@@ -717,8 +726,9 @@ export default function TopNav() {
         {/* Spacer on mobile */}
         <div className="flex-1 md:hidden" />
 
-        {/* Right side: bell + avatar */}
+        {/* Right side: theme + bell + avatar */}
         <div className="relative flex items-center gap-3 shrink-0" ref={inboxRef}>
+          <ThemeSwitcher />
 
           {/* Bell — routes on mobile, opens dropdown on desktop */}
           <button
@@ -737,7 +747,7 @@ export default function TopNav() {
                 setHasUnread(false);
               }
             }}
-            className="relative p-1.5 text-stone-400 hover:text-neutral-700 transition-colors"
+            className={`relative p-1.5 transition-colors ${navIconColor}`}
           >
             <Bell className="w-5 h-5" />
             {hasUnread && (
@@ -748,7 +758,7 @@ export default function TopNav() {
           {/* Messages icon — mobile only */}
           <button
             onClick={() => router.push('/messages')}
-            className="md:hidden relative p-1.5 text-stone-400 hover:text-neutral-700 transition-colors"
+            className={`md:hidden relative p-1.5 transition-colors ${navIconColor}`}
           >
             <MessageCircle className="w-5 h-5" />
             {!!localStorage.getItem('mutua_unread_message') && (
@@ -868,7 +878,7 @@ export default function TopNav() {
           <div className="relative" ref={profileRef}>
             <button
               onClick={() => setProfileOpen(o => !o)}
-              className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center text-white text-xs font-bold hover:opacity-80 transition-opacity shrink-0"
+              className={`w-8 h-8 rounded-full overflow-hidden flex items-center justify-center text-white text-xs font-bold hover:opacity-80 transition-opacity shrink-0 ${immersive ? 'ring-1 ring-white/25' : ''}`}
               style={avatarUrl ? undefined : { backgroundColor: avatarBg }}
             >
               {avatarUrl

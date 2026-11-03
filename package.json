@@ -5,12 +5,17 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "dev:staging": "node scripts/start-staging.mjs",
+    "test:live": "node scripts/test-live-exchange.mjs",
+    "test:audio": "node --test tests/live-audio.test.cjs"
   },
   "dependencies": {
+    "@react-three/fiber": "^8.18.0",
     "@supabase/supabase-js": "^2.47.10",
     "@tailwindcss/postcss": "^4.2.1",
     "@types/three": "^0.183.1",
+    "cobe": "^2.0.1",
     "flag-icons": "^7.5.0",
     "geist": "^1.7.0",
     "lucide-react": "^0.577.0",
@@ -33,6 +38,7 @@
     "@types/topojson-specification": "^1.0.5",
     "autoprefixer": "^10.4.20",
     "postcss": "^8",
+    "react-test-renderer": "^18.3.1",
     "tailwindcss": "^3.4.19",
     "typescript": "^5.4.5"
   }

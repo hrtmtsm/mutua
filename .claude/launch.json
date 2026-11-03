@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "mutua-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 3000
+    },
+    {
+      "name": "mutua-staging",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:staging", "--", "3002"],
+      "port": 3002
+    }
+  ]
+}

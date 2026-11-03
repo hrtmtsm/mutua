@@ -45,8 +45,8 @@ export interface UserProfile {
   email?:              string;
   native_language:     Language;
   learning_language:   Language;
-  goal:                Goal;
-  comm_style:          CommStyle;
+  goal:                Goal | null;       // null for minimal-signup profiles — never guessed/defaulted
+  comm_style:          CommStyle | null;  // null for minimal-signup profiles — never guessed/defaulted
   availability?:       Availability;      // deprecated — kept for legacy rows
   practice_frequency?: Frequency;
   name?:               string;            // display name — not persisted to DB
@@ -62,8 +62,8 @@ export interface SavedPartner {
   name:                string;
   native_language:     Language;
   learning_language:   Language;
-  goal:                Goal;
-  comm_style:          CommStyle;
+  goal:                Goal | null;
+  comm_style:          CommStyle | null;
   availability?:       Availability;      // deprecated — kept for legacy rows
   practice_frequency?: Frequency;
   saved_at:            string;

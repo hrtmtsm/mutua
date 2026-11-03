@@ -137,6 +137,31 @@ export const LANG_FLAG_CODE: Record<string, string> = {
   Swahili:    'ke',
 };
 
+// Each language's own name, in its own script — for language pickers.
+export const LANG_NATIVE_NAME: Record<string, string> = {
+  English:    'English',
+  Japanese:   '日本語',
+  Spanish:    'Español',
+  French:     'Français',
+  Korean:     '한국어',
+  Mandarin:   '中文',
+  Portuguese: 'Português',
+  German:     'Deutsch',
+  Italian:    'Italiano',
+  Arabic:     'العربية',
+  Hindi:      'हिन्दी',
+  Turkish:    'Türkçe',
+  Vietnamese: 'Tiếng Việt',
+  Thai:       'ภาษาไทย',
+  Indonesian: 'Bahasa Indonesia',
+  Dutch:      'Nederlands',
+  Polish:     'Polski',
+  Swedish:    'Svenska',
+  Russian:    'Русский',
+  Tagalog:    'Tagalog',
+  Swahili:    'Kiswahili',
+};
+
 // Hex values so they work as inline styles (avoids Tailwind JIT detection issues)
 export const LANG_AVATAR_COLOR: Record<string, string> = {
   Japanese:   '#3b82f6',

@@ -1,0 +1,146 @@
+/* Standalone design preview — not linked from production nav, no DB/API calls.
+   Inspired by a reference "floating objects in the sky" landing (user-supplied
+   screenshot). Objects are replaced with our own illustrated avatars, each
+   paired with a persistent greeting bubble in a different language. */
+
+.corner-page {
+  position: relative;
+  min-height: 100svh;
+  overflow: hidden;
+  isolation: isolate;
+  /* Matches /preview/sky's midday palette (paletteAt(12): top/middle/horizon)
+     so the shared SkyCanvas clouds sit on a consistent sky. */
+  background: linear-gradient(180deg, #307bc0 0%, #5a9ed8 32%, #7ab9e6 62%, #d8e8e6 100%);
+  color: #10233f;
+  font-family: var(--font-heading), sans-serif;
+}
+
+/* ── cloud sky ── live clouds come from the shared SkyCanvas (real CC0 photos,
+   see /preview/sky). .corner-static-clouds is only the no-WebGL fallback,
+   reusing the same photo assets rather than a painted substitute. */
+.corner-cloud-layer { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.corner-static-clouds { position: absolute; inset: 0; }
+.corner-static-clouds img { position: absolute; width: 55%; height: auto; opacity: .85; }
+
+.corner-nav {
+  position: relative;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 24px;
+}
+.corner-nav-links {
+  display: flex;
+  align-items: center;
+  gap: clamp(16px, 3.4vw, 48px);
+  margin-right: auto;
+  font-size: 14px;
+  font-weight: 600;
+}
+.corner-nav-links a { color: #10233fcc; text-decoration: none; }
+.corner-nav-links a:hover { color: #10233f; }
+.corner-nav-cta {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: #0d1b2f;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 8px 20px #0d1b2f33;
+  white-space: nowrap;
+}
+
+.corner-hero {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 76svh;
+  padding: 0 20px;
+}
+.corner-wordmark {
+  margin: 0;
+  font-size: clamp(64px, 13vw, 170px);
+  font-weight: 800;
+  line-height: 0.88;
+  letter-spacing: -0.03em;
+  background: linear-gradient(180deg, #ffffff 0%, #e4ecf5 38%, #9fb3c9 52%, #f4f8fc 66%, #ffffff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 2px 0 #ffffffa0, 0 18px 36px #0d2a4f3d;
+  -webkit-text-stroke: 1.5px #ffffff55;
+  animation: corner-wordmark-in 760ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.corner-tagline {
+  margin: 18px 0 0;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(16px, 2.4vw, 24px);
+  font-weight: 600;
+  color: #16304fe6;
+  animation: corner-fade-up 620ms ease-out 180ms both;
+}
+@keyframes corner-wordmark-in { from { opacity: 0; transform: translateY(14px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes corner-fade-up { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+.corner-float {
+  position: absolute;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  animation: corner-pop-in 560ms cubic-bezier(0.22, 1, 0.36, 1) both,
+             corner-bob var(--bob-dur, 6s) ease-in-out var(--bob-delay, 0s) infinite alternate;
+}
+.corner-avatar {
+  width: var(--size, 76px);
+  height: var(--size, 76px);
+  border-radius: 999px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 14px 28px #0d2a4f30, 0 2px 6px #0d2a4f20, 0 0 0 3px #ffffffd0;
+  transform: rotate(var(--rotate, 0deg));
+}
+.corner-avatar img { width: 100%; height: 100%; object-fit: cover; transform: scale(1.12); }
+.corner-greeting {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #fffffff2;
+  color: #16304f;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 8px 18px #0d2a4f26;
+}
+
+@keyframes corner-pop-in { from { opacity: 0; transform: translateY(14px) scale(0.75); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes corner-bob { from { transform: translateY(0); } to { transform: translateY(-14px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .corner-float, .corner-wordmark, .corner-tagline { animation: none; }
+}
+
+/* On narrow screens the scattered layout gets crowded — thin the flock and
+   keep the hero copy legible rather than forcing a cramped 1:1 scale-down. */
+@media (max-width: 720px) {
+  .corner-nav { flex-wrap: wrap; justify-content: center; row-gap: 10px; padding: 16px 16px 0; }
+  .corner-nav-links { margin-right: 0; font-size: 12px; gap: 12px; order: 2; flex-basis: 100%; justify-content: center; }
+  .corner-nav-cta { order: 1; margin: 0 auto; }
+  .corner-wordmark { font-size: clamp(52px, 17vw, 96px); }
+  .corner-float[data-hide-mobile='true'],
+  .corner-float[data-hide-near-text='true'] { display: none; }
+}

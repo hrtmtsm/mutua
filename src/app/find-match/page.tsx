@@ -98,8 +98,8 @@ export default function FindMatchPage() {
         email,
         native_language:    profile.native_language,
         target_language:    profile.learning_language,
-        goal:               profile.goal,
-        communication_style: profile.comm_style,
+        goal:               profile.goal ?? '',
+        communication_style: profile.comm_style ?? '',
         availability:       profile.availability,
       });
     } catch {

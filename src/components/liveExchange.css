@@ -1,0 +1,245 @@
+/* /app's chat & call screens, restyled to match the sky landing page (/)
+   look & feel: same Nunito wordmark font, same sky gradient + cloud layer,
+   same ink/cream/sage color tokens and pill button shape as
+   src/app/preview/sky/sky.css's --exchange-* system. Day/night values mirror
+   that stylesheet's day and [data-hero-tone='night'] variants, switched here
+   by the app's own light/night theme toggle instead of a scroll position. */
+
+/* Hoisted to :root (not scoped to .live-exchange-scene) so SetupModal, which
+   renders above this scene as a fixed overlay, can share the same tokens.
+   White/neutral tone throughout — --live-sage and --live-btn-bg keep a
+   touch of the brand's dark green as accents (buttons, rings), everything
+   else (scene, cards, bubbles) sits on white or near-white. */
+:root {
+  --live-ink: #1c2622;
+  --live-muted: #677069;
+  --live-cream: #ffffff;
+  --live-sage: #e6ece6;
+  --live-label: #f7f8f6;
+  /* Primary CTA: one glossy blue, kept the same in both themes (like a
+     brand color) rather than flipped — see .live-button's gradient/shadow. */
+  --live-btn-top: #5e8ff0;
+  --live-btn-bottom: #3a5fe0;
+  --live-btn-fg: #ffffff;
+}
+:root[data-theme='night'] {
+  --live-ink: #f1f3f1;
+  --live-muted: #9aa49d;
+  --live-cream: #20241f;
+  --live-sage: #2a302a;
+  --live-label: #23261f;
+}
+.live-exchange-scene {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  color: var(--live-ink);
+  font-family: var(--font-live-logo), 'Figtree', sans-serif;
+  background: #ffffff;
+}
+:root[data-theme='night'] .live-exchange-scene { background: #141613; }
+
+.live-content { position: relative; z-index: 10; display: flex; flex-direction: column; flex: 1; min-height: 560px; }
+
+/* Omegle/OmeTV-style instant layout: no click-through landing copy — the
+   stage always shows live state (connecting/searching/chat), and Next/Stop
+   stay pinned below it the whole time. */
+.live-stage { position: relative; z-index: 10; flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.live-stage-center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 14px; padding: 24px; }
+
+.live-control-bar { position: relative; z-index: 10; display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+.live-control { flex: 1 1 130px; min-height: 52px; }
+.live-control-next { flex: 1 1 160px; font-size: 15px; }
+.live-control-stop {
+  flex: 1 1 130px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  border-radius: 999px; border: 1px solid #8f4433; color: #fff8f0;
+  background: linear-gradient(180deg, #c8705d 0%, #a24c39 100%);
+  font-family: inherit; font-weight: 700; font-size: 14px; cursor: pointer;
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, .3), inset 0 -3px 6px rgba(0, 0, 0, .2), 0 8px 16px rgba(90, 30, 20, .22);
+  transition: transform 140ms ease-out, filter 140ms ease-out;
+}
+.live-control-stop:hover:not(:disabled) { filter: brightness(1.06); transform: translateY(-1px); }
+.live-control-stop:active:not(:disabled) { transform: translateY(1px); box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, .25), inset 0 -2px 4px rgba(0, 0, 0, .22), 0 3px 8px rgba(90, 30, 20, .18); }
+.live-control-stop:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+.live-chat-input-bar { position: relative; z-index: 10; display: flex; gap: 10px; margin-top: 10px; }
+
+/* Shared shell for the call pane + chat pane split — used both as a live
+   "video left / text right" preview before starting, and for the real
+   matched conversation once one begins. */
+.live-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 16px; flex: 1; min-height: 460px; }
+.live-call-pane {
+  display: flex; flex-direction: column; align-items: stretch; text-align: center;
+  gap: 10px; padding: 16px;
+}
+.live-avatar-ring-lg {
+  width: 64px; height: 64px; border-radius: 50%; overflow: hidden; flex-shrink: 0;
+  border: 3px solid #ffffffc0; box-shadow: 0 6px 20px #193d4520; background: var(--live-cream);
+}
+.live-avatar-ring-lg img { width: 100%; height: 100%; object-fit: cover; }
+
+/* Each side gets its own "screen", stacked top/bottom like a real two-party
+   call — you on top, the other side below, even before anyone fills it. */
+.live-call-tiles { display: flex; flex-direction: column; gap: 10px; flex: 1; min-height: 0; }
+.live-call-tile {
+  position: relative; flex: 1; min-height: 100px; width: 100%; border-radius: 16px; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--live-sage);
+}
+:root[data-theme='night'] .live-call-tile { background: #262b24; }
+.live-tile-label {
+  position: absolute; left: 10px; bottom: 10px; padding: 4px 11px; border-radius: 999px;
+  background: #1c2622b3; color: #fff; font-size: 11px; font-weight: 700;
+  max-width: calc(100% - 20px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.live-call-tile-empty { background: var(--live-label); border: 1px dashed #cfd4cc; }
+:root[data-theme='night'] .live-call-tile-empty { border-color: #3a3f36; }
+.live-tile-empty-text { font-size: 12px; font-weight: 700; font-style: italic; letter-spacing: .02em; color: var(--live-muted); }
+.live-chat-pane { display: flex; flex-direction: column; min-height: 0; padding: 20px; }
+.live-chat-pane-empty { flex: 1; display: flex; align-items: center; justify-content: center; text-align: center; padding: 20px; }
+@media (max-width: 760px) {
+  .live-split { grid-template-columns: 1fr; min-height: 0; }
+  .live-call-tiles { min-height: 220px; }
+  .live-call-tile { min-height: 90px; }
+  .live-call-pane { padding: 16px; }
+}
+
+/* Below the preview: an explicit Start button plus the matching conditions —
+   nothing begins until this is pressed. */
+.live-start-row { position: relative; z-index: 10; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 16px; margin-top: 16px; }
+.live-start-button { flex: 0 0 auto; min-width: 180px; }
+.live-conditions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.live-select {
+  padding: 13px 16px; border-radius: 9px; border: 1px solid #e7e9e5;
+  background: linear-gradient(180deg, #ffffff 0%, var(--live-cream) 100%);
+  color: var(--live-ink); font-family: inherit; font-weight: 600; font-size: 13px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .6), 0 4px 10px rgba(20, 22, 16, .08);
+  transition: transform 140ms ease-out, filter 140ms ease-out;
+}
+:root[data-theme='night'] .live-select { border-color: #33372f; }
+.live-select:hover:not(:disabled) { filter: brightness(1.03); }
+@media (max-width: 500px) {
+  .live-start-row { flex-direction: column; }
+  .live-start-button { width: 100%; }
+  .live-conditions { width: 100%; justify-content: center; }
+}
+
+.live-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--live-muted); margin: 0 0 16px; }
+.live-heading { font-family: inherit; font-weight: 800; letter-spacing: -.035em; line-height: 1.1; font-size: clamp(32px, 4.4vw, 46px); color: var(--live-ink); margin: 0; text-wrap: balance; }
+.live-subtitle { font-family: inherit; font-weight: 500; color: var(--live-muted); font-size: 15px; line-height: 1.65; margin: 0; }
+.live-note { font-size: 12px; line-height: 1.7; color: var(--live-muted); }
+.live-note a { color: inherit; text-decoration: underline; }
+
+/* Glossy "popped out" pill — a soft inner highlight near the top, a soft
+   inner shadow near the bottom, and a real drop shadow for lift. */
+.live-button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  padding: 15px 26px; border-radius: 999px; border: 1px solid rgba(20, 22, 16, .14);
+  background: linear-gradient(180deg, var(--live-btn-top) 0%, var(--live-btn-bottom) 100%);
+  color: var(--live-btn-fg);
+  font-family: inherit; font-weight: 700; font-size: 14px; line-height: 1.2;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .3),
+    inset 0 -2px 4px rgba(0, 0, 0, .12),
+    0 4px 10px rgba(20, 22, 16, .14),
+    0 1px 2px rgba(20, 22, 16, .08);
+  cursor: pointer;
+  transition: transform 140ms ease-out, box-shadow 140ms ease-out, filter 140ms ease-out;
+}
+.live-button:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); }
+.live-button:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), inset 0 -1px 3px rgba(0, 0, 0, .15), 0 2px 5px rgba(20, 22, 16, .1);
+}
+.live-button:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+.live-button:focus-visible { outline: 2px solid var(--live-muted); outline-offset: 4px; }
+
+.live-button-ghost {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  padding: 15px 26px; border-radius: 999px; border: 1px solid #e7e9e5;
+  background: linear-gradient(180deg, #ffffff 0%, var(--live-cream) 100%); color: var(--live-ink);
+  font-family: inherit; font-weight: 700; font-size: 14px; line-height: 1.2;
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, .6), 0 6px 14px rgba(20, 22, 16, .1);
+  cursor: pointer; transition: transform 140ms ease-out, filter 140ms ease-out;
+}
+:root[data-theme='night'] .live-button-ghost { border-color: #33372f; }
+.live-button-ghost:hover:not(:disabled) { filter: brightness(1.03); transform: translateY(-1px); }
+.live-button-ghost:active:not(:disabled) { transform: translateY(1px); box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, .4), 0 2px 6px rgba(20, 22, 16, .12); }
+.live-button-ghost:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+.live-button-ghost[aria-pressed='true'] { background: var(--live-sage); }
+
+.live-card {
+  background: var(--live-label); border: 1px solid #e7e9e5; border-radius: 22px;
+  box-shadow: 0 10px 30px #18352c0d; color: var(--live-ink);
+}
+:root[data-theme='night'] .live-card { border-color: #33372f; }
+.live-pill-status { font-size: 13px; color: var(--live-muted); }
+
+.live-error { position: relative; z-index: 20; border-radius: 14px; padding: 12px 16px; font-size: 13px;
+  background: #fdebea; border: 1px solid #f3c4c0; color: #7a2420; }
+
+.live-message { max-width: 80%; padding: 12px 16px; font-size: 14px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; color: var(--live-ink); border: 1px solid #e7e9e5; box-shadow: 0 3px 12px #1b39380a; }
+:root[data-theme='night'] .live-message { border-color: #33372f; }
+.live-message-theirs { background: var(--live-cream); border-radius: 16px 16px 16px 4px; }
+.live-message-mine { background: var(--live-sage); border-radius: 16px 16px 4px 16px; }
+
+.live-input {
+  flex: 1; min-width: 0; border-radius: 999px; border: 1px solid #e7e9e5;
+  background: var(--live-cream); color: var(--live-ink); padding: 12px 18px; font-size: 14px; font-family: inherit;
+}
+:root[data-theme='night'] .live-input { border-color: #33372f; }
+.live-input::placeholder { color: var(--live-muted); opacity: .8; }
+
+.live-divider { border-color: var(--live-label); }
+
+@media (prefers-reduced-motion: reduce) {
+  .live-button, .live-button-ghost { transition: none; }
+}
+
+/* SetupModal — same ink/cream/button tokens as the scene behind it. */
+.live-modal-card { background: var(--live-cream); color: var(--live-ink); border: 1px solid var(--live-label); }
+.live-modal-title { font-family: var(--font-live-logo), 'Figtree', sans-serif; font-weight: 800; letter-spacing: -.02em; }
+.live-modal-tabs { background: var(--live-label); }
+.live-modal-tab { color: var(--live-muted); }
+.live-modal-tab[data-active='true'] { background: var(--live-ink); color: var(--live-cream); }
+.live-modal-input {
+  width: 100%; padding: 10px 14px; border-radius: 10px; border: 1px solid #e7e9e5;
+  background: var(--live-label); color: var(--live-ink); font-size: 14px;
+}
+:root[data-theme='night'] .live-modal-input { border-color: #33372f; }
+.live-modal-input::placeholder { color: var(--live-muted); opacity: .75; }
+.live-modal-input:focus { outline: none; border-color: var(--live-muted); }
+
+/* LanguagePicker — flag + native-script name, in a small popover grid. */
+.lang-picker { position: relative; }
+.lang-picker-trigger { width: 100%; display: flex; align-items: center; gap: 8px; text-align: left; cursor: pointer; }
+.lang-picker-trigger:disabled { opacity: .5; cursor: not-allowed; }
+.lang-picker-caret { margin-left: auto; opacity: .55; font-size: 10px; flex-shrink: 0; }
+.lang-picker-flag { width: 1.15em; height: 0.82em; border-radius: 2px; box-shadow: 0 0 0 1px rgba(0, 0, 0, .1); flex-shrink: 0; background-size: cover; }
+.lang-picker-placeholder { color: var(--live-muted); }
+.lang-picker-menu {
+  position: absolute; top: calc(100% + 6px); left: 0; z-index: 40; width: max(260px, 100%);
+  max-height: 320px; overflow-y: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 2px;
+  padding: 8px; border-radius: 14px; background: var(--live-cream); border: 1px solid #e7e9e5;
+  box-shadow: 0 16px 40px rgba(20, 22, 16, .18);
+}
+:root[data-theme='night'] .lang-picker-menu { border-color: #33372f; }
+.lang-picker-option {
+  display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 9px; border: 0;
+  background: transparent; color: var(--live-ink); font-family: inherit; font-size: 13px; font-weight: 600;
+  text-align: left; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.lang-picker-option:hover { background: var(--live-label); }
+.lang-picker-option[data-active='true'] { background: var(--live-sage); }
+@media (max-width: 480px) {
+  .lang-picker-menu { grid-template-columns: 1fr; width: max(220px, 100%); }
+}
+
+/* Site-wide interface language — a short single-column list, right-aligned
+   under the trigger so it doesn't run off the edge of the nav bar. */
+.locale-switcher { display: inline-block; width: auto; }
+.locale-switcher .lang-picker-trigger { width: auto; padding: 8px 12px; border-radius: 999px; font-size: 12px; }
+.locale-switcher-menu { grid-template-columns: 1fr; width: max-content; min-width: 140px; left: auto; right: 0; }
+

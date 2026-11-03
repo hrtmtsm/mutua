@@ -8,7 +8,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 
-  const { sessionId, name, bio } = await request.json();
+  const { sessionId, name, bio, needsWelcome } = await request.json();
   if (!sessionId || !name?.trim()) {
     return NextResponse.json({ error: 'sessionId and name required' }, { status: 400 });
   }
@@ -36,6 +36,11 @@ export async function POST(request: Request) {
   }
 
   const trimmed = name.trim();
+  // needs_welcome is deliberately NOT included in this update. Combining it
+  // with name/bio in one statement means that, until the column is actually
+  // migrated in, the WHOLE update fails (unknown column) — silently breaking
+  // the pre-existing, working name-save behavior for every /auth/welcome
+  // submission. Keep this update exactly as it always was.
   const profileUpdate: Record<string, string> = { name: trimmed };
   if (bio !== undefined) profileUpdate.bio = bio;
 
@@ -47,6 +52,21 @@ export async function POST(request: Request) {
 
   if (profileError) {
     return NextResponse.json({ error: profileError.message }, { status: 500 });
+  }
+
+  // Best-effort, separate from the save above on purpose: clear needs_welcome
+  // once the invited user completes setup. If the column doesn't exist yet
+  // (migration not applied), this no-ops with a warning — it must never
+  // affect the response below, since /auth/callback's own fallback already
+  // covers the pre-migration period correctly via the name heuristic.
+  if (typeof needsWelcome === 'boolean') {
+    const { error: flagError } = await adminClient
+      .from('profiles')
+      .update({ needs_welcome: needsWelcome })
+      .eq('session_id', sessionId);
+    if (flagError) {
+      console.warn('needs_welcome update skipped (column likely not migrated yet):', flagError.message);
+    }
   }
 
   return NextResponse.json({ success: true });

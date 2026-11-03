@@ -45,7 +45,7 @@ export default function WelcomePage() {
           'Content-Type': 'application/json',
           ...(authSession?.access_token ? { 'Authorization': `Bearer ${authSession.access_token}` } : {}),
         },
-        body: JSON.stringify({ sessionId, name: trimmed }),
+        body: JSON.stringify({ sessionId, name: trimmed, needsWelcome: false }),
       });
 
       // Keep localStorage in sync

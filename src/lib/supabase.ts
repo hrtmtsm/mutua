@@ -12,10 +12,13 @@ export async function saveProfile(
   profile: Omit<UserProfile, 'id' | 'created_at'>,
 ): Promise<void> {
   if (!isConfigured) return;
-  const { error } = await supabase
-    .from('profiles')
-    .upsert(profile, { onConflict: 'session_id' });
-  if (error) throw error;
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error('Please sign in.');
+  const response = await fetch('/api/save-profile', {
+    method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+    body: JSON.stringify(profile),
+  });
+  if (!response.ok) throw new Error('Could not save profile.');
 }
 
 export async function findCandidates(profile: UserProfile): Promise<UserProfile[]> {

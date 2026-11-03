@@ -51,6 +51,9 @@ async function ensureProfile(admin: any, entry: WaitlistEntry): Promise<string> 
     comm_style:         entry.communication_style,
     availability:       'Flexible',
     practice_frequency: entry.practice_frequency ?? 'Once a week',
+    // Stub profile — see auto-match/route.ts for why this flag (not name)
+    // decides whether /auth/callback sends this person through /auth/welcome.
+    needs_welcome:      true,
   });
   if (error) throw new Error(`Profile insert failed for ${entry.email}: ${error.message}`);
   return sessionId;

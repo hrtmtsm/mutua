@@ -79,3 +79,233 @@ body {
   0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
   40%            { opacity: 1;   transform: scale(1.2); }
 }
+
+/* Appearance follows the viewer's local clock unless explicitly overridden. */
+:root {
+  --surface: #ffffff;
+  --page: #fafafa;
+  --ink: #171717;
+  --muted: #64748b;
+  --line: #e2e8f0;
+}
+:root[data-theme='night'] {
+  --surface: #040a17;
+  --page: #02050d;
+  --ink: #f1f5f9;
+  --muted: #94a3b8;
+  --line: #26344a;
+}
+body, .app-shell { background-color: var(--page); color: var(--ink); }
+.theme-switcher { background: var(--surface); color: var(--ink); border-color: var(--line); }
+.immersive-scene { background: radial-gradient(ellipse at 50% 30%, #0b1b33 0%, #040a17 60%, #02050d 100%); }
+:root[data-theme='night'] :is(.bg-white, .bg-stone-50, .bg-stone-100, .bg-neutral-50) { background-color: var(--surface); }
+:root[data-theme='night'] :is(.text-neutral-900, .text-neutral-800, .text-neutral-700, .text-neutral-600, .text-black, .text-\[\#171717\]) { color: var(--ink); }
+:root[data-theme='night'] :is(.text-stone-400, .text-stone-500, .text-neutral-500) { color: var(--muted); }
+:root[data-theme='night'] :is(.border-stone-100, .border-stone-200, .border-stone-200\/60) { border-color: var(--line); }
+:root[data-theme='night'] :is(.hover\:bg-stone-50, .hover\:bg-stone-100):hover { background-color: #142039; }
+/* Preserve the high-contrast action buttons on the globe. */
+:root[data-theme='night'] .immersive-scene .bg-white { background-color: #f8fafc; color: #040a17; }
+:root[data-theme='light'] .immersive-scene { background: radial-gradient(ellipse at 50% 30%, #e8f2ff 0%, #f5f9ff 60%, #ffffff 100%); color: #14233b; }
+:root[data-theme='light'] :is(.immersive-scene, .theme-modal) :is(.text-white, .text-white\/70, .text-white\/60, .text-white\/50, .text-white\/40) { color: #475569; }
+:root[data-theme='light'] .immersive-scene > div { --tw-ring-color: #cbd5e1; }
+:root[data-theme='light'] :is(.immersive-scene, .theme-modal) :is(.bg-white\/10, .bg-white\/5, .bg-white\/15) { background-color: #e2e8f0; color: #14233b; }
+:root[data-theme='light'] .immersive-scene :is(.bg-black\/60, .bg-\[\#040a17\]) { background-color: #f1f5f9; color: #14233b; }
+:root[data-theme='light'] :is(.immersive-scene, .theme-modal) :is(.border-white\/10, .border-white\/15, .border-white\/20) { border-color: #cbd5e1; }
+:root[data-theme='light'] :is(.immersive-scene, .theme-modal) .placeholder\:text-white\/30::placeholder,
+:root[data-theme='light'] .theme-modal .placeholder\:text-white\/40::placeholder { color: #64748b; }
+:root[data-theme='light'] .theme-modal { background: #ffffff; color: #14233b; color-scheme: light; }
+:root[data-theme='light'] .theme-modal :is(.bg-\[\#0b1b33\], .bg-\[\#040a17\]) { background: #f1f5f9; color: #14233b; }
+:root[data-theme='light'] .theme-modal .btn-primary { color: white; }
+.globe-avatar { pointer-events: auto; cursor: default; border: 0; padding: 0; }
+.globe-greeting {
+  position: absolute;
+  display: block;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px) rotate(var(--greeting-tilt, -4deg)) scale(.96);
+  transform-origin: 50% 100%;
+  opacity: 0;
+  white-space: nowrap;
+  padding: 10px 14px;
+  border-radius: 4px;
+  background: var(--greeting-color, #34695e);
+  color: #fff;
+  border: 1px solid #ffffff30;
+  box-shadow: 0 3px 5px #0002, 0 8px 16px #0002, inset 0 1px 0 #ffffff30;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  pointer-events: none;
+  transition: opacity 150ms ease-out, transform 150ms ease-out;
+}
+.globe-avatar:hover, .globe-avatar:focus-visible { z-index: 30 !important; outline: 2px solid #60a5fa; outline-offset: 3px; }
+.globe-greeting-static, .globe-avatar:hover .globe-greeting, .globe-avatar:focus-visible .globe-greeting {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0) rotate(var(--greeting-tilt, -4deg)) scale(1);
+}
+@media (prefers-reduced-motion: reduce) { .globe-greeting { transition: none; } }
+
+/* ── /app ランディング: 言語パートナーのネットワーク演出(地球儀の代わり) ── */
+/* ページ全体のvwではなく、このパネル自体の幅を基準にフォントを拡縮する
+   (コンテナクエリ) ── ウィンドウ幅が狭くても、パネルが十分な幅を持てば
+   ラベルが省略されにくくなる。 */
+.lang-net { container-type: inline-size; }
+.lang-net-card {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  padding: 5% 5% 0;
+  border-radius: 14px;
+  box-shadow: 0 10px 24px #0004, 0 2px 6px #0003;
+  transform: rotate(var(--rotate, 0deg)) translateY(0);
+  animation: lang-net-card-in 620ms cubic-bezier(0.22, 1, 0.36, 1) both,
+             lang-net-card-float 7s ease-in-out 900ms infinite alternate;
+  z-index: 15;
+}
+.lang-net-card-photo {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px #00000014;
+}
+/* Source illustrations center a small face on a large background — scale up
+   and crop so the card reads as a portrait, not a face floating in a void. */
+.lang-net-card-photo img { position: absolute; inset: -38%; width: 176%; height: 176%; object-fit: cover; }
+.lang-net-card-label { padding: 7% 2% 10%; min-width: 0; }
+.lang-net-card-lang {
+  font-size: clamp(9px, 4.4cqw, 15px); font-weight: 700; color: #1d2b22; line-height: 1.3;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.lang-net-card-tag {
+  font-size: clamp(9px, 3.6cqw, 12px); color: #1d2b2299; margin-top: 2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.lang-net-line {
+  /* pathLength=1 on the <path> normalizes length to 1 unit, so dasharray/
+     dashoffset below are fractions of the whole line regardless of its
+     actual on-screen length. */
+  fill: none;
+  stroke: #ffffff6b;
+  stroke-width: 0.45;
+  stroke-dasharray: 0.03 0.025;
+  stroke-linecap: round;
+  stroke-dashoffset: 1;
+  animation: lang-net-line-draw 1100ms ease-out forwards, lang-net-line-flow 9s linear 1100ms infinite;
+}
+:root[data-theme='light'] .lang-net-line { stroke: #14233b40; }
+
+.lang-net-badge {
+  position: absolute;
+  width: clamp(26px, 4.2vw, 36px);
+  height: clamp(26px, 4.2vw, 36px);
+  border-radius: 999px;
+  background: #ffffffe6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(12px, 1.8vw, 16px);
+  box-shadow: 0 6px 16px #0004;
+  z-index: 16;
+  opacity: 0;
+  animation: lang-net-pop-in 520ms cubic-bezier(0.22, 1, 0.36, 1) both,
+             lang-net-card-float 6s ease-in-out 1200ms infinite alternate;
+}
+.lang-net-tag {
+  position: absolute;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #0b1b33d9;
+  color: #fff;
+  font-size: clamp(10px, 1.4vw, 12px);
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 6px 16px #0004;
+  z-index: 16;
+  opacity: 0;
+  animation: lang-net-pop-in 520ms cubic-bezier(0.22, 1, 0.36, 1) both,
+             lang-net-card-float 8s ease-in-out 1200ms infinite alternate;
+}
+:root[data-theme='light'] .lang-net-tag { background: #ffffffe6; color: #14233b; }
+
+@keyframes lang-net-card-in {
+  from { opacity: 0; transform: rotate(var(--rotate, 0deg)) translateY(18px) scale(0.92); }
+  to   { opacity: 1; transform: rotate(var(--rotate, 0deg)) translateY(0) scale(1); }
+}
+@keyframes lang-net-card-float {
+  from { margin-top: 0; }
+  to   { margin-top: -3%; }
+}
+@keyframes lang-net-pop-in {
+  from { opacity: 0; transform: scale(0.6); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes lang-net-line-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes lang-net-line-flow { to { stroke-dashoffset: -1; } }
+@media (prefers-reduced-motion: reduce) {
+  .lang-net-card, .lang-net-badge, .lang-net-tag, .lang-net-line { animation: none; opacity: 1; }
+}
+
+/* A continuous descent: open sky, a cloud crossing, then the meadow. */
+.lp-journey {
+  position: relative; isolation: isolate; color: #fff;
+  background: linear-gradient(#438dd2 0%, #75b5e9 42%, #a9d6ef 76%, #dae9d0 100%);
+  --cloud-light: #ffffff; --cloud-shadow: #d9eaf6;
+  --hill-far: #a9bd91; --hill-light: #8cba67; --hill-dark: #386b3f;
+  --grass-0: #294f35; --grass-1: #3c7143; --grass-2: #56894b; --grass-3: #6d9b50;
+  --grass-4: #80a65b; --grass-5: #426c36; --grass-6: #a1b96e;
+}
+.lp-hero { background: transparent; }
+.lp-sky { opacity: .65; mask-image: linear-gradient(#000 55%, transparent); }
+.lp-sky-fade { background: linear-gradient(#163d6f40, transparent 60%); }
+.lp-cloud-bank { position: absolute; inset-inline: 0; height: 650px; pointer-events: none; z-index: 3; }
+.lp-cloud { position: absolute; width: 78%; height: 100%; background: radial-gradient(ellipse at 25% 58%, var(--cloud-light) 0 14%, transparent 43%), radial-gradient(ellipse at 55% 45%, var(--cloud-light) 0 12%, transparent 40%), radial-gradient(ellipse at 70% 70%, var(--cloud-shadow) 0 10%, transparent 45%), radial-gradient(ellipse at 30% 85%, var(--cloud-light) 0 16%, transparent 50%); }
+.lp-cloud-left { left: -22%; }
+.lp-cloud-right { right: -25%; transform: scaleX(-1) translateY(60px); }
+.lp-cloud-crossing { top: clamp(850px, 112vw, 1500px); opacity: .92; }
+.lp-how { position: relative; background: transparent; padding-top: 240px; padding-bottom: 260px; }
+.lp-cloud-middle { top: -160px; opacity: .8; z-index: 0; }
+.lp-cloud-middle .lp-cloud-left { left: -44%; }
+.lp-cloud-middle .lp-cloud-right { right: -42%; }
+.lp-eyebrow { color: #335a73; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .2em; }
+.lp-step { background: #ffffffd9; border-color: #ffffffb0; box-shadow: 0 16px 40px #214e7020; }
+.lp-step-copy { color: #526575; }
+.lp-arrival { position: relative; min-height: 100svh; height: 950px; overflow: hidden; }
+.lp-cloud-horizon { top: -220px; opacity: .45; z-index: 0; }
+.lp-arrival-copy { position: relative; z-index: 4; text-align: center; padding: 50px 24px 0; }
+.lp-arrival h2 { color: #214c4b; font-size: clamp(40px, 5.5vw, 80px); letter-spacing: -.045em; line-height: 1.04; font-weight: 600; margin: 24px 0 30px; }
+.lp-meadow-art { position: absolute; width: 100%; height: 78%; bottom: 0; z-index: 2; }
+.lp-meadow-wordmark { position: absolute; bottom: 90px; left: 0; width: 100%; text-align: center; color: #fff4d8dc; font-family: Georgia, serif; font-size: clamp(100px, 19vw, 280px); font-weight: 700; letter-spacing: -.07em; z-index: 3; }
+.lp-land-footer { position: relative; z-index: 4; background: var(--hill-dark); }
+.lp-land-footer p, .lp-land-footer a { color: #e0ecd8; }
+:root[data-theme='night'] .lp-journey { background: linear-gradient(#040a17, #101f36 48%, #263e50 80%, #52616a); --cloud-light: #456079; --cloud-shadow: #233a54; --hill-far: #3d5960; --hill-light: #35534e; --hill-dark: #162f2c; --grass-0: #102622; --grass-1: #193b32; --grass-2: #24493e; --grass-3: #305446; --grass-4: #436557; --grass-5: #244135; --grass-6: #516e5c; }
+:root[data-theme='night'] .lp-sky { filter: brightness(.3) saturate(.4); opacity: .45; }
+:root[data-theme='night'] .lp-sky-fade { background: linear-gradient(#040a1760, transparent); }
+:root[data-theme='night'] .lp-eyebrow { color: #c0d4df; }
+:root[data-theme='night'] .lp-step { background: #102338e8; border-color: #7798ad40; }
+:root[data-theme='night'] .lp-step-copy { color: #b6c3d4; }
+:root[data-theme='night'] .lp-arrival h2 { color: #e0e9e0; }
+:root[data-theme='night'] .lp-meadow-wordmark { color: #d4e3dcbe; }
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .lp-cloud-crossing .lp-cloud-left { animation: cloud-pass-left linear both; animation-timeline: scroll(root); }
+    .lp-cloud-crossing .lp-cloud-right { animation: cloud-pass-right linear both; animation-timeline: scroll(root); }
+  }
+}
+@keyframes cloud-pass-left { from { transform: translate(0, 90px); } to { transform: translate(-22%, -200px); } }
+@keyframes cloud-pass-right { from { transform: scaleX(-1) translate(0, 90px); } to { transform: scaleX(-1) translate(-22%, -200px); } }
+@media (max-width: 640px) {
+  .lp-how { padding-top: 170px; padding-bottom: 120px; }
+  .lp-cloud-bank { height: 430px; }
+  .lp-cloud-crossing { top: 690px; }
+  .lp-arrival { height: 800px; min-height: 90svh; }
+  .lp-arrival-copy { padding-top: 80px; }
+  .lp-meadow-art { width: 160%; max-width: none; left: -30%; height: 65%; }
+  .lp-meadow-wordmark { bottom: 110px; }
+}
+/* Fade cloud edges so the atmosphere never forms a rectangular seam. */
+.lp-cloud-bank { mask-image: linear-gradient(transparent, #000 18%, #000 72%, transparent); }
+.lp-cloud-horizon { display: none; }
+.lp-cloud-bank { -webkit-mask-image: linear-gradient(transparent, #000 18%, #000 72%, transparent); }

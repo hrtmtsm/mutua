@@ -25,8 +25,8 @@ interface Profile {
 
 function score(a: Profile, b: Profile): number {
   let s = 60;
-  if (a.goal              === b.goal)              s += 15;
-  if (a.comm_style        === b.comm_style)        s += 20;
+  if (a.goal              && a.goal              === b.goal)              s += 15;
+  if (a.comm_style        && a.comm_style        === b.comm_style)        s += 20;
   if (a.practice_frequency && b.practice_frequency &&
       a.practice_frequency === b.practice_frequency) s += 10;
   return Math.min(s, 99);
@@ -122,8 +122,8 @@ export async function GET(req: NextRequest) {
       `Native ${a.native_language} speaker — exactly the language ${b.name ?? b.email.split('@')[0]} wants to practice`,
       `Learning ${a.learning_language} — ${b.name ?? b.email.split('@')[0]}'s native language`,
     ];
-    if (a.goal       === b.goal)       reasons.push(`Same goal: ${a.goal}`);
-    if (a.comm_style === b.comm_style) reasons.push(`Both prefer ${a.comm_style.toLowerCase()}`);
+    if (a.goal       && a.goal       === b.goal)       reasons.push(`Same goal: ${a.goal}`);
+    if (a.comm_style && a.comm_style === b.comm_style) reasons.push(`Both prefer ${a.comm_style.toLowerCase()}`);
     if (a.practice_frequency && a.practice_frequency === b.practice_frequency)
       reasons.push(`Both want to practice ${a.practice_frequency.toLowerCase()}`);
 

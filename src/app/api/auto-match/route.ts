@@ -28,8 +28,8 @@ interface WaitlistEntry {
 
 function score(a: Profile, b: Profile): number {
   let s = 60;
-  if (a.goal      === b.goal)      s += 15;
-  if (a.comm_style === b.comm_style) s += 20;
+  if (a.goal      && a.goal      === b.goal)      s += 15;
+  if (a.comm_style && a.comm_style === b.comm_style) s += 20;
   if (a.practice_frequency && b.practice_frequency &&
       a.practice_frequency === b.practice_frequency) s += 10;
   return Math.min(s, 99);
@@ -125,8 +125,8 @@ export async function POST(request: Request) {
       `Native ${me.native_language} speaker — exactly the language ${partner.email} wants to practice`,
       `Learning ${me.learning_language} — ${partner.email}'s native language`,
     ];
-    if (me.goal       === partner.goal)       reasons.push(`Same goal: ${me.goal}`);
-    if (me.comm_style === partner.comm_style) reasons.push(`Both prefer ${me.comm_style.toLowerCase()}`);
+    if (me.goal       && me.goal       === partner.goal)       reasons.push(`Same goal: ${me.goal}`);
+    if (me.comm_style && me.comm_style === partner.comm_style) reasons.push(`Both prefer ${me.comm_style.toLowerCase()}`);
     if (me.practice_frequency && me.practice_frequency === partner.practice_frequency)
       reasons.push(`Both want to practice ${me.practice_frequency.toLowerCase()}`);
 
@@ -263,6 +263,11 @@ export async function POST(request: Request) {
             comm_style:         w.communication_style,
             practice_frequency: w.practice_frequency ?? 'Once a week',
             availability:       'Flexible',
+            // Stub profile — this person hasn't interactively signed up yet
+            // (no password set). /auth/callback routes them through
+            // /auth/welcome on first real login because of this flag, not
+            // because of their name.
+            needs_welcome:      true,
           });
           if (profileErr) continue;
         }
@@ -272,8 +277,8 @@ export async function POST(request: Request) {
         `Native ${me.native_language} speaker — exactly the language ${w.email} wants to practice`,
         `Learning ${me.learning_language} — ${w.email}'s native language`,
       ];
-      if (me.goal       === w.goal)                reasons.push(`Same goal: ${me.goal}`);
-      if (me.comm_style === w.communication_style) reasons.push(`Both prefer ${me.comm_style.toLowerCase()}`);
+      if (me.goal       && me.goal       === w.goal)                reasons.push(`Same goal: ${me.goal}`);
+      if (me.comm_style && me.comm_style === w.communication_style) reasons.push(`Both prefer ${me.comm_style.toLowerCase()}`);
 
       const { error: insertErr } = await admin.from('matches').insert({
         session_id_a:       me.session_id,

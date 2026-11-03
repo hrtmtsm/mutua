@@ -9,6 +9,7 @@ import { track } from '@/lib/analytics';
 import { supabase, saveProfile } from '@/lib/supabase';
 import type { UserAvailability } from '@/lib/supabase';
 import AppShell from '@/components/AppShell';
+import { AVATAR_OPTIONS, defaultAvatarFor } from '@/lib/glyphAvatars';
 import { Pencil, Camera, ChevronDown } from 'lucide-react';
 
 
@@ -216,6 +217,9 @@ export default function ProfilePage() {
   const [draftName, setDraftName] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [iconPickerOpen, setIconPickerOpen] = useState(false);
+  const [draftAvatar, setDraftAvatar] = useState('');
+  const [iconSaved, setIconSaved] = useState(false);
 
   const [availSlots,    setAvailSlots]    = useState<UserAvailability[]>([]);
   const [availTimezone, setAvailTimezone] = useState('');
@@ -238,11 +242,11 @@ export default function ProfilePage() {
       setProfile(p);
       setName(p.name ?? '');
       setDraftName(p.name ?? '');
-      setAvatarUrl((p as any).avatar_url ?? '');
+      setAvatarUrl(p.avatar_url || defaultAvatarFor(p.session_id));
       setNative(p.native_language);
       setLearning(p.learning_language);
-      setGoal(p.goal);
-      setCommStyle(p.comm_style);
+      if (p.goal)       setGoal(p.goal);
+      if (p.comm_style) setCommStyle(p.comm_style);
       if (p.practice_frequency) setPracticeFrequency(p.practice_frequency);
       if (p.bio) setBio(p.bio);
       if (p.interests) {
@@ -288,7 +292,40 @@ export default function ProfilePage() {
 
   const [cropSrc, setCropSrc] = useState<string | null>(null);
 
-  const handleAvatarClick = () => fileRef.current?.click();
+  const handleAvatarClick = () => {
+    setDraftAvatar(avatarUrl);
+    setIconSaved(false);
+    setUploadError('');
+    setIconPickerOpen(open => !open);
+  };
+
+  const saveGlyphAvatar = async () => {
+    if (!profile || !AVATAR_OPTIONS.includes(draftAvatar) || uploading) return;
+    setUploading(true);
+    setUploadError('');
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Please sign in to save your icon.');
+      const response = await fetch('/api/select-avatar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ sessionId: profile.session_id, avatarUrl: draftAvatar }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Could not save icon.');
+      setAvatarUrl(result.url);
+      setProfile(previous => previous ? { ...previous, avatar_url: result.url } : previous);
+      const stored = localStorage.getItem('mutua_profile');
+      if (stored) localStorage.setItem('mutua_profile', JSON.stringify({ ...JSON.parse(stored), avatar_url: result.url }));
+      window.dispatchEvent(new Event('mutua:profile-updated'));
+      setIconPickerOpen(false);
+      setIconSaved(true);
+    } catch (error) {
+      setUploadError(error instanceof Error ? error.message : 'Could not save icon. Please try again.');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -412,9 +449,38 @@ export default function ProfilePage() {
                 )}
               </div>
 
+              <div className="flex items-center gap-3">
+                <button type="button" onClick={handleAvatarClick} disabled={uploading}
+                  aria-expanded={iconPickerOpen} aria-controls="glyph-icon-picker"
+                  className="text-sm font-semibold text-blue-600 hover:text-blue-700 disabled:opacity-50">Choose icon</button>
+                <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading}
+                  className="text-sm text-stone-500 hover:text-neutral-900 disabled:opacity-50">Upload photo</button>
+                {iconSaved && <span role="status" className="text-xs text-emerald-700">Icon saved</span>}
+              </div>
+              {iconPickerOpen && (
+                <section id="glyph-icon-picker" aria-label="Choose your icon" className="rounded-2xl border border-stone-200 bg-stone-50 p-4 space-y-4">
+                  <p className="text-sm font-semibold text-neutral-900">Pick your icon</p>
+                  <div className="grid grid-cols-6 gap-2">
+                    {AVATAR_OPTIONS.map((url, index) => (
+                      <button type="button" key={url} aria-label={`Avatar ${index + 1}`} aria-pressed={draftAvatar === url}
+                        onClick={() => setDraftAvatar(url)} disabled={uploading}
+                        className={`aspect-square rounded-full p-0.5 border-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 ${draftAvatar === url ? 'border-blue-600 bg-blue-50' : 'border-transparent hover:border-stone-300'}`}>
+                        <img src={url} alt="" className="w-full h-full rounded-full" />
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <button type="button" onClick={() => setIconPickerOpen(false)} disabled={uploading} className="text-sm text-stone-500">Cancel</button>
+                    <button type="button" onClick={saveGlyphAvatar} disabled={uploading || !AVATAR_OPTIONS.includes(draftAvatar)}
+                      className="rounded-full bg-blue-600 hover:bg-blue-700 px-5 py-2 text-sm font-semibold text-white disabled:opacity-50">{uploading ? 'Saving…' : 'Save icon'}</button>
+                  </div>
+                  <p className="text-xs text-stone-500">Adventurer / Glyphs by <a href="https://www.dicebear.com/styles/" target="_blank" rel="noreferrer" className="underline">DiceBear</a> / Lisa Wischofsky &amp; Matt Houser · <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer" className="underline">CC BY 4.0</a></p>
+                </section>
+              )}
+
               <div className="flex items-center gap-5">
                 <div className="relative shrink-0">
-                  <button className="block w-16 h-16 rounded-2xl overflow-hidden cursor-pointer group" onClick={handleAvatarClick}>
+                  <button className="block w-16 h-16 rounded-2xl overflow-hidden cursor-pointer group" onClick={handleAvatarClick} aria-label="Choose your icon" aria-expanded={iconPickerOpen} aria-controls="glyph-icon-picker" disabled={uploading}>
                     {avatarUrl ? (
                       <img src={avatarUrl} alt={name} className="w-full h-full object-cover"
                         onError={() => {

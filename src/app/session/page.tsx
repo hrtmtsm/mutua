@@ -266,12 +266,12 @@ export default function SessionPage() {
     if (!stored) { router.replace('/onboarding'); return; }
     const parsed = JSON.parse(stored) as MatchResult;
     setMatch(parsed);
-    setPool(buildFallbackPool(parsed.partner.goal));
+    setPool(buildFallbackPool(parsed.partner.goal ?? ''));
 
     if (isConfigured) {
       const myId      = localStorage.getItem('mutua_session_id') ?? '';
       const partnerId = parsed.partner.session_id;
-      fetchSessionPool(myId, partnerId, parsed.partner.goal)
+      fetchSessionPool(myId, partnerId, parsed.partner.goal ?? '')
         .then(p => setPool(p))
         .catch(() => { /* keep fallback */ });
     }

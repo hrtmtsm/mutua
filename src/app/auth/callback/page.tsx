@@ -47,12 +47,30 @@ export default function AuthCallbackPage() {
         localStorage.setItem('mutua_session_id', profile.session_id);
         localStorage.setItem('mutua_profile', JSON.stringify(profile));
 
-        // If they already have a name set, skip welcome — they're a returning user
-        const alreadySetUp = profile.name && !profile.name.includes('@');
-        router.replace(alreadySetUp ? '/app' : '/auth/welcome');
+        // needs_welcome is an explicit flag set only by the admin/stub profile
+        // creation paths (invited users who have never set a password) — not
+        // inferred from whether a name happens to be present. A SetupModal
+        // signup never sets this flag, so it always skips straight to /app.
+        //
+        // IMPORTANT: until the `needs_welcome` column is migrated in, `select('*')`
+        // simply omits the key — it will not exist on `profile` at all. We must not
+        // read that as "false" (would silently skip password setup for invited
+        // users). Distinguish "column missing" (`in` check fails) from "column
+        // present and false" by key presence, and fall back to the exact
+        // pre-existing name heuristic only in the missing-column case, so invited
+        // users keep going through /auth/welcome exactly as before until the
+        // migration lands — see invite-flow-fix-migration.sql.
+        const needsWelcome = 'needs_welcome' in profile
+          ? Boolean(profile.needs_welcome)
+          : !(profile.name && !String(profile.name).includes('@'));
+        router.replace(needsWelcome ? '/auth/welcome' : '/app');
       } else {
-        // Authenticated but no profile — go through onboarding
-        router.replace('/onboarding');
+        // Authenticated but no profile row yet — this happens for a brand-new
+        // SetupModal signup only when the Supabase project requires email
+        // confirmation (so the profile wasn't created before this redirect).
+        // Land on the main screen; it asks for just the language pair via
+        // SetupModal the next time the user tries to act, not here.
+        router.replace('/app');
       }
     };
 

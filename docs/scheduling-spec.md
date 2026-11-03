@@ -1,4 +1,4 @@
-# Mutua Scheduling System — Product Spec
+# yonder Scheduling System — Product Spec
 _Updated after design review_
 
 ---
