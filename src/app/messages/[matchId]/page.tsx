@@ -7,8 +7,10 @@ import { supabase, getMessages, sendMessage, type Message } from '@/lib/supabase
 import { LANG_AVATAR_COLOR } from '@/lib/constants';
 import { track } from '@/lib/analytics';
 import { markPop } from '@/lib/navigation';
+import { useLocale } from '@/components/LocaleProvider';
 
 export default function ChatPage() {
+  const { t } = useLocale();
   const router  = useRouter();
   const params  = useParams();
   const matchId = params.matchId as string;
@@ -42,10 +44,10 @@ export default function ChatPage() {
       const partnerSid = isA ? match.session_id_b : match.session_id_a;
       const partnerLang = isA ? (match.native_language_b ?? '') : (match.native_language_a ?? '');
       setAvatarBg(LANG_AVATAR_COLOR[partnerLang] ?? '#171717');
-      setPartnerName(isA ? (match.name_b ?? 'Partner') : (match.name_a ?? 'Partner'));
+      setPartnerName(isA ? (match.name_b ?? t('app.partner')) : (match.name_a ?? t('app.partner')));
 
       const { data: prof } = await supabase
-        .from('profiles').select('name, avatar_url').eq('session_id', partnerSid).maybeSingle();
+        .from('public_profile_cards').select('name, avatar_url').eq('session_id', partnerSid).maybeSingle();
       if (prof?.name)      setPartnerName(prof.name);
       if (prof?.avatar_url) setAvatarUrl(prof.avatar_url);
 
@@ -103,7 +105,7 @@ export default function ChatPage() {
       await sendMessage(matchId, myId, text);
       track('message_sent');
     } catch {
-      setError('Failed to send. Try again.');
+      setError(t('sidebar.sendFailed'));
       setMessages(prev => prev.filter(m => m.id !== optimistic.id));
     }
   };
@@ -135,7 +137,7 @@ export default function ChatPage() {
             <div className="w-5 h-5 border-2 border-[#2B8FFF] border-t-transparent rounded-full animate-spin" />
           </div>
         ) : messages.length === 0 ? (
-          <p className="text-sm text-stone-400 text-center mt-8">Say hello!</p>
+          <p className="text-sm text-stone-400 text-center mt-8">{t('sidebar.sayHello')}</p>
         ) : messages.map(m => {
           const isMe = m.sender_id === myId;
           return (
@@ -159,7 +161,7 @@ export default function ChatPage() {
           value={draft}
           onChange={e => setDraft(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && send()}
-          placeholder="Message..."
+          placeholder={t('sidebar.chatPlaceholder')}
           className="flex-1 text-base px-4 py-2.5 border border-stone-200 rounded-2xl focus:outline-none focus:border-neutral-400 bg-stone-50"
         />
         <button

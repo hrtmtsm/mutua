@@ -7,9 +7,11 @@
  */
 
 import { NextResponse } from 'next/server';
+import {requireAuth} from '@/lib/presenceAuth';
 import { createClient } from '@supabase/supabase-js';
 
 export async function POST(request: Request) {
+  const auth=await requireAuth(request);if(!auth.ok)return NextResponse.json({error:auth.error},{status:auth.status});
   const { sessionIds } = await request.json().catch(() => ({}));
   if (!Array.isArray(sessionIds) || sessionIds.length === 0) {
     return NextResponse.json({});
@@ -20,11 +22,15 @@ export async function POST(request: Request) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   );
 
-  // Resolve session_ids → emails via profiles
+  const memberships=await auth.rpcDb.from('matches').select('session_id_a,session_id_b');
+  const allowed=new Set((memberships.data||[]).flatMap(m=>[m.session_id_a,m.session_id_b]));
+  const safeIds=sessionIds.filter(id=>typeof id==='string'&&allowed.has(id)).slice(0,100);
+  if(!safeIds.length)return NextResponse.json({});
+  // Only matched partners can disclose their timezone.
   const { data: profiles } = await db
     .from('profiles')
     .select('session_id, email')
-    .in('session_id', sessionIds);
+    .in('session_id', safeIds);
 
   if (!profiles?.length) return NextResponse.json({});
 

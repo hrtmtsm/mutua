@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import { useRef } from 'react';
 import { consumePop, markPop, peekPop } from '@/lib/navigation';
 
-const TAB_ROUTES = ['/app', '/exchanges', '/history', '/settings'];
+const TAB_ROUTES = ['/app', '/exchanges', '/settings'];
 const isTab = (p: string) => TAB_ROUTES.some(r => p === r || p.startsWith(r + '/'));
 
 // Fallback for browser back gesture / hardware button.

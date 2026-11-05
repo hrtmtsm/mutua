@@ -3,6 +3,7 @@ import { supabase } from './supabase';
 export interface LiveMessage { id: number; conversation_id: string; sender_id: string; client_id: string; body: string; created_at: string }
 export interface LiveCall { id: string; conversation_id: string; from_user: string; status: 'ringing'|'accepted'|'declined'|'cancelled'|'expired'|'ended'; expires_at: string; ended_reason: string|null }
 export interface LiveSnapshot {
+ voice?: import('./practice').VoiceSession|null;
  userId: string;
  people?: { id: string; name: string|null; avatarUrl: string|null; countryCode: string|null }[];
  queue: { kind: 'text'|'voice'; expires_at: string } | null;
@@ -17,7 +18,7 @@ export async function liveAction(action: string, data: Record<string, unknown> =
  const request = (token: string) => fetch('/api/live-exchange', {
   method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
   body: JSON.stringify({ action, data }), signal: AbortSignal.timeout(15000),
- });
+ }).catch(() => { throw new Error('通信がタイムアウトしました。もう一度お試しください。'); });
  let response = await request(session.access_token);
  // A rejected token has not executed the action. Refresh it once before retrying.
  if (response.status === 401) {

@@ -1,18 +1,26 @@
 'use client';
+import {authorizedFetch} from '@/lib/practice';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import TopNav from '@/components/Sidebar';
+import { useLocale } from '@/components/LocaleProvider';
+import type { DictionaryKey } from '@/lib/i18n/dictionary';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
-const DAY_NAMES  = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const DAY_KEYS: DictionaryKey[] = [
+  'weekday.sun', 'weekday.mon', 'weekday.tue', 'weekday.wed', 'weekday.thu', 'weekday.fri', 'weekday.sat',
+];
+const MONTH_KEYS: DictionaryKey[] = [
+  'month.jan', 'month.feb', 'month.mar', 'month.apr', 'month.may', 'month.jun',
+  'month.jul', 'month.aug', 'month.sep', 'month.oct', 'month.nov', 'month.dec',
+];
 
-function fmtLabel(date: Date, hour: number, min: number) {
+function fmtLabel(date: Date, hour: number, min: number, t: (key: DictionaryKey) => string) {
   const h12  = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
   const ampm = hour >= 12 ? 'PM' : 'AM';
   const m    = String(min).padStart(2, '0');
-  return `${DAY_NAMES[date.getDay()]}, ${MONTH_NAMES[date.getMonth()]} ${date.getDate()} · ${h12}:${m} ${ampm}`;
+  return `${t(DAY_KEYS[date.getDay()])}, ${t(MONTH_KEYS[date.getMonth()])} ${date.getDate()} · ${h12}:${m} ${ampm}`;
 }
 
 function fmtTime(hour: number, min: number) {
@@ -41,14 +49,14 @@ function getTimeSlots(startHour = 8, endHour = 22) {
   return slots;
 }
 
-function generateSuggestedSlots(): string[] {
+function generateSuggestedSlots(t: (key: DictionaryKey) => string): string[] {
   const slots: string[] = [];
   const cursor = new Date();
   cursor.setDate(cursor.getDate() + 1);
   cursor.setSeconds(0); cursor.setMilliseconds(0);
   while (slots.length < 4) {
     const isWeekend = cursor.getDay() === 0 || cursor.getDay() === 6;
-    slots.push(fmtLabel(cursor, isWeekend ? 10 : 19, 0));
+    slots.push(fmtLabel(cursor, isWeekend ? 10 : 19, 0, t));
     cursor.setDate(cursor.getDate() + 1);
   }
   return slots;
@@ -56,8 +64,9 @@ function generateSuggestedSlots(): string[] {
 
 // ── Component ──────────────────────────────────────────────────────────────
 export default function SessionSchedulePage() {
+  const { t } = useLocale();
   const router = useRouter();
-  const [partnerName, setPartnerName] = useState('your partner');
+  const [partnerName, setPartnerName] = useState(t('setAvailability.yourPartnerFallback'));
   const [slots,       setSlots]       = useState<string[]>([]);
   const [selected,    setSelected]    = useState<string | null>(null);
   const [showGrid,    setShowGrid]    = useState(false);
@@ -69,7 +78,7 @@ export default function SessionSchedulePage() {
 
   useEffect(() => {
     const stored = localStorage.getItem('mutua_session_slots');
-    setSlots(stored ? JSON.parse(stored) : generateSuggestedSlots());
+    setSlots(stored ? JSON.parse(stored) : generateSuggestedSlots(t));
     const partner = localStorage.getItem('mutua_current_partner');
     if (partner) {
       const { name } = JSON.parse(partner);
@@ -98,7 +107,7 @@ export default function SessionSchedulePage() {
     const myProfile    = localStorage.getItem('mutua_profile');
     const myName       = myProfile ? (JSON.parse(myProfile).name ?? '') : '';
     if (matchId && partnerEmail) {
-      fetch('/api/confirm-session', {
+      authorizedFetch('/api/confirm-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -122,9 +131,9 @@ export default function SessionSchedulePage() {
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center space-y-2 py-8">
             <p className="text-4xl">✅</p>
-            <p className="font-bold text-lg text-neutral-900">Session noted!</p>
+            <p className="font-bold text-lg text-neutral-900">{t('sessionSchedule.noted')}</p>
             <p className="text-sm text-neutral-400">
-              We'll remind you to connect with {partnerName} — {selected?.toLowerCase()}.
+              {t('sessionSchedule.reminderBody').replace('{partner}', partnerName).replace('{time}', selected?.toLowerCase() ?? '')}
             </p>
           </div>
         </div>
@@ -141,9 +150,9 @@ export default function SessionSchedulePage() {
 
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-stone-400 mb-1">
-              Schedule with {partnerName}
+              {t('sessionSchedule.scheduleWith').replace('{partner}', partnerName)}
             </p>
-            <p className="font-black text-2xl text-neutral-900">When works for you?</p>
+            <p className="font-black text-2xl text-neutral-900">{t('sessionSchedule.whenWorks')}</p>
           </div>
 
           {/* ── Suggested slots ── */}
@@ -165,14 +174,14 @@ export default function SessionSchedulePage() {
           {/* ── Custom grid picker (multi-select) ── */}
           {showGrid ? (
             <div className="space-y-3">
-              <p className="text-xs text-neutral-400">Select one or more times — {partnerName} will pick one.</p>
+              <p className="text-xs text-neutral-400">{t('sessionSchedule.selectMultiple').replace('{partner}', partnerName)}</p>
               <div className="border border-stone-200 rounded-2xl overflow-hidden">
                 {/* Day headers */}
                 <div className="grid border-b border-stone-100" style={{ gridTemplateColumns: `80px repeat(${days.length}, 1fr)` }}>
                   <div className="px-3 py-3" />
                   {days.map(d => (
                     <div key={d.toISOString()} className="px-2 py-3 text-center border-l border-stone-100">
-                      <p className="text-xs font-semibold text-neutral-500">{DAY_NAMES[d.getDay()]}</p>
+                      <p className="text-xs font-semibold text-neutral-500">{t(DAY_KEYS[d.getDay()])}</p>
                       <p className="text-xs text-stone-400">{d.getDate()}/{d.getMonth()+1}</p>
                     </div>
                   ))}
@@ -190,7 +199,7 @@ export default function SessionSchedulePage() {
                         {min === 0 && <span className="text-xs text-stone-400">{fmtTime(hour, 0)}</span>}
                       </div>
                       {days.map(d => {
-                        const label = fmtLabel(d, hour, min);
+                        const label = fmtLabel(d, hour, min, t);
                         const isSelected = picked.has(label);
                         return (
                           <button
@@ -217,7 +226,7 @@ export default function SessionSchedulePage() {
                   onClick={() => confirm(Array.from(picked))}
                   className="w-full py-3 btn-primary text-white font-bold rounded-xl"
                 >
-                  Send {picked.size} option{picked.size > 1 ? 's' : ''} to {partnerName}
+                  {(picked.size > 1 ? t('sessionSchedule.sendOptionsPlural') : t('sessionSchedule.sendOptionsSingular')).replace('{n}', String(picked.size)).replace('{partner}', partnerName)}
                 </button>
               )}
             </div>
@@ -226,7 +235,7 @@ export default function SessionSchedulePage() {
               onClick={() => setShowGrid(true)}
               className="w-full text-center text-sm text-neutral-400 hover:text-neutral-600 transition-colors"
             >
-              Pick another time
+              {t('sessionSchedule.pickAnotherTime')}
             </button>
           )}
 
@@ -234,7 +243,7 @@ export default function SessionSchedulePage() {
             onClick={() => router.push('/app')}
             className="w-full text-center text-xs text-neutral-300 hover:text-neutral-400 transition-colors"
           >
-            Schedule later
+            {t('sessionSchedule.scheduleLater')}
           </button>
 
         </div>

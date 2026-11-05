@@ -8,6 +8,7 @@ import { getSessionStarters } from '@/lib/prompts';
 import TopNav from '@/components/Sidebar';
 import { Mic, MicOff, Video, VideoOff } from 'lucide-react';
 import { supabase, isConfigured } from '@/lib/supabase';
+import { useLocale } from '@/components/LocaleProvider';
 
 function Avatar({ name, lang, avatarUrl, size = 'lg' }: { name: string; lang: string; avatarUrl?: string | null; size?: 'sm' | 'lg' }) {
   const bg = LANG_AVATAR_COLOR[lang] ?? '#3b82f6';
@@ -30,6 +31,7 @@ function Avatar({ name, lang, avatarUrl, size = 'lg' }: { name: string; lang: st
 }
 
 export default function PreSessionPage() {
+  const { t }      = useLocale();
   const router     = useRouter();
   const videoRef   = useRef<HTMLVideoElement>(null);
   const streamRef  = useRef<MediaStream | null>(null);
@@ -171,7 +173,7 @@ export default function PreSessionPage() {
                 <div className="w-16 h-16 rounded-2xl overflow-hidden bg-neutral-700 flex items-center justify-center text-white font-black text-xl">
                   {myAvatarUrl
                     ? <img src={myAvatarUrl} alt="" className="w-full h-full object-cover" />
-                    : myInitials || 'You'
+                    : myInitials || t('preSession.youFallback')
                   }
                 </div>
               </div>
@@ -179,7 +181,7 @@ export default function PreSessionPage() {
 
             {/* Name label */}
             <div className="absolute bottom-14 left-4" style={{ zIndex: 2 }}>
-              <span className="text-sm font-semibold text-white drop-shadow">You</span>
+              <span className="text-sm font-semibold text-white drop-shadow">{t('preSession.youFallback')}</span>
             </div>
 
             {/* Controls */}
@@ -190,7 +192,7 @@ export default function PreSessionPage() {
               {/* Mic */}
               <button
                 onClick={() => setMicOn(m => !m)}
-                title={micOn ? 'Mute' : 'Unmute'}
+                title={micOn ? t('preSession.mute') : t('preSession.unmute')}
                 className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${micOn ? 'bg-white/20 hover:bg-white/30' : 'bg-red-500 hover:bg-red-600'}`}
               >
                 {micOn
@@ -202,7 +204,7 @@ export default function PreSessionPage() {
               {/* Camera */}
               <button
                 onClick={() => setCameraOn(c => !c)}
-                title={cameraOn ? 'Camera off' : 'Camera on'}
+                title={cameraOn ? t('preSession.cameraOff') : t('preSession.cameraOn')}
                 className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${cameraOn ? 'bg-white/20 hover:bg-white/30' : 'bg-red-500 hover:bg-red-600'}`}
               >
                 {cameraOn
@@ -223,7 +225,7 @@ export default function PreSessionPage() {
                 >
                   {audioDevices.map(d => (
                     <option key={d.deviceId} value={d.deviceId}>
-                      {d.label || `Microphone ${d.deviceId.slice(0, 6)}`}
+                      {d.label || t('preSession.microphoneFallback').replace('{id}', d.deviceId.slice(0, 6))}
                     </option>
                   ))}
                 </select>
@@ -233,7 +235,7 @@ export default function PreSessionPage() {
 
           {/* ── Right: join panel ── */}
           <div className="w-full md:w-64 flex flex-col items-center text-center gap-5">
-            <p className="font-serif font-black text-2xl text-neutral-900">Ready to join?</p>
+            <p className="font-serif font-black text-2xl text-neutral-900">{t('preSession.readyToJoin')}</p>
 
             <div className="flex flex-col items-center gap-2">
               <Avatar name={partner.name} lang={partner.native_language} avatarUrl={partner.avatar_url} size="lg" />
@@ -242,18 +244,18 @@ export default function PreSessionPage() {
                 {partnerOnline && (
                   <span className="ml-1.5 inline-flex items-center gap-1 text-emerald-600 font-medium">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
-                    is in this exchange
+                    {t('preSession.isInExchange')}
                   </span>
                 )}
               </p>
-              <p className="text-xs text-stone-400">{flag} Native {partner.native_language}</p>
+              <p className="text-xs text-stone-400">{t('preSession.nativeLine').replace('{flag}', flag).replace('{lang}', partner.native_language)}</p>
             </div>
 
             <button
               onClick={handleStart}
               className="w-full py-3.5 btn-primary text-white font-bold text-base rounded-xl shadow-md"
             >
-              Join now
+              {t('preSession.joinNow')}
             </button>
           </div>
 

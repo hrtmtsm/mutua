@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { useLocale } from '@/components/LocaleProvider';
 
 // Pages that should never show the ban gate (auth flows)
 const EXEMPT = ['/login', '/signup', '/auth', '/onboarding', '/landing', '/admin'];
@@ -15,6 +16,7 @@ interface BanInfo {
 }
 
 export default function BanGate({ children }: { children: React.ReactNode }) {
+  const { t } = useLocale();
   const pathname = usePathname();
   const [ban,      setBan]      = useState<BanInfo | null>(null);
   const [checked,  setChecked]  = useState(false);
@@ -78,35 +80,34 @@ export default function BanGate({ children }: { children: React.ReactNode }) {
         </div>
 
         <h1 className="font-serif font-black text-2xl text-neutral-900 mb-2">
-          Account suspended
+          {t('banGate.title')}
         </h1>
         <p className="text-sm text-stone-500 mb-4 leading-relaxed">
-          Your account is temporarily suspended until <strong className="text-neutral-800">{until}</strong>.
+          {t('banGate.suspendedUntil').split('{date}')[0]}<strong className="text-neutral-800">{until}</strong>{t('banGate.suspendedUntil').split('{date}')[1]}
         </p>
 
         {ban.ban_reason && (
           <div className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 mb-6 text-left">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-400 mb-1">Flagged message</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-400 mb-1">{t('banGate.flaggedMessage')}</p>
             <p className="text-sm text-neutral-700 leading-relaxed italic">"{ban.ban_reason}"</p>
           </div>
         )}
 
         <p className="text-xs text-stone-400 leading-relaxed mb-6">
-          Mutua is a language-learning space. Sharing external contact info like Instagram or Snapchat
-          isn't allowed to keep our community safe.
+          {t('banGate.policyNotice')}
         </p>
 
         {claimed ? (
           <div className="w-full bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-3 text-center">
-            <p className="text-sm font-semibold text-emerald-700">Appeal submitted</p>
-            <p className="text-xs text-emerald-600 mt-0.5">We'll review it and get back to you.</p>
+            <p className="text-sm font-semibold text-emerald-700">{t('banGate.appealSubmittedTitle')}</p>
+            <p className="text-xs text-emerald-600 mt-0.5">{t('banGate.appealSubmittedBody')}</p>
           </div>
         ) : showForm ? (
           <div className="w-full space-y-3">
             <textarea
               value={note}
               onChange={e => setNote(e.target.value)}
-              placeholder="Anything you'd like us to know…"
+              placeholder={t('banGate.appealPlaceholder')}
               rows={3}
               className="w-full text-sm border border-stone-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-stone-200 resize-none text-neutral-800 placeholder-stone-300"
             />
@@ -115,14 +116,14 @@ export default function BanGate({ children }: { children: React.ReactNode }) {
                 onClick={() => setShowForm(false)}
                 className="flex-1 py-2.5 text-sm border border-stone-200 text-stone-500 rounded-xl"
               >
-                Cancel
+                {t('profile.cancel')}
               </button>
               <button
                 onClick={handleClaim}
                 disabled={claiming}
                 className="flex-1 py-2.5 text-sm bg-neutral-900 text-white font-semibold rounded-xl disabled:opacity-40"
               >
-                {claiming ? 'Submitting...' : 'Submit appeal'}
+                {claiming ? t('banGate.submitting') : t('banGate.submitAppeal')}
               </button>
             </div>
           </div>
@@ -131,7 +132,7 @@ export default function BanGate({ children }: { children: React.ReactNode }) {
             onClick={() => setShowForm(true)}
             className="text-sm text-[#2B8FFF] underline"
           >
-            This was a mistake — claim
+            {t('banGate.claimMistake')}
           </button>
         )}
       </div>

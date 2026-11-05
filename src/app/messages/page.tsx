@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase';
 import { LANG_AVATAR_COLOR } from '@/lib/constants';
 import { BottomNav } from '@/components/Sidebar';
 import type { Message } from '@/lib/supabase';
+import { useLocale } from '@/components/LocaleProvider';
 
 type Conversation = {
   matchId:     string;
@@ -23,6 +24,7 @@ function initials(name: string) {
 }
 
 export default function MessagesPage() {
+  const { t } = useLocale();
   const router = useRouter();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [myId, setMyId]   = useState('');
@@ -49,7 +51,7 @@ export default function MessagesPage() {
 
       const [{ data: allMessages }, { data: profiles }] = await Promise.all([
         supabase.from('messages').select('*').in('match_id', matchIds).order('created_at', { ascending: true }),
-        supabase.from('profiles').select('session_id, name, avatar_url, native_language').in('session_id', partnerSids),
+        supabase.from('public_profile_cards').select('session_id, name, avatar_url, native_language').in('session_id', partnerSids),
       ]);
 
       const profileMap = Object.fromEntries((profiles ?? []).map(p => [p.session_id, p]));
@@ -68,7 +70,7 @@ export default function MessagesPage() {
           const msgs = msgsByMatch[m.id] ?? [];
           return {
             matchId:     m.id,
-            partnerName: profile?.name ?? (isA ? m.name_b : m.name_a) ?? 'Partner',
+            partnerName: profile?.name ?? (isA ? m.name_b : m.name_a) ?? t('app.partner'),
             avatarBg:    LANG_AVATAR_COLOR[partnerLang] ?? '#171717',
             avatarUrl:   profile?.avatar_url ?? null,
             lastMessage: msgs[msgs.length - 1] ?? null,
@@ -89,7 +91,7 @@ export default function MessagesPage() {
         <button onClick={() => { markPop(); router.back(); }} className="p-1.5 -ml-1.5 text-stone-400 hover:text-neutral-700 transition-colors">
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <span className="font-serif font-bold text-xl text-neutral-900">Messages</span>
+        <span className="font-serif font-bold text-xl text-neutral-900">{t('nav.titleMessages')}</span>
       </header>
 
       <main className="flex-1 pb-24">
@@ -99,9 +101,9 @@ export default function MessagesPage() {
           </div>
         ) : conversations.length === 0 ? (
           <div className="py-16 text-center px-4">
-            <p className="text-sm font-semibold text-neutral-900 mb-1">No messages</p>
+            <p className="text-sm font-semibold text-neutral-900 mb-1">{t('sidebar.noMessagesTitle')}</p>
             <p className="text-xs text-stone-400 leading-relaxed">
-              Messages from your exchange partners will appear here.
+              {t('sidebar.noMessagesBody')}
             </p>
           </div>
         ) : (
@@ -130,7 +132,7 @@ export default function MessagesPage() {
                     </p>
                     {last && (
                       <p className={`text-sm truncate mt-0.5 ${hasUnread ? 'text-neutral-700 font-medium' : 'text-stone-400'}`}>
-                        {last.sender_id === myId ? 'You: ' : ''}{last.text}
+                        {last.sender_id === myId ? t('sidebar.youPrefix') : ''}{last.text}
                       </p>
                     )}
                   </div>

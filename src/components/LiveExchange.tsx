@@ -7,16 +7,32 @@ import localFont from 'next/font/local';
 import { supabase } from '@/lib/supabase';
 import { liveAction, type LiveSnapshot, type LiveMessage } from '@/lib/liveExchange';
 import { useLiveAudio } from '@/hooks/useLiveAudio';
+import { useSpeaking } from '@/hooks/useSpeaking';
 import AppShell from './AppShell';
+import AIPractice from './AIPractice';
+import {practiceAction} from '@/lib/practice';
+import {usePracticeAudio} from '@/hooks/usePracticeAudio';
 import SetupModal from './SetupModal';
-import { defaultAvatarFor } from '@/lib/glyphAvatars';
+import { initialsFor, isRealPhoto } from '@/lib/glyphAvatars';
+import { LANG_AVATAR_COLOR, LANG_FLAG_CODE } from '@/lib/constants';
 import { LANGUAGES, type Language } from '@/lib/types';
 import LanguagePicker from './LanguagePicker';
+import { Mic, MicOff, PhoneOff, SkipForward, X } from 'lucide-react';
+import { useLocale } from './LocaleProvider';
 import './liveExchange.css';
+
+// Google Meet–style fallback: the real photo when there is one, otherwise
+// initials on a language-colored background — never a stock cartoon glyph.
+function AvatarTile({ url, name, color }: { url?: string | null; name?: string | null; color: string }) {
+ return isRealPhoto(url)
+  ? <img src={url} alt="" />
+  : <div className="live-avatar-fallback" style={{ backgroundColor: color }}>{initialsFor(name) || '?'}</div>;
+}
 
 const liveFont = localFont({ src: '../app/preview/sky/fonts/Nunito-Variable.ttf', variable: '--font-live-logo', weight: '200 1000', display: 'swap' });
 
 export default function LiveExchange() {
+ const { t } = useLocale();
  const [user, setUser] = useState<User|null>(null);
  const [authLoaded, setAuthLoaded] = useState(false);
  const [profileReady, setProfileReady] = useState(false);
@@ -24,19 +40,27 @@ export default function LiveExchange() {
  const [pendingStart, setPendingStart] = useState(false);
  const startRead = useRef(false);
  const [setup, setSetup] = useState(false);
+ const [setupInitialTab, setSetupInitialTab] = useState<'signup' | 'login'>('signup');
+ const [mediaCallId,setMediaCallId]=useState<string|null>(null);
  const [snapshot, setSnapshot] = useState<LiveSnapshot|null>(null);
  const [messages, setMessages] = useState<LiveMessage[]>([]);
  const [input, setInput] = useState('');
  const [error, setError] = useState('');
  const [busy, setBusy] = useState(false);
  const [sending, setSending] = useState(false);
+ const [transcriptionConsent,setTranscriptionConsent]=useState(false);
+ const connectedCall=useRef('');
  const [muted, setMuted] = useState(false);
  const [audioBlocked, setAudioBlocked] = useState(false);
  const [expired, setExpired] = useState(false);
+ const [showAiPrompt, setShowAiPrompt] = useState(false);
+ const [aiStage, setAiStage] = useState<'ask' | 'practice'>('ask');
  const [stoppedByUser, setStoppedByUser] = useState(false);
  const [sessionId, setSessionId] = useState('');
  const [nativeLanguage, setNativeLanguage] = useState<Language | ''>('');
  const [learningLanguage, setLearningLanguage] = useState<Language | ''>('');
+ const [myName, setMyName] = useState('');
+ const [myAvatarUrl, setMyAvatarUrl] = useState<string | null>(null);
  const audioRef = useRef<HTMLAudioElement>(null);
  const bottomRef = useRef<HTMLDivElement>(null);
  const currentRef = useRef<LiveSnapshot|null>(null);
@@ -48,19 +72,21 @@ export default function LiveExchange() {
  sessionUser.current = user?.id ?? null;
  const conversation = snapshot?.conversation;
  const active = conversation?.status === 'active';
- const call = active && snapshot?.call?.status === 'accepted' ? snapshot.call : null;
+ const call = active && snapshot?.call?.status === 'accepted' && mediaCallId===snapshot.call.id ? snapshot.call : null;
  const partner = snapshot?.partner;
  const loadProfile = useCallback(async (account: User) => {
   const { data, error } = await supabase.from('profiles').select('*').eq('email', account.email!)
    .order('created_at', { ascending: false }).limit(1).maybeSingle();
   if (sessionUser.current !== account.id) return;
-  if (error) { setError('プロフィールを読み込めませんでした。'); return; }
+  if (error) { setError(t('liveExchange.profileLoadError')); return; }
   setProfileReady(!!data?.native_language && !!data?.learning_language);
   setProfileLoaded(true);
   if (data) {
    setSessionId(data.session_id);
    setNativeLanguage(data.native_language ?? '');
    setLearningLanguage(data.learning_language ?? '');
+   setMyName(data.name ?? '');
+   setMyAvatarUrl(data.avatar_url ?? null);
    localStorage.setItem('mutua_profile', JSON.stringify(data));
    localStorage.setItem('mutua_session_id', data.session_id);
    window.dispatchEvent(new Event('mutua:profile-updated'));
@@ -78,13 +104,13 @@ export default function LiveExchange() {
  }, []);
  useEffect(() => {
   setProfileReady(false); setProfileLoaded(false); setSnapshot(null); setMessages([]); currentRef.current = null;
-  setSessionId(''); setNativeLanguage(''); setLearningLanguage('');
+  setSessionId(''); setNativeLanguage(''); setLearningLanguage(''); setMyName(''); setMyAvatarUrl(null);
   requestVersion.current++;
   if (user) loadProfile(user);
  }, [user?.id, loadProfile]);
  const apply = useCallback((next: LiveSnapshot) => {
   const previous = currentRef.current;
-  if (previous?.queue && !next.queue && !next.conversation) setExpired(true);
+  if (previous?.queue && !next.queue && !next.conversation) { setExpired(true); setAiStage('ask'); setShowAiPrompt(true); }
   if (previous?.conversation?.id !== next.conversation?.id) setMessages(next.messages || []);
   else setMessages(old => {
    const merged = new Map(old.map(message => [message.id, message]));
@@ -101,7 +127,7 @@ export default function LiveExchange() {
   try {
    const next = await liveAction('state');
    if (version === requestVersion.current && identity === sessionUser.current) apply(next);
-  } catch (error) { if (identity === sessionUser.current) setError(error instanceof Error ? error.message : '接続エラー'); }
+  } catch (error) { if (identity === sessionUser.current) setError(error instanceof Error ? error.message : t('liveExchange.connectionError')); }
   finally { pollBusy.current = false; }
  }, [apply]);
  useEffect(() => {
@@ -121,11 +147,12 @@ export default function LiveExchange() {
   return () => { supabase.removeChannel(channel); };
  }, [conversation?.id, user?.id, refresh]);
  const command = async (action: string, data: Record<string, unknown> = {}) => {
-  if (commandBusy.current) throw new Error('操作の完了をお待ちください。');
+  if (commandBusy.current) throw new Error(t('liveExchange.actionBusyError'));
   commandBusy.current = true; const version = ++requestVersion.current;
   const identity = sessionUser.current;
   try {
    const next = await liveAction(action, data);
+   if((action==='invite'||action==='accept')&&next.call?.id)setMediaCallId(next.call.id);
    if (version === requestVersion.current && identity === sessionUser.current) apply(next);
    return next;
   } finally { commandBusy.current = false; }
@@ -133,7 +160,7 @@ export default function LiveExchange() {
  const perform = async (action: string, data: Record<string, unknown> = {}) => {
   setError(''); setBusy(true);
   try { await command(action, data); }
-  catch (error) { setError(error instanceof Error ? error.message : '操作に失敗しました。'); }
+  catch (error) { setError(error instanceof Error ? error.message : t('liveExchange.actionFailed')); }
   finally { setBusy(false); }
  };
  const stopFailedCall = (reason: string) => {
@@ -143,10 +170,19 @@ export default function LiveExchange() {
   const failedCallId = call.id;
   liveAction('end_call', { conversationId: call.conversation_id, callId: failedCallId, reason: 'media_failure' })
    .then(next => { if (currentRef.current?.call?.id === failedCallId) { requestVersion.current++; apply(next); } })
-   .catch(() => { if (currentRef.current?.call?.id === failedCallId) setError(`${reason} 通話終了の同期に失敗しました。「会話を終了」を押してください。`); });
+   .catch(() => { if (currentRef.current?.call?.id === failedCallId) setError(`${reason} ${t('liveExchange.callEndSyncFailed')}`); });
  };
  const rtc = useLiveAudio({ callId: call?.id, conversationId: call?.conversation_id,
   myId: user?.id, partnerId: partner?.id, muted, onFailure: stopFailedCall });
+ const selfSpeaking = useSpeaking(rtc.local) && !muted;
+ const partnerSpeaking = useSpeaking(rtc.remote);
+ const transcription=usePracticeAudio(snapshot?.voice?.partner_type==='human'?snapshot.voice:null,rtc.local,muted);
+ useEffect(()=>{
+  if(rtc.state!=='connected'||!call||connectedCall.current===call.id)return;
+  connectedCall.current=call.id;
+  void practiceAction('connected',{callId:call.id}).then(()=>refresh()).catch(()=>{connectedCall.current='';setError(t('liveExchange.callLogStartFailed'));});
+ },[rtc.state,call?.id,refresh]);
+ const endVoice=async()=>{setBusy(true);rtc.local?.getTracks().forEach(t=>t.stop());await transcription.finish();await perform('end_call',{conversationId:conversation?.id,callId:call?.id});};
  useEffect(() => {
   const audio = audioRef.current;
   if (!audio) return;
@@ -157,15 +193,15 @@ export default function LiveExchange() {
  useEffect(() => { bottomRef.current?.scrollIntoView({ block: 'nearest' }); }, [messages.length]);
  // Every match starts as text — voice is never a separate queue to choose,
  // just an "通話を開始" button inside the conversation once matched.
- const join = async () => {
+ const join = async (native = nativeLanguage, learning = learningLanguage) => {
   if (!authLoaded) return;
-  if (!user || !profileReady) { setPendingStart(true); setSetup(true); return; }
-  setExpired(false);
+  if (!user || !profileReady) { setPendingStart(true); setSetupInitialTab('signup'); setSetup(true); return; }
+  setExpired(false); setShowAiPrompt(false);
   setError(''); setBusy(true);
   try {
    const current = await command('state');
-   if (!current.queue && current.conversation?.status !== 'active') await command('join', { kind: 'text' });
-  } catch (error) { setError(error instanceof Error ? error.message : '接続できませんでした。'); }
+   if (current.conversation?.status !== 'active') await command('join', { kind: 'text', nativeLanguage: native, learningLanguage: learning });
+  } catch (error) { setError(error instanceof Error ? error.message : t('liveExchange.connectFailed')); }
   finally { setBusy(false); }
  };
  // Only a link from the landing page's own CTA (?start=) skips straight to
@@ -182,10 +218,15 @@ export default function LiveExchange() {
   if (requestedNative && (LANGUAGES as readonly string[]).includes(requestedNative)) setNativeLanguage(requestedNative as Language);
   if (requestedLearning && (LANGUAGES as readonly string[]).includes(requestedLearning)) setLearningLanguage(requestedLearning as Language);
   const hasStart = params.has('start');
-  if (hasStart || requestedNative || requestedLearning) {
-   params.delete('start'); params.delete('native'); params.delete('learning');
+  // A dedicated "already have an account? log in" entry point — opens
+  // straight to the login tab and never auto-joins a search afterward
+  // (that's decided by onComplete's isSignup flag, not by this param).
+  const hasLogin = params.has('login');
+  if (hasStart || hasLogin || requestedNative || requestedLearning) {
+   params.delete('start'); params.delete('login'); params.delete('native'); params.delete('learning');
    window.history.replaceState(null, '', window.location.pathname + (params.size ? `?${params}` : '') + window.location.hash);
   }
+  if (hasLogin && !user) { setSetupInitialTab('login'); setSetup(true); }
   // Pass the URL-derived values straight through instead of reading
   // nativeLanguage/learningLanguage state here — the setState calls above
   // haven't committed yet within this same effect, so the state would
@@ -199,33 +240,20 @@ export default function LiveExchange() {
   if (!pendingStart || setup || !user || !profileReady) return;
   setPendingStart(false); void join();
  }, [pendingStart, setup, user?.id, profileReady]);
- const saveLanguages = async (native: Language, learning: Language) => {
-  const { data: { session } } = await supabase.auth.getSession();
-  const res = await fetch('/api/save-profile', {
-   method: 'POST',
-   headers: { 'Content-Type': 'application/json', ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}) },
-   body: JSON.stringify({ session_id: sessionId, native_language: native, learning_language: learning }),
-  });
-  if (!res.ok) throw new Error('言語設定を保存できませんでした。');
- };
  // Start: the explicit entry point (preview screen's button, or the landing
  // page's ?native=/?learning=) — saves any condition change first (when
  // there's a profile to save it to), and only then joins. Takes explicit
  // overrides rather than always reading nativeLanguage/learningLanguage
- // state, so a value that just arrived via URL params is never skipped
+ // state; the server persists the pair inside the same matching transaction, so a value from URL params is never skipped
  // while waiting for its own setState to commit.
  const startWith = async (overrideNative: Language | null, overrideLearning: Language | null) => {
   const native = overrideNative ?? nativeLanguage;
   const learning = overrideLearning ?? learningLanguage;
   if (user && profileReady && native && learning) {
-   if (native === learning) { setError('母語と学習言語は別の言語を選んでください。'); return; }
-   setError(''); setBusy(true);
-   try { await saveLanguages(native, learning); }
-   catch (error) { setError(error instanceof Error ? error.message : '言語設定を保存できませんでした。'); setBusy(false); return; }
-   setBusy(false);
+   if (native === learning) { setError(t('liveExchange.sameLanguageError')); return; }
   }
   setStoppedByUser(false);
-  await join();
+  await join(native, learning);
  };
  const handleStart = () => startWith(null, null);
  // Next: skip whatever's happening now (if anything) and look for someone new.
@@ -234,13 +262,14 @@ export default function LiveExchange() {
   setStoppedByUser(false);
   setError(''); setBusy(true);
   try {
+   await transcription.finish();
    const existing = currentRef.current;
    if (existing?.conversation?.status === 'active') await command('end', { conversationId: existing.conversation.id, callId: existing.call?.id });
    else if (existing?.queue) await command('cancel');
-   if (!user || !profileReady) { setPendingStart(true); setSetup(true); return; }
-   setExpired(false);
-   await command('join', { kind: 'text' });
-  } catch (error) { setError(error instanceof Error ? error.message : '接続できませんでした。'); }
+   if (!user || !profileReady) { setPendingStart(true); setSetupInitialTab('signup'); setSetup(true); return; }
+   setExpired(false); setShowAiPrompt(false);
+   await command('join', { kind: 'text', nativeLanguage, learningLanguage });
+  } catch (error) { setError(error instanceof Error ? error.message : t('liveExchange.connectFailed')); }
   finally { setBusy(false); }
  };
  // Stop: end/cancel whatever's happening and stay paused until Next is pressed again.
@@ -248,10 +277,11 @@ export default function LiveExchange() {
   setStoppedByUser(true);
   setError(''); setBusy(true);
   try {
+   await transcription.finish();
    const existing = currentRef.current;
    if (existing?.conversation?.status === 'active') await command('end', { conversationId: existing.conversation.id, callId: existing.call?.id });
    else if (existing?.queue) await command('cancel');
-  } catch (error) { setError(error instanceof Error ? error.message : '操作に失敗しました。'); }
+  } catch (error) { setError(error instanceof Error ? error.message : t('liveExchange.actionFailed')); }
   finally { setBusy(false); }
  };
  const sendMessage = async (event: React.FormEvent) => {
@@ -262,119 +292,167 @@ export default function LiveExchange() {
   try {
    await command('message', { conversationId: conversation.id, body: text, clientId: crypto.randomUUID() });
    setInput(value => value === input ? '' : value);
-  } catch (error) { setError(error instanceof Error ? error.message : '送信できませんでした。'); }
+  } catch (error) { setError(error instanceof Error ? error.message : t('liveExchange.sendMessageFailed')); }
   finally { setSending(false); }
  };
  const actionData = { conversationId: conversation?.id, callId: snapshot?.call?.id };
  return <div className={liveFont.variable}>
   <AppShell>
   <main className="flex-1 flex flex-col min-h-[640px] md:min-h-[calc(100vh-56px)]">
-   <div className="live-exchange-scene flex-1 p-6 md:p-10">
+   <div className="live-exchange-scene flex-1 p-4 md:py-6 md:px-6">
     <div className="live-content">
     <audio ref={audioRef} autoPlay playsInline data-testid="remote-audio" data-connection-state={rtc.state} data-sent-bytes={rtc.stats.sentBytes} data-received-bytes={rtc.stats.receivedBytes} data-received-energy={rtc.stats.receivedEnergy} />
     {error && <div role="alert" className="live-error mb-4">{error}</div>}
     <div className="live-stage">
      {active ? (
       <div className="live-split">
-       <section className="live-call-pane">
-        <div className="live-call-tiles">
-         <div className="live-call-tile">
-          <span className="live-avatar-ring-lg"><img src={defaultAvatarFor(user?.id || 'guest')} alt="" /></span>
-          <p className="live-tile-label">あなた</p>
+       <div className="live-call-column">
+       <div className="live-video-row">
+        <div className="live-main-tile" data-speaking={call && partnerSpeaking ? 'true' : undefined}>
+         <div className="live-partner-badge">
+          {partner?.nativeLanguage && LANG_FLAG_CODE[partner.nativeLanguage] && <span className={`fi fi-${LANG_FLAG_CODE[partner.nativeLanguage]}`} aria-hidden="true" />}
+          <span className="live-partner-badge-name">{partner?.name || t('liveExchange.partnerFallbackName')}</span>
+          {partner?.nativeLanguage && <span className="live-partner-badge-native">{partner.nativeLanguage} · ネイティブ</span>}
          </div>
-         <div className="live-call-tile">
-          <span className="live-avatar-ring-lg"><img src={partner?.avatarUrl || defaultAvatarFor(partner?.id || 'guest')} alt="" /></span>
-          <p className="live-tile-label">{partner?.name || '言語パートナー'}</p>
+         <span className="live-avatar-hero"><AvatarTile url={partner?.avatarUrl} name={partner?.name} color={LANG_AVATAR_COLOR[partner?.nativeLanguage ?? ''] ?? '#171717'} /></span>
+         <div className="live-pip-self" data-speaking={call && selfSpeaking ? 'true' : undefined}>
+          <AvatarTile url={myAvatarUrl} name={myName} color={LANG_AVATAR_COLOR[nativeLanguage] ?? '#171717'} />
          </div>
         </div>
+       </div>
+       <section className="live-card live-call-controls">
         <p className="live-pill-status">{partner?.nativeLanguage} → {partner?.learningLanguage}</p>
         {!call && snapshot?.call?.status !== 'ringing' && (!snapshot?.call || ['expired','declined','cancelled','ended'].includes(snapshot.call.status)) && (
-         <button disabled={busy} onClick={() => perform('invite', actionData)} className="live-button">📞 通話を開始</button>
+         <button disabled={busy} onClick={() => perform('invite', {...actionData,transcriptionConsent})} className="live-button">📞 {t('app.startCall')}</button>
         )}
+        {snapshot?.call?.status==='accepted'&&!call&&<button className="live-button" onClick={()=>setMediaCallId(snapshot.call!.id)}>{t('liveExchange.joinCallThisTab')}</button>}
         {snapshot?.call?.status === 'ringing' && <>
-         <p role="status" className="live-pill-status">{snapshot.call.from_user === user?.id ? '相手の応答を待っています…' : '通話のお誘いです'}</p>
+         <p role="status" className="live-pill-status">{snapshot.call.from_user === user?.id ? t('app.waitingForAnswer') : t('app.callInvite')}</p>
          {snapshot.call.from_user === user?.id
-          ? <button disabled={busy} onClick={() => perform('cancel_invite', actionData)} className="live-button-ghost">招待をキャンセル</button>
-          : <div className="flex gap-2"><button disabled={busy} onClick={() => perform('accept', actionData)} className="live-button">承諾</button><button disabled={busy} onClick={() => perform('decline', actionData)} className="live-button-ghost">今はしない</button></div>}
+          ? <button disabled={busy} onClick={() => perform('cancel_invite', actionData)} className="live-button-ghost">{t('app.cancelInvite')}</button>
+          : <div className="flex gap-2"><button disabled={busy} onClick={() => perform('accept', {...actionData,transcriptionConsent})} className="live-button">{t('app.accept')}</button><button disabled={busy} onClick={() => perform('decline', actionData)} className="live-button-ghost">{t('app.decline')}</button></div>}
         </>}
         {call && <>
-         <p role="status" className="live-pill-status">{rtc.state === 'connected' ? '音声接続中' : rtc.state === 'failed' ? '音声接続に失敗しました' : '音声を接続しています…'}</p>
+         <p role="status" className="live-pill-status">{rtc.state === 'connected' ? t('app.callConnected') : rtc.state === 'failed' ? t('app.callFailed') : t('app.callConnecting')}</p>
          <div className="flex gap-2">
-          <button aria-pressed={muted} onClick={() => setMuted(value => !value)} className="live-button-ghost">{muted ? 'ミュート解除' : 'ミュート'}</button>
-          <button disabled={busy} onClick={() => perform('end_call', actionData)} className="live-button-ghost">通話を終了</button>
+          <button aria-pressed={muted} aria-label={muted ? t('app.unmute') : t('app.mute')} title={muted ? t('app.unmute') : t('app.mute')} onClick={() => setMuted(value => !value)} className="live-icon-btn">{muted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}</button>
+          <button disabled={busy} aria-label={t('app.endCall')} title={t('app.endCall')} onClick={endVoice} className="live-icon-btn live-icon-btn-danger"><PhoneOff className="w-5 h-5" /></button>
          </div>
         </>}
-        {!call && snapshot?.call && ['expired','declined','cancelled','ended'].includes(snapshot.call.status) && <p role="status" className="live-pill-status">{({ expired:'通話の招待は期限切れになりました。', declined:'通話の招待は断られました。', cancelled:'通話の招待はキャンセルされました。', ended: snapshot.call.ended_reason === 'media_failure' ? '音声接続に失敗しました。チャットは続けられます。' : '通話が終了しました。チャットは続けられます。' } as Record<string,string>)[snapshot.call.status]}</p>}
-        {audioBlocked && <button onClick={() => audioRef.current?.play().then(() => setAudioBlocked(false)).catch(() => setError('音声を再生できませんでした。'))} className="live-button-ghost">相手の音声を再生</button>}
+        {call&&snapshot?.voice?.consent_version&&<p className="text-sm mt-2" data-testid="transcription-status" data-status={transcription.status} data-events={transcription.diagnostics.events} data-sent-bytes={transcription.diagnostics.sentBytes} data-commits={transcription.diagnostics.commits}>{t('liveExchange.transcriptionLogPrefix')} {transcription.status==='connected'?t('liveExchange.transcriptionConnected'):transcription.status==='ended'?t('liveExchange.transcriptionEnded'):t('liveExchange.transcriptionPreparing')}</p>}
+        {transcription.error&&<p role="alert" className="text-sm">{transcription.error}</p>}
+        {!call&&<label className="text-sm flex gap-2 items-start mt-3"><input type="checkbox" checked={transcriptionConsent} onChange={e=>setTranscriptionConsent(e.target.checked)}/><span>{t('liveExchange.transcriptionConsentLabel')} {t('aiPractice.voiceConsentText')}</span></label>}
+        {snapshot?.voice&&<Link className="underline text-sm mt-3" href={`/calls/${snapshot.voice.id}`}>{t('liveExchange.callLogAiLink')}</Link>}
+        {!call && snapshot?.call && ['expired','declined','cancelled','ended'].includes(snapshot.call.status) && <p role="status" className="live-pill-status">{({ expired:t('app.callExpired'), declined:t('app.callDeclined'), cancelled:t('app.callCancelled'), ended: snapshot.call.ended_reason === 'media_failure' ? t('app.callEndedMediaFailure') : t('app.callEnded') } as Record<string,string>)[snapshot.call.status]}</p>}
+        {audioBlocked && <button onClick={() => audioRef.current?.play().then(() => setAudioBlocked(false)).catch(() => setError(t('liveExchange.audioPlayFailed')))} className="live-button-ghost">{t('app.playRemoteAudio')}</button>}
        </section>
+       </div>
        <section className="live-card live-chat-pane">
-        <div role="log" aria-label="チャットメッセージ" aria-live="polite" className="flex-1 min-h-0 overflow-y-auto space-y-3">
-         {messages.length === 0 && <p className="live-pill-status text-center">マッチしました。挨拶してみましょう。</p>}
+        <div role="log" aria-label={t('liveExchange.chatLogLabel')} aria-live="polite" className="flex-1 min-h-0 overflow-y-auto space-y-3">
+         {messages.length === 0 && <p className="live-pill-status text-center">{t('app.matched')}</p>}
          {messages.map(message => <div key={message.id} className={`flex ${message.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}>
           <p className={`live-message ${message.sender_id === user?.id ? 'live-message-mine' : 'live-message-theirs'}`}>{message.body}</p>
          </div>)}<div ref={bottomRef} />
         </div>
         <form onSubmit={sendMessage} className="live-chat-input-bar">
-         <input aria-label="メッセージ" value={input} onChange={event => setInput(event.target.value)} maxLength={2000} placeholder="メッセージを入力…" className="live-input" />
-         <button disabled={sending || !input.trim() || busy} type="submit" className="live-button">{sending ? '送信中…' : '送信'}</button>
+         <input aria-label={t('liveExchange.messageInputLabel')} value={input} onChange={event => setInput(event.target.value)} maxLength={2000} placeholder={t('app.messagePlaceholder')} className="live-input" />
+         <button disabled={sending || !input.trim() || busy} type="submit" className="live-button">{sending ? t('app.sending') : t('app.send')}</button>
         </form>
        </section>
       </div>
      ) : (
       <>
-       {(snapshot?.queue || stoppedByUser || (user && !profileReady) || conversation?.status === 'ended' || expired) && (
+       {(stoppedByUser || (user && !profileReady) || conversation?.status === 'ended' || expired) && (
         <p className="live-pill-status text-center mb-3">
-         {snapshot?.queue ? '相手を探しています… 最大90秒で終了します。'
-          : stoppedByUser ? '一時停止中 — 下のボタンで再開します。'
-          : user && !profileReady ? 'プロフィールの母語と学習言語を設定すると、すぐに始められます。'
-          : expired ? '待機時間が終了しました。下のボタンでもう一度探せます。'
-          : conversation?.ended_reason === 'peer_left' ? '相手が退出しました。下のボタンで次の相手を探せます。'
-          : '会話は終了しました。下のボタンで次の相手を探せます。'}
+         {stoppedByUser ? t('app.stopped')
+          : user && !profileReady ? t('app.needProfile')
+          : expired ? t('app.expired')
+          : conversation?.ended_reason === 'peer_left' ? t('app.peerLeft')
+          : t('app.conversationEnded')}
         </p>
        )}
        <div className="live-split">
-        <section className="live-call-pane">
-         <div className="live-call-tiles">
-          <div className="live-call-tile">
-           <span className="live-avatar-ring-lg"><img src={defaultAvatarFor(user?.id || 'guest')} alt="" /></span>
-           <p className="live-tile-label">あなた</p>
-          </div>
-          <div className="live-call-tile live-call-tile-empty">
-           <p className="live-tile-empty-text">{snapshot?.queue ? '検索中…' : 'Not started'}</p>
-           <p className="live-tile-label">相手</p>
-          </div>
+        <div className="live-call-column">
+        <div className="live-video-row">
+         <div className="live-main-tile">
+          {snapshot?.queue ? (
+           <>
+            <div className="live-radar" role="status" aria-label={t('liveExchange.searchingLabel')}>
+             <span className="live-radar-ring" /><span className="live-radar-ring" /><span className="live-radar-ring" />
+             <span className="live-avatar-hero"><AvatarTile url={myAvatarUrl} name={myName} color={LANG_AVATAR_COLOR[nativeLanguage] ?? '#171717'} /></span>
+            </div>
+            <p className="live-finding-text">相手を探しています<span className="live-finding-dots"><span>.</span><span>.</span><span>.</span></span></p>
+           </>
+          ) : (
+           <>
+            <span className="live-avatar-hero"><AvatarTile url={myAvatarUrl} name={myName} color={LANG_AVATAR_COLOR[nativeLanguage] ?? '#171717'} /></span>
+            <p className="live-tile-empty-text">{t('app.notStarted')}</p>
+           </>
+          )}
          </div>
-         <p className="live-pill-status">通話(音声)はマッチ後、ここから誘えます</p>
-        </section>
+        </div>
+        </div>
         <section className="live-card live-chat-pane">
-         <div className="live-chat-pane-empty"><p className="live-pill-status">{snapshot?.queue ? '相手が見つかると、ここでメッセージを送れます' : 'マッチすると、ここでメッセージを送れます'}</p></div>
+         <div className="live-chat-pane-empty"><p className="live-pill-status">{snapshot?.queue ? t('app.waitingForPartner') : t('app.waitingForMatch')}</p></div>
         </section>
        </div>
        {!snapshot?.queue && (
         <div className="live-start-row">
-         <button disabled={busy || !authLoaded} onClick={handleStart} className="live-button live-start-button">▶ 開始する</button>
+         <button disabled={busy || !authLoaded} onClick={handleStart} className="live-button live-start-button">▶ {t('app.start')}</button>
          {user && profileReady && (
-          <div className="live-conditions" role="group" aria-label="条件">
-           <LanguagePicker value={nativeLanguage} onChange={setNativeLanguage} placeholder="母語" disabled={busy} />
-           <LanguagePicker value={learningLanguage} onChange={setLearningLanguage} placeholder="学習言語" disabled={busy} />
+          <div className="live-conditions" role="group" aria-label={t('liveExchange.conditionsLabel')}>
+           <LanguagePicker value={nativeLanguage} onChange={setNativeLanguage} placeholder={t('app.nativePlaceholder')} disabled={busy} />
+           <LanguagePicker value={learningLanguage} onChange={setLearningLanguage} placeholder={t('app.learningPlaceholder')} disabled={busy} />
           </div>
          )}
+         {expired && user && <button onClick={() => { setAiStage('practice'); setShowAiPrompt(true); }} className="live-button-ghost">🤖 {t('liveExchange.practiceWithAi')}</button>}
         </div>
        )}
-       <p className="live-note text-center mt-3">プロフィールの母語と学習言語が合う相手とマッチします。<Link href="/profile">プロフィール</Link></p>
+       <p className="live-note text-center mt-3">{t('app.footnote')} <Link href="/profile">{t('app.profileLink')}</Link></p>
       </>
      )}
     </div>
-    {(active || snapshot?.queue) && <div className="live-control-bar">
-     <button disabled={busy || !authLoaded} onClick={handleNext} className="live-control live-control-next live-button">⏭ Next</button>
-     <button disabled={busy} onClick={handleStop} className="live-control live-control-stop">⏹ Stop</button>
+    {active && <div className="live-control-bar">
+     <button disabled={busy || !authLoaded} aria-label={t('liveExchange.nextPartnerLabel')} title={t('liveExchange.nextPartnerLabel')} onClick={handleNext} className="live-icon-btn"><SkipForward className="w-5 h-5" /></button>
+     <button disabled={busy} aria-label={t('liveExchange.leaveLabel')} title={t('liveExchange.leaveLabel')} onClick={handleStop} className="live-icon-btn live-icon-btn-danger"><PhoneOff className="w-5 h-5" /></button>
+    </div>}
+    {!active && snapshot?.queue && <div className="live-control-bar">
+     <button disabled={busy} aria-label={t('liveExchange.cancelLabel')} title={t('liveExchange.cancelLabel')} onClick={handleStop} className="live-icon-btn live-icon-btn-danger"><X className="w-5 h-5" /></button>
     </div>}
     </div>
    </div>
   </main>
-  <SetupModal open={setup} onClose={() => { setSetup(false); setPendingStart(false); }} onComplete={() => {
-   setSetup(false); supabase.auth.getSession().then(({data}) => { setUser(data.session?.user ?? null); if (data.session?.user) loadProfile(data.session.user); });
+  <SetupModal open={setup} onClose={() => { setSetup(false); setPendingStart(false); }} initialTab={setupInitialTab} onComplete={({ isSignup }) => {
+   setSetup(false);
+   // Returning users land on the home screen and press Start themselves —
+   // only a fresh signup (a clear "start practicing now" intent) auto-joins.
+   if (!isSignup) setPendingStart(false);
+   supabase.auth.getSession().then(({data}) => { setUser(data.session?.user ?? null); if (data.session?.user) loadProfile(data.session.user); });
   }} initialNative={nativeLanguage || undefined} initialLearning={learningLanguage || undefined} />
+  {showAiPrompt && user && (
+   <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 bg-[#173e34]/55 backdrop-blur-sm">
+    {aiStage === 'ask' ? (
+     <div className="live-modal-card w-full max-w-sm rounded-2xl shadow-2xl p-6 relative text-center space-y-4">
+      <button onClick={() => setShowAiPrompt(false)} aria-label={t('setup.close')} className="absolute top-3 right-3 opacity-60 hover:opacity-100 text-sm w-7 h-7 flex items-center justify-center">✕</button>
+      <p className="live-modal-title text-lg">{t('liveExchange.noPartnerFoundTitle')}</p>
+      <p className="live-subtitle text-sm leading-relaxed">{t('liveExchange.noPartnerFoundBody')}</p>
+      <div className="space-y-2">
+       <button className="w-full live-button justify-center text-sm" onClick={() => setAiStage('practice')}>
+        {t('liveExchange.practiceWithAi')}
+       </button>
+       <button className="w-full live-button-ghost justify-center text-sm" onClick={() => { setShowAiPrompt(false); void handleStart(); }}>
+        {t('liveExchange.findSomeoneAgain')}
+       </button>
+      </div>
+     </div>
+    ) : (
+     <div className="w-full max-w-lg relative max-h-[90vh] overflow-y-auto">
+      <button onClick={() => setShowAiPrompt(false)} aria-label={t('setup.close')} className="absolute top-4 right-4 opacity-60 hover:opacity-100 text-sm w-7 h-7 flex items-center justify-center z-10 bg-white/70 rounded-full">✕</button>
+      <AIPractice available onStarted={() => refresh()} onEnded={() => { refresh(); setShowAiPrompt(false); }} />
+     </div>
+    )}
+   </div>
+  )}
   </AppShell>
  </div>;
 }

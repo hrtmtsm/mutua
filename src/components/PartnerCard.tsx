@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { LANG_FLAGS, LANG_AVATAR_COLOR } from '@/lib/constants';
+import { useLocale } from '@/components/LocaleProvider';
 
 function usePartnerLocalTime(timezone: string | undefined) {
   const [display, setDisplay] = useState('');
@@ -74,6 +75,7 @@ export function PartnerCardShell({
   topRight?:     React.ReactNode;
   children?:     React.ReactNode;
 }) {
+  const { t } = useLocale();
   const nativeFlag   = LANG_FLAGS[partner.nativeLang]   ?? '';
   const learningFlag = LANG_FLAGS[partner.learningLang] ?? '';
   const localTime    = usePartnerLocalTime(partner.timezone);
@@ -112,7 +114,7 @@ export function PartnerCardShell({
       {/* In common chips */}
       {pills.length > 0 && (
         <div className="px-7 mt-4">
-          <p className="text-xs text-stone-400 font-medium mb-2">In common</p>
+          <p className="text-xs text-stone-400 font-medium mb-2">{t('partnerCard.inCommon')}</p>
           <div className="flex flex-wrap gap-1.5">
             {pills.map((v, i) => (
               <span key={i} className="px-3 py-1 bg-stone-100 text-sm font-medium text-stone-600 rounded-full">{v}</span>

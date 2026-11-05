@@ -7,19 +7,22 @@ import { markPop } from '@/lib/navigation';
 import { supabase, getNotifications, markNotificationsSeen, type AppNotification } from '@/lib/supabase';
 import { LANG_AVATAR_COLOR } from '@/lib/constants';
 import { BottomNav } from '@/components/Sidebar';
+import { useLocale } from '@/components/LocaleProvider';
+import type { DictionaryKey } from '@/lib/i18n/dictionary';
 
-function timeAgo(iso: string): string {
+function timeAgo(iso: string, t: (key: DictionaryKey) => string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const m = Math.floor(diff / 60000);
-  if (m < 1)  return 'just now';
-  if (m < 60) return `${m}m ago`;
+  if (m < 1)  return t('sidebar.agoJustNow');
+  if (m < 60) return t('sidebar.agoMinutes').replace('{n}', String(m));
   const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
+  if (h < 24) return t('sidebar.agoHours').replace('{n}', String(h));
   const d = Math.floor(h / 24);
-  return `${d}d ago`;
+  return t('sidebar.agoDays').replace('{n}', String(d));
 }
 
 function NotificationRow({ n, myId }: { n: AppNotification; myId: string }) {
+  const { t } = useLocale();
   const router = useRouter();
   const ini = n.actor_name
     ? n.actor_name.trim().split(/\s+/).map((p, i, a) => i === 0 || i === a.length - 1 ? p[0] : '').join('').toUpperCase()
@@ -45,7 +48,7 @@ function NotificationRow({ n, myId }: { n: AppNotification; myId: string }) {
         <p className={`text-sm leading-snug ${!n.seen ? 'font-semibold text-neutral-900' : 'font-medium text-neutral-700'}`}>
           {n.body}
         </p>
-        <p className="text-xs text-stone-400 mt-0.5">{timeAgo(n.created_at)}</p>
+        <p className="text-xs text-stone-400 mt-0.5">{timeAgo(n.created_at, t)}</p>
       </div>
 
       {/* Unread dot */}
@@ -55,6 +58,7 @@ function NotificationRow({ n, myId }: { n: AppNotification; myId: string }) {
 }
 
 export default function NotificationsPage() {
+  const { t } = useLocale();
   const router = useRouter();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,7 +85,7 @@ export default function NotificationsPage() {
         <button onClick={() => { markPop(); router.back(); }} className="p-1.5 -ml-1.5 text-stone-400 hover:text-neutral-700 transition-colors">
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <span className="font-serif font-bold text-xl text-neutral-900">Notifications</span>
+        <span className="font-serif font-bold text-xl text-neutral-900">{t('nav.titleNotifications')}</span>
       </header>
 
       <main className="flex-1 pb-24">
@@ -91,9 +95,9 @@ export default function NotificationsPage() {
           </div>
         ) : notifications.length === 0 ? (
           <div className="py-16 text-center px-4">
-            <p className="text-sm font-semibold text-neutral-900 mb-1">No notifications yet</p>
+            <p className="text-sm font-semibold text-neutral-900 mb-1">{t('sidebar.noNotificationsTitle')}</p>
             <p className="text-xs text-stone-400 leading-relaxed">
-              We'll let you know when something happens with your exchange.
+              {t('notifications.emptyBody')}
             </p>
           </div>
         ) : (

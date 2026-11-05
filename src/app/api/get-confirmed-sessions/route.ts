@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
   const token     = req.headers.get('authorization')?.replace('Bearer ', '');
   const sessionId = req.nextUrl.searchParams.get('sessionId');
 
-  if (!token && !sessionId) return NextResponse.json({ sessions: [] });
+  if (!token) return NextResponse.json({error:'unauthorized'},{status:401});
 
   const db = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -25,21 +25,7 @@ export async function GET(req: NextRequest) {
     authUserId = user?.id ?? null;
   }
 
-  if (!authUserId && sessionId) {
-    // Look up auth user via profile session_id → email → auth user
-    const { data: profile } = await db
-      .from('profiles')
-      .select('email')
-      .eq('session_id', sessionId)
-      .maybeSingle();
-    if (profile?.email) {
-      const { data: usersData } = await db.auth.admin.listUsers({ perPage: 1000 });
-      const authUser = (usersData?.users ?? []).find(u => u.email === profile.email);
-      authUserId = authUser?.id ?? null;
-    }
-  }
-
-  if (!authUserId) return NextResponse.json({ sessions: [] });
+  if (!authUserId) return NextResponse.json({error:'unauthorized'},{status:401});
 
   const now = new Date().toISOString();
   const { data: sessions } = await db

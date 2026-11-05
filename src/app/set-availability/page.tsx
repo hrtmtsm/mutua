@@ -10,6 +10,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Avatar } from '@/components/PartnerCard';
 import { markPop } from '@/lib/navigation';
 import { track } from '@/lib/analytics';
+import { useLocale } from '@/components/LocaleProvider';
 
 // ── Template helpers ───────────────────────────────────────────────────────────
 // Encode as dow*10000+minuteOfDay so we remember which specific days were chosen.
@@ -84,6 +85,7 @@ function buildSlotsFromTemplate(templateValues: number[], tz: string): SessionSl
 }
 
 function SetAvailabilityInner() {
+  const { t }           = useLocale();
   const router          = useRouter();
   const searchParams    = useSearchParams();
   const matchId         = searchParams.get('matchId');
@@ -112,7 +114,7 @@ function SetAvailabilityInner() {
   const [cancelling,   setCancelling]   = useState(false);
   const [result,       setResult]       = useState<{ state: string; scheduledAt?: string | null } | null>(null);
   const [saveError,    setSaveError]    = useState<string | null>(null);
-  const [partnerName,      setPartnerName]      = useState('your partner');
+  const [partnerName,      setPartnerName]      = useState(t('setAvailability.yourPartnerFallback'));
   const [partnerAvatarUrl, setPartnerAvatarUrl] = useState<string | null>(null);
   const [partnerNativeLang, setPartnerNativeLang] = useState('');
 
@@ -142,7 +144,7 @@ function SetAvailabilityInner() {
           if (!m) return;
           const partnerId = m.session_id_a === sid ? m.session_id_b : m.session_id_a;
           supabase
-            .from('profiles')
+            .from('public_profile_cards')
             .select('name, avatar_url, native_language')
             .eq('session_id', partnerId)
             .maybeSingle()
@@ -255,7 +257,7 @@ function SetAvailabilityInner() {
     const futureSlots = slots.filter(s => new Date(s.startsAt) > now);
     if (futureSlots.length === 0) {
       setSaving(false);
-      setSaveError('All selected times are in the past. Please pick times later this week.');
+      setSaveError(t('setAvailability.pastTimesError'));
       return;
     }
 
@@ -270,14 +272,14 @@ function SetAvailabilityInner() {
 
     if (!res) {
       setSaving(false);
-      setSaveError('Network error. Please try again.');
+      setSaveError(t('setAvailability.networkError'));
       return;
     }
 
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
       setSaving(false);
-      setSaveError(data.error ?? 'Something went wrong. Please try again.');
+      setSaveError(data.error ?? t('setAvailability.genericError'));
       return;
     }
 
@@ -342,7 +344,7 @@ function SetAvailabilityInner() {
         <div className="min-w-0">
           <p className="font-bold text-base text-neutral-900 leading-tight truncate">{partnerName}</p>
           <p className="text-xs text-stone-400">
-            {schedulingState === 'scheduled' ? 'Rescheduling a session' : 'Scheduling a session'}
+            {schedulingState === 'scheduled' ? t('setAvailability.reschedulingSubtitle') : t('setAvailability.schedulingSubtitle')}
           </p>
         </div>
       </div>
@@ -355,7 +357,7 @@ function SetAvailabilityInner() {
             className="hidden md:flex items-center gap-1.5 text-sm text-stone-400 hover:text-neutral-900 transition-colors mb-6"
           >
             <ArrowLeft className="w-4 h-4" />
-            Back
+            {t('setAvailability.back')}
           </button>
 
           <div className="hidden md:flex items-center gap-3 mb-4">
@@ -363,14 +365,14 @@ function SetAvailabilityInner() {
             <div>
               <p className="font-bold text-lg text-neutral-900 leading-tight">{partnerName}</p>
               <p className="text-sm text-stone-400">
-                {schedulingState === 'scheduled' ? 'Rescheduling a session' : 'Scheduling a session'}
+                {schedulingState === 'scheduled' ? t('setAvailability.reschedulingSubtitle') : t('setAvailability.schedulingSubtitle')}
               </p>
             </div>
           </div>
 
           {partnerSlots.length > 0 && overlapCount > 0 && (
             <p className="text-sm text-stone-500 mt-1.5">
-              {`You have ${overlapCount} overlapping slot${overlapCount > 1 ? 's' : ''} with ${partnerName}. Hit save to lock it in!`}
+              {(overlapCount > 1 ? t('setAvailability.overlapMessagePlural') : t('setAvailability.overlapMessageSingular')).replace('{n}', String(overlapCount)).replace('{partner}', partnerName)}
             </p>
           )}
         </div>
@@ -394,11 +396,11 @@ function SetAvailabilityInner() {
           <div className="space-y-3">
             {result?.state === 'scheduled' ? (
               <p className="text-sm text-center text-emerald-600 font-semibold">
-                Session booked! Check your email for details.
+                {t('setAvailability.bookedConfirmed')}
               </p>
             ) : (
               <p className="text-sm text-stone-500 text-center leading-relaxed">
-                Got it! We'll notify <span className="font-semibold text-neutral-900">{partnerName}</span> to pick their times.
+                {t('setAvailability.notifyPartnerPrefix')}<span className="font-semibold text-neutral-900">{partnerName}</span>{t('setAvailability.notifyPartnerSuffix')}
               </p>
             )}
             <div className="flex gap-2">
@@ -406,13 +408,13 @@ function SetAvailabilityInner() {
                 onClick={() => { window.location.href = '/app'; }}
                 className="flex-1 py-3 btn-primary text-white font-bold text-sm rounded-xl"
               >
-                {result?.state === 'scheduled' ? 'View session →' : 'Sounds good'}
+                {result?.state === 'scheduled' ? t('setAvailability.viewSession') : t('setAvailability.soundsGood')}
               </button>
               <button
                 onClick={() => { setSaved(false); setResult(null); setSaveError(null); }}
                 className="flex-1 py-3 border border-stone-200 text-stone-500 font-medium text-sm rounded-xl hover:bg-stone-100 transition-colors"
               >
-                Update times
+                {t('setAvailability.updateTimes')}
               </button>
             </div>
           </div>
@@ -426,7 +428,7 @@ function SetAvailabilityInner() {
               disabled={saving || cancelling || slots.length === 0 || !matchId}
               className="w-full py-3.5 btn-primary text-white font-bold text-sm rounded-xl disabled:opacity-40 disabled:pointer-events-none"
             >
-              {saving ? 'Saving...' : slots.length > 0 ? (overlapCount > 0 ? 'Lock it in →' : 'Save times →') : 'Tap slots above to continue'}
+              {saving ? t('setAvailability.saving') : slots.length > 0 ? (overlapCount > 0 ? t('setAvailability.lockItIn') : t('setAvailability.saveTimes')) : t('setAvailability.tapSlotsToContinue')}
             </button>
 
             {schedulingState === 'scheduled' && matchId && (
@@ -435,7 +437,7 @@ function SetAvailabilityInner() {
                 disabled={saving || cancelling}
                 className="w-full mt-3 text-sm text-stone-400 hover:text-rose-500 transition-colors disabled:opacity-40"
               >
-                {cancelling ? 'Cancelling...' : "Actually, I can't make it :("}
+                {cancelling ? t('setAvailability.cancelling') : t('setAvailability.cantMakeIt')}
               </button>
             )}
           </>

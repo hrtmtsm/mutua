@@ -105,6 +105,7 @@ export default function LandingExperience({ preview = false }: { preview?: boole
           <Link href={ctaHref} className="study-button possibility-start">{t('landing.cta')}</Link>
         </div>
         <p className="landing-start-note">{t('landing.note')}</p>
+        <p className="landing-login-note">{t('landing.alreadyHaveAccount')} <Link href="/app?login=1" className="landing-login-link">{t('setup.login')}</Link></p>
       </div>
       <PeoplePossibilities reduced={reduced} hidden={hidden} mobile={mobile}/>
     </section>

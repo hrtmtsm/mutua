@@ -1,4 +1,5 @@
 'use client';
+import {authorizedFetch} from '@/lib/practice';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
@@ -17,6 +18,7 @@ import {
 } from '@/lib/promptsDb';
 import { isConfigured, supabase } from '@/lib/supabase';
 import { track } from '@/lib/analytics';
+import { useLocale } from '@/components/LocaleProvider';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -112,6 +114,7 @@ function SelfPIP({
   initials?: string;
   avatarBg?: string;
 }) {
+  const { t } = useLocale();
   const bg = avatarBg ?? '#2B8FFF';
   return (
     <div
@@ -155,7 +158,7 @@ function SelfPIP({
             {avatarUrl ? (
               <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
             ) : (
-              <span>{initials ?? 'You'}</span>
+              <span>{initials ?? t('session.youFallback')}</span>
             )}
           </div>
         </div>
@@ -163,7 +166,7 @@ function SelfPIP({
       {/* Name label */}
       <div className="absolute bottom-2 left-0 right-0 flex justify-center pointer-events-none">
         <span className="text-[10px] font-semibold text-white/80 bg-black/25 backdrop-blur-sm px-2 py-0.5 rounded-full">
-          You
+          {t('session.youFallback')}
         </span>
       </div>
     </div>
@@ -172,6 +175,7 @@ function SelfPIP({
 
 // ── SessionPage ───────────────────────────────────────────────────────────────
 export default function SessionPage() {
+  const { t } = useLocale();
   const router = useRouter();
 
   const [match,            setMatch]            = useState<MatchResult | null>(null);
@@ -254,7 +258,7 @@ export default function SessionPage() {
   // Record that this user entered the session room
   useEffect(() => {
     if (!myId || !matchId) return;
-    fetch('/api/record-join', {
+    authorizedFetch('/api/record-join', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ matchId, sessionId: myId }),
@@ -493,7 +497,7 @@ export default function SessionPage() {
       localStorage.setItem('mutua_streak', JSON.stringify({ lastDate: today, count: 1 }));
     }
     // Save lightweight session metadata for review screen + history
-    const pName = match?.partner.name ?? 'Your partner';
+    const pName = match?.partner.name ?? t('session.yourPartnerFallback');
     const partnerId = match?.partner.session_id ?? '';
     const durationMins = Math.round(seconds / 60);
     const stored = localStorage.getItem('mutua_match');
@@ -588,7 +592,7 @@ export default function SessionPage() {
   if (!match) return null;
 
   const { partner } = match;
-  const partnerName = partner.name ?? 'Your partner';
+  const partnerName = partner.name ?? t('session.yourPartnerFallback');
 
   const handlePillCheck = (pillIndex: 0 | 1) => {
     if (checklistCelebrating) return;
@@ -621,13 +625,13 @@ export default function SessionPage() {
   const nativeText    = getT(currentPrompt, partner.native_language);
 
   // Turn-based display
-  const phaseLabel    = phase === 'ice' ? 'Warm up' : phase === 'conv' ? 'Talk about this' : 'Wrap up';
+  const phaseLabel    = phase === 'ice' ? t('session.phaseWarmUp') : phase === 'conv' ? t('session.phaseTalkAboutThis') : t('session.phaseWrapUp');
   const activeLang    = activeTurn === 'learning' ? partner.learning_language : partner.native_language;
   const activeFlag    = LANG_FLAGS[activeLang] ?? '';
   const activeText    = activeTurn === 'learning' ? learningText : nativeText;
   const turnGuidance  = activeTurn === 'learning'
-    ? `${partnerName} speaks · You help`
-    : `You speak · ${partnerName} helps`;
+    ? t('session.turnGuidancePartnerSpeaks').replace('{partner}', partnerName)
+    : t('session.turnGuidanceYouSpeak').replace('{partner}', partnerName);
 
   // ── Shared prompt card (rendered in both floating overlay and sidebar) ────────
 
@@ -653,9 +657,9 @@ export default function SessionPage() {
 
         {/* Header */}
         <div className="px-4 pt-3 pb-2 flex items-center justify-between">
-          <span className="text-sm font-bold text-neutral-900">Break the ice</span>
+          <span className="text-sm font-bold text-neutral-900">{t('session.breakTheIce')}</span>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-stone-400">{checklistStep + 1} of {CHECKLIST_ITEMS.length}</span>
+            <span className="text-xs text-stone-400">{t('session.stepOfTotal').replace('{step}', String(checklistStep + 1)).replace('{total}', String(CHECKLIST_ITEMS.length))}</span>
             <button onClick={() => setCardMinimized(m => !m)} className="text-stone-400 hover:text-stone-600 transition-colors">
               {cardMinimized ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
             </button>
@@ -675,7 +679,7 @@ export default function SessionPage() {
                 {myAvatarUrl ? (
                   <img src={myAvatarUrl} alt="" className="w-full h-full object-cover" />
                 ) : (
-                  <span className="text-[9px] font-black text-white leading-none">{myInitials || 'You'}</span>
+                  <span className="text-[9px] font-black text-white leading-none">{myInitials || t('session.youFallback')}</span>
                 )}
               </div>
               <div className="flex-1 min-w-0">
@@ -750,7 +754,7 @@ export default function SessionPage() {
         {/* Follow-up hint */}
         {currentPrompt.hint && (
           <p className="text-[12px] text-stone-500 leading-relaxed">
-            Follow-up: {currentPrompt.hint}
+            {t('session.followUpPrefix')} {currentPrompt.hint}
           </p>
         )}
 
@@ -762,14 +766,14 @@ export default function SessionPage() {
           onClick={handleChangeTopic}
           className="text-sm text-stone-400 hover:text-stone-600 transition-colors"
         >
-          Change topic
+          {t('session.changeTopic')}
         </button>
         {!turnSwitched ? (
           <button
             onClick={handleSwitchTurn}
             className="px-4 py-2 btn-primary text-white font-semibold text-sm rounded-xl" style={{ boxShadow: 'none' }}
           >
-            Switch turn ↔
+            {t('session.switchTurn')}
           </button>
         ) : (
           <div className="flex items-center gap-3">
@@ -777,13 +781,13 @@ export default function SessionPage() {
               onClick={handleSwitchTurn}
               className="text-sm text-stone-400 hover:text-neutral-600 font-medium transition-colors"
             >
-              Switch turns ↔
+              {t('session.switchTurns')}
             </button>
             <button
               onClick={handleNext}
               className="px-4 py-2 btn-primary text-white font-semibold text-sm rounded-xl" style={{ boxShadow: 'none' }}
             >
-              Next topic →
+              {t('session.nextTopic')}
             </button>
           </div>
         )}
@@ -800,14 +804,14 @@ export default function SessionPage() {
       {/* ── Offline banner ── */}
       {!isOnline && (
         <div className="shrink-0 bg-neutral-900 text-white text-xs font-medium text-center py-1.5 px-4 z-50">
-          No internet connection — reconnecting…
+          {t('session.offlineBanner')}
         </div>
       )}
 
       {/* ── RTC status banners ── */}
       {rtcState === 'disconnected' && (
         <div className="shrink-0 bg-amber-500 text-white text-xs font-medium text-center py-1.5 px-4 z-50 flex items-center justify-center gap-2">
-          <WifiOff className="w-3.5 h-3.5" /> Partner disconnected — waiting to reconnect…
+          <WifiOff className="w-3.5 h-3.5" /> {t('session.partnerDisconnected')}
         </div>
       )}
 
@@ -822,10 +826,10 @@ export default function SessionPage() {
             {!partnerStream && (
               <div className="flex flex-col items-center gap-3 text-center px-6">
                 {rtcState === 'failed' ? (
-                  <p className="text-white/50 text-sm">Connection failed</p>
+                  <p className="text-white/50 text-sm">{t('session.connectionFailed')}</p>
                 ) : (
                   <p className="text-white/50 text-sm flex items-center gap-0.5">
-                    Waiting for partner
+                    {t('session.waitingForPartner')}
                     <span className="inline-flex gap-0.5 ml-1">
                       {[0, 1, 2].map(i => (
                         <span
@@ -842,7 +846,7 @@ export default function SessionPage() {
                     onClick={e => { e.stopPropagation(); window.location.reload(); }}
                     className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-xs font-semibold rounded-xl transition-colors"
                   >
-                    Reconnect
+                    {t('session.reconnect')}
                   </button>
                 )}
               </div>
@@ -879,12 +883,12 @@ export default function SessionPage() {
                   {partnerMuted && (
                     <span className="flex items-center gap-1 bg-black/40 backdrop-blur-sm rounded-full px-2 py-0.5">
                       <MicOff className="w-3 h-3 text-white/80" />
-                      <span className="text-[10px] font-semibold text-white/80">Muted</span>
+                      <span className="text-[10px] font-semibold text-white/80">{t('session.mutedBadge')}</span>
                     </span>
                   )}
                 </div>
                 <p className="text-xs text-white mt-0.5">
-                  {LANG_FLAGS[partner.native_language]} Native {partner.native_language}
+                  {t('preSession.nativeLine').replace('{flag}', LANG_FLAGS[partner.native_language] ?? '').replace('{lang}', partner.native_language)}
                 </p>
               </div>
               <span className="font-mono text-xs text-white/50 tabular-nums">{formatTime(seconds)}</span>
@@ -919,13 +923,13 @@ export default function SessionPage() {
                 <div ref={selfHaloRef} className="absolute w-24 h-24 rounded-full bg-white/30"
                   style={{ opacity: 0, transform: 'scale(1)', transformOrigin: 'center', willChange: 'transform, opacity' }} />
                 <div className="relative w-20 h-20 rounded-full overflow-hidden ring-2 ring-white/40 bg-white/20 backdrop-blur-md flex items-center justify-center font-bold text-white text-xl select-none">
-                  {myAvatarUrl ? <img src={myAvatarUrl} alt="" className="w-full h-full object-cover" /> : <span>{myInitials || 'You'}</span>}
+                  {myAvatarUrl ? <img src={myAvatarUrl} alt="" className="w-full h-full object-cover" /> : <span>{myInitials || t('session.youFallback')}</span>}
                 </div>
               </div>
             )}
             {/* "You" label */}
             <div className="absolute bottom-3 left-0 right-0 flex justify-center pointer-events-none z-10">
-              <span className="text-[11px] font-semibold text-white/80 bg-black/25 backdrop-blur-sm px-2 py-0.5 rounded-full">You</span>
+              <span className="text-[11px] font-semibold text-white/80 bg-black/25 backdrop-blur-sm px-2 py-0.5 rounded-full">{t('session.youFallback')}</span>
             </div>
           </div>
 
@@ -950,7 +954,7 @@ export default function SessionPage() {
           <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 min-h-0">
             {messages.length === 0 ? (
               <p className="text-xs text-neutral-400 text-center mt-4 leading-relaxed">
-                Type while you talk — notes, words,<br />anything that helps.
+                {t('session.chatEmptyHintPrefix')}<br />{t('session.chatEmptyHintSuffix')}
               </p>
             ) : messages.map((m, i) => (
               <div key={i} className={`flex flex-col ${m.from === 'me' ? 'items-end' : 'items-start'}`}>
@@ -988,7 +992,7 @@ export default function SessionPage() {
                     }}
                     className="mt-1 ml-1 text-[11px] text-stone-500 underline underline-offset-2 hover:text-stone-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
-                    {translatingIdx === i ? 'Translating…' : translationsUsed >= MAX_TRANSLATIONS ? 'No translations left' : `Translate → ${myNativeLang}`}
+                    {translatingIdx === i ? t('session.translating') : translationsUsed >= MAX_TRANSLATIONS ? t('session.noTranslationsLeft') : t('session.translateTo').replace('{lang}', myNativeLang)}
                   </button>
                 )}
               </div>
@@ -1005,7 +1009,7 @@ export default function SessionPage() {
                 value={message}
                 onChange={e => setMessage(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleSend()}
-                placeholder="Type a message…"
+                placeholder={t('app.messagePlaceholder')}
                 className="flex-1 bg-neutral-50 border border-neutral-200 rounded-xl px-3 py-2 text-base text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:border-[#2B8FFF] transition-colors"
               />
               <button
@@ -1013,7 +1017,7 @@ export default function SessionPage() {
                 disabled={!message.trim()}
                 className="px-3 py-2 bg-[#2B8FFF] hover:bg-blue-600 disabled:opacity-30 text-sm font-semibold text-white rounded-xl transition-colors shrink-0"
               >
-                Send
+                {t('app.send')}
               </button>
             </div>
           </div>
@@ -1028,11 +1032,11 @@ export default function SessionPage() {
         <div className="relative">
           {showDevicePicker === 'mic' && (
             <div className="absolute bottom-full mb-2 left-0 w-56 bg-white border border-stone-200 rounded-xl shadow-xl z-50 overflow-hidden">
-              <p className="px-3 pt-2.5 pb-1 text-[10px] font-semibold text-stone-400 uppercase tracking-wider">Microphone</p>
+              <p className="px-3 pt-2.5 pb-1 text-[10px] font-semibold text-stone-400 uppercase tracking-wider">{t('session.microphoneWord')}</p>
               {devices.mics.map(d => (
                 <button key={d.deviceId} onClick={() => { switchDevice('audioinput', d.deviceId); setShowDevicePicker(null); }}
                   className="w-full text-left px-3 py-2 text-xs text-neutral-800 hover:bg-stone-50 truncate block"
-                >{d.label || 'Microphone'}</button>
+                >{d.label || t('session.microphoneWord')}</button>
               ))}
             </div>
           )}
@@ -1042,7 +1046,7 @@ export default function SessionPage() {
               className="flex items-center gap-1.5 pl-2.5 pr-1.5 py-5 hover:opacity-90 transition-opacity sm:pl-3 sm:pr-2 sm:gap-2"
             >
               {muted ? <MicOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Mic className="w-4 h-4 sm:w-5 sm:h-5" />}
-              <span className="text-[10px] sm:text-[11px] font-medium">{muted ? 'Unmute' : 'Mute'}</span>
+              <span className="text-[10px] sm:text-[11px] font-medium">{muted ? t('preSession.unmute') : t('preSession.mute')}</span>
             </button>
             <div className={`w-px self-stretch ${muted ? 'bg-red-400' : 'bg-neutral-300'}`} />
             <button
@@ -1069,18 +1073,18 @@ export default function SessionPage() {
           {unreadCount > 0 && !chatOpen && (
             <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500" />
           )}
-          <span className="text-[10px] sm:text-[11px] font-medium">Chat</span>
+          <span className="text-[10px] sm:text-[11px] font-medium">{t('session.chatLabel')}</span>
         </button>
 
         {/* Camera button — split: [icon+label | ^picker] */}
         <div className="relative">
           {showDevicePicker === 'camera' && (
             <div className="absolute bottom-full mb-2 right-0 w-56 bg-white border border-stone-200 rounded-xl shadow-xl z-50 overflow-hidden">
-              <p className="px-3 pt-2.5 pb-1 text-[10px] font-semibold text-stone-400 uppercase tracking-wider">Camera</p>
+              <p className="px-3 pt-2.5 pb-1 text-[10px] font-semibold text-stone-400 uppercase tracking-wider">{t('session.cameraWord')}</p>
               {devices.cameras.map(d => (
                 <button key={d.deviceId} onClick={() => { switchDevice('videoinput', d.deviceId); setShowDevicePicker(null); }}
                   className="w-full text-left px-3 py-2 text-xs text-neutral-800 hover:bg-stone-50 truncate block"
-                >{d.label || 'Camera'}</button>
+                >{d.label || t('session.cameraWord')}</button>
               ))}
             </div>
           )}
@@ -1090,7 +1094,7 @@ export default function SessionPage() {
               className="flex items-center gap-1.5 pl-2.5 pr-1.5 py-5 hover:opacity-90 transition-opacity sm:pl-3 sm:pr-2 sm:gap-2"
             >
               {cameraOn ? <Video className="w-4 h-4 sm:w-5 sm:h-5" /> : <VideoOff className="w-4 h-4 sm:w-5 sm:h-5" />}
-              <span className="text-[10px] sm:text-[11px] font-medium">Camera</span>
+              <span className="text-[10px] sm:text-[11px] font-medium">{t('session.cameraWord')}</span>
             </button>
             <div className={`w-px self-stretch ${cameraOn ? 'bg-blue-400' : 'bg-neutral-300'}`} />
             <button
@@ -1113,7 +1117,7 @@ export default function SessionPage() {
           className="flex items-center gap-1.5 px-2.5 py-5 rounded-xl bg-red-500 hover:bg-red-600 text-white transition-all sm:gap-2 sm:px-3"
         >
           <PhoneOff className="w-4 h-4 sm:w-5 sm:h-5" />
-          <span className="text-[10px] sm:text-[11px] font-medium">End</span>
+          <span className="text-[10px] sm:text-[11px] font-medium">{t('session.endLabel')}</span>
         </button>
       </div>
 
@@ -1130,15 +1134,15 @@ export default function SessionPage() {
               <div className="w-0 h-0 border-l-[8px] border-r-[8px] border-b-[10px] border-l-transparent border-r-transparent border-b-white" />
             </div>
             <div className="bg-white rounded-2xl p-4 shadow-xl space-y-3">
-              <p className="text-sm font-semibold text-neutral-900">Conversation prompts</p>
+              <p className="text-sm font-semibold text-neutral-900">{t('session.conversationPrompts')}</p>
               <p className="text-sm text-neutral-500 leading-relaxed">
-                Use it as a guide — or just go with the flow.
+                {t('session.guideHint')}
               </p>
               <button
                 onClick={() => { localStorage.setItem('mutua_seen_walkthrough', 'true'); setShowWalkthrough(false); }}
                 className="w-full py-2.5 btn-primary text-white font-bold rounded-xl text-sm"
               >
-                Got it 👍
+                {t('session.gotIt')}
               </button>
             </div>
           </div>
@@ -1146,15 +1150,15 @@ export default function SessionPage() {
           {/* Mobile: above prompt card at bottom, arrow down */}
           <div className="md:hidden absolute bottom-[340px] left-3 right-3 pointer-events-auto">
             <div className="bg-white rounded-2xl p-4 shadow-xl space-y-3">
-              <p className="text-sm font-semibold text-neutral-900">Conversation prompts</p>
+              <p className="text-sm font-semibold text-neutral-900">{t('session.conversationPrompts')}</p>
               <p className="text-sm text-neutral-500 leading-relaxed">
-                Use it as a guide — or just go with the flow.
+                {t('session.guideHint')}
               </p>
               <button
                 onClick={() => { localStorage.setItem('mutua_seen_walkthrough', 'true'); setShowWalkthrough(false); }}
                 className="w-full py-2.5 btn-primary text-white font-bold rounded-xl text-sm"
               >
-                Got it 👍
+                {t('session.gotIt')}
               </button>
             </div>
             <div className="flex justify-center">
@@ -1168,20 +1172,20 @@ export default function SessionPage() {
       {showEndConfirm && (
         <div className="fixed inset-0 bg-black/50 z-50" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100dvh' }}>
           <div className="bg-white rounded-2xl p-7 mx-6 w-full max-w-sm text-center space-y-4 shadow-xl">
-            <p className="text-xl font-bold text-neutral-900">End exchange?</p>
-            <p className="text-sm text-neutral-500">Once you end, you won't be able to rejoin this session.</p>
+            <p className="text-xl font-bold text-neutral-900">{t('session.endExchangeTitle')}</p>
+            <p className="text-sm text-neutral-500">{t('session.endExchangeBody')}</p>
             <div className="flex flex-col gap-2 pt-1">
               <button
                 onClick={handleEnd}
                 className="w-full py-3 btn-primary text-white font-bold rounded-xl"
               >
-                End exchange
+                {t('session.endExchangeConfirm')}
               </button>
               <button
                 onClick={() => setShowEndConfirm(false)}
                 className="w-full py-3 text-sm text-neutral-400 hover:text-neutral-600 transition-colors"
               >
-                Cancel
+                {t('profile.cancel')}
               </button>
             </div>
           </div>
@@ -1193,19 +1197,19 @@ export default function SessionPage() {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center px-6 z-50">
           <div className="bg-white border border-stone-200 rounded-2xl p-8 max-w-sm w-full text-center space-y-5 shadow-xl">
             <div className="space-y-2">
-              <p className="text-xs font-bold uppercase tracking-widest text-stone-400">10 minutes in</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-stone-400">{t('session.tenMinutesIn')}</p>
               <p className="font-bold text-lg text-neutral-900 leading-snug">
-                Make sure you&rsquo;re both getting equal practice time.
+                {t('session.checkpointBody1')}
               </p>
               <p className="text-sm text-stone-500">
-                Switch languages if you haven&rsquo;t already.
+                {t('session.checkpointBody2')}
               </p>
             </div>
             <button
               onClick={() => { checkpointDismissedRef.current = true; setCheckpoint(false); }}
               className="w-full py-3 btn-primary text-white font-bold rounded-xl"
             >
-              Got it 👍
+              {t('session.gotIt')}
             </button>
           </div>
         </div>

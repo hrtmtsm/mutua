@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/presenceAuth';
+import {liveConfigurationError} from '@/lib/releaseConfig';
 
 const MESSAGES: Record<string,string> = {
  not_authenticated: 'ログインしてください。', complete_profile_first: 'プロフィールで母語と学習言語を設定してください。',
+ invalid_language_pair:'母語と学習言語を確認してください。', ai_session_active:'AI通話を終了してから相手を探してください。', legacy_identity_verification_required:'以前のプロフィールとの本人確認が必要です。データは保持されています。',
  choose_different_languages: '母語と学習言語は別の言語を選んでください。',
  conversation_ended: '会話は終了しています。次の相手を探してください。',
  invite_no_longer_ringing: 'この通話の招待は期限切れ、または既に応答済みです。',
@@ -10,12 +12,8 @@ const MESSAGES: Record<string,string> = {
 };
 const ACTIONS = new Set(['state','join','cancel','message','invite','accept','decline','cancel_invite','end_call','end','signal']);
 export async function POST(request: Request) {
- // Verification rollout is explicitly confined to the approved staging project.
- const ref = process.env.LIVE_EXCHANGE_PROJECT_REF;
- const expected = ref ? `https://${ref}.supabase.co` : '';
- if (!ref || ref === 'jrdnhjzvmyuslziodhpm' || process.env.NEXT_PUBLIC_SUPABASE_URL !== expected) {
-  return NextResponse.json({ error: '実接続の検証環境が設定されていません。' }, { status: 503 });
- }
+ const configurationError=liveConfigurationError();
+ if(configurationError)return NextResponse.json({error:configurationError},{status:503});
  try {
   const body = await request.json();
   if (!ACTIONS.has(body.action) || !body.data || typeof body.data !== 'object' || Array.isArray(body.data)) {

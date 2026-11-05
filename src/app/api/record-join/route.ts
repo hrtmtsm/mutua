@@ -7,6 +7,7 @@
  */
 
 import { NextResponse } from 'next/server';
+import {requireAuth} from '@/lib/presenceAuth';
 import { createClient } from '@supabase/supabase-js';
 
 function admin() {
@@ -24,22 +25,14 @@ export async function POST(request: Request) {
 
   const db = admin();
 
-  // Resolve the anonymous sessionId → auth user_id via user_availability
-  const { data: avail } = await db
-    .from('user_availability')
-    .select('user_id')
-    .eq('session_id', sessionId)
-    .maybeSingle();
-
-  if (!avail?.user_id) {
-    return NextResponse.json({ error: 'sessionId not found' }, { status: 404 });
-  }
-
+  const auth=await requireAuth(request);if(!auth.ok)return NextResponse.json({error:auth.error},{status:auth.status});
+  const membership=await auth.rpcDb.from('matches').select('id').eq('id',matchId).maybeSingle();
+  if(!membership.data)return NextResponse.json({error:'forbidden'},{status:403});
   const { error } = await db
     .from('confirmed_sessions')
     .update({ joined_at: new Date().toISOString() })
     .eq('match_id', matchId)
-    .eq('user_id', avail.user_id);
+    .eq('user_id', auth.userId);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

@@ -32,7 +32,7 @@ export async function POST(request: Request) {
   if (!matchId || !slots?.length) {
     return NextResponse.json({ error: 'matchId and slots required' }, { status: 400 });
   }
-  if (!token && !sessionId) {
+  if (!token) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 

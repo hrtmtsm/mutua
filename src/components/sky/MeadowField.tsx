@@ -5,7 +5,6 @@ import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { Palette } from './palette';
 import { landscapeProjection } from './LandscapeView';
-import MeadowBlossoms from './MeadowBlossoms';
 
 // World-space relief, shared by the ground and every blade's root.
 export function meadowHeight(x:number,z:number) {
@@ -42,9 +41,6 @@ const terrainFragment = `
     vec3 base=mix(groundColor*.75,hillColor,broad*.55+.2);
     base*=.72+sun*.39;
     base*=.94+detail*.10;
-    float trailX=2.4+sin(world.z*.055)*3.2;
-    float path=(1.-smoothstep(.6,1.0,abs(world.x-trailX)))*(1.-smoothstep(35.,80.,-world.z));
-    base=mix(base,vec3(.43,.39,.26)*(.7+sun*.3),path*.8);
     base+=lightColor*pow(sun,4.)*.035*(1.-night*.6);
     float distance=length(vec3(world.x*.22,0.,world.z-10.));
     float haze=smoothstep(28.,145.,distance);
@@ -125,7 +121,6 @@ export function makeGrass(mobile:boolean,heightAt:(x:number,z:number)=>number=me
     const z=6.2-Math.pow(random(),1.55)*101.2;
     const x=(random()-.5)*(10-z)*(mobile?.95:2.2);
     if(accept&&!accept(x,z))continue;
-    if(!accept&&Math.abs(x-(2.4+Math.sin(z*.055)*3.2))<.85)continue;
     // Broad patches, smaller tufts and open channels, rather than an even grid.
     const patch=.5+.28*Math.sin(x*.61+z*.19)*Math.sin(z*.36-x*.15)+.16*Math.sin(x*1.4+z*.81);
     if(random()>patch+.15)continue;
@@ -181,7 +176,6 @@ export default function MeadowField({palette,progress,reduced,mobile,still}:{pal
   });
   useEffect(()=>()=>{terrain.dispose();grass.dispose();},[terrain,grass]);
   return <group>
-    <MeadowBlossoms palette={palette} progress={progress} mobile={mobile} reduced={reduced} still={still} height={meadowHeight}/>
     <mesh geometry={terrain} frustumCulled={false} renderOrder={10}>
       <shaderMaterial uniforms={uniforms} vertexShader={terrainVertex} fragmentShader={terrainFragment} transparent depthWrite side={THREE.DoubleSide}/>
     </mesh>

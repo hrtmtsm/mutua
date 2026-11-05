@@ -5,23 +5,25 @@ import { useRouter } from 'next/navigation';
 import { track } from '@/lib/analytics';
 import { supabase, isConfigured } from '@/lib/supabase';
 import { LANG_AVATAR_COLOR } from '@/lib/constants';
+import { useLocale } from '@/components/LocaleProvider';
+import type { DictionaryKey } from '@/lib/i18n/dictionary';
 
-const OPTIONS = [
-  { id: 'technical',  label: 'Technical issues' },
-  { id: 'topics',     label: "Didn't know what to talk about" },
-  { id: 'no_practice', label: "Didn't get to practice my language" },
-  { id: 'no_show',    label: "My partner didn't show up :(" },
-  { id: 'nothing',    label: 'Nothing, it was great!' },
+const OPTIONS: { id: string; labelKey: DictionaryKey }[] = [
+  { id: 'technical',  labelKey: 'sessionReview.optionTechnical' },
+  { id: 'topics',     labelKey: 'sessionReview.optionTopics' },
+  { id: 'no_practice', labelKey: 'sessionReview.optionNoPractice' },
+  { id: 'no_show',    labelKey: 'sessionReview.optionNoShow' },
+  { id: 'nothing',    labelKey: 'sessionReview.optionNothing' },
 ];
 
 const NO_SHOW_THRESHOLD = 120; // seconds
 
-function formatDuration(s: number) {
+function formatDuration(s: number, t: (key: DictionaryKey) => string) {
   const m = Math.floor(s / 60);
   const sec = s % 60;
-  if (m === 0) return `${sec}s`;
-  if (sec === 0) return `${m}m`;
-  return `${m}m ${sec}s`;
+  if (m === 0) return t('sessionReview.durationSecOnly').replace('{s}', String(sec));
+  if (sec === 0) return t('sessionReview.durationMinOnly').replace('{m}', String(m));
+  return t('sessionReview.durationMinSec').replace('{m}', String(m)).replace('{s}', String(sec));
 }
 
 function AvatarCircle({ name, lang, avatarUrl }: { name: string; lang: string; avatarUrl: string | null }) {
@@ -42,11 +44,12 @@ function AvatarCircle({ name, lang, avatarUrl }: { name: string; lang: string; a
 }
 
 export default function SessionReviewPage() {
+  const { t } = useLocale();
   const router = useRouter();
   const [selected,      setSelected]      = useState<string | null>(null);
   const [note,          setNote]          = useState('');
   const [duration,      setDuration]      = useState(0);
-  const [partnerName,   setPartnerName]   = useState('your partner');
+  const [partnerName,   setPartnerName]   = useState(t('sessionReview.yourPartnerFallback'));
   const [matchId,       setMatchId]       = useState<string | null>(null);
   const [userId,        setUserId]        = useState<string | null>(null);
   const [partnerId,     setPartnerId]     = useState<string | null>(null);
@@ -61,21 +64,21 @@ export default function SessionReviewPage() {
     if (raw) {
       const { duration: d, partnerName: n, matchId: mid, partnerId: pid } = JSON.parse(raw);
       setDuration(d ?? 0);
-      setPartnerName(n ?? 'your partner');
+      setPartnerName(n ?? t('sessionReview.yourPartnerFallback'));
       setMatchId(mid ?? null);
       setPartnerId(pid ?? null);
 
       // Fetch both avatars
       if (sid && pid) {
         supabase
-          .from('profiles')
+          .from('public_profile_cards')
           .select('session_id, name, avatar_url, native_language')
           .in('session_id', [sid, pid])
           .then(({ data }) => {
             if (!data) return;
             const me      = data.find(r => r.session_id === sid);
             const partner = data.find(r => r.session_id === pid);
-            if (me)      setMyAvatar({ name: me.name ?? 'Me', lang: me.native_language ?? '', url: me.avatar_url ?? null });
+            if (me)      setMyAvatar({ name: me.name ?? t('sessionReview.meFallback'), lang: me.native_language ?? '', url: me.avatar_url ?? null });
             if (partner) setPartnerAvatar({ name: partner.name ?? n, lang: partner.native_language ?? '', url: partner.avatar_url ?? null });
           });
       }
@@ -144,14 +147,14 @@ export default function SessionReviewPage() {
               alt="🔥"
               className="w-6 h-6"
             />
-            <p className="text-2xl font-black text-neutral-900">{formatDuration(duration)}</p>
+            <p className="text-2xl font-black text-neutral-900">{formatDuration(duration, t)}</p>
           </div>
         </div>
 
         {/* Question */}
         <div className="flex flex-col gap-4">
           <div className="text-center">
-            <p className="text-xl font-bold text-neutral-900">How was this session?</p>
+            <p className="text-xl font-bold text-neutral-900">{t('sessionReview.heading')}</p>
           </div>
 
           <div className="flex flex-col gap-3">
@@ -167,7 +170,7 @@ export default function SessionReviewPage() {
                       : 'bg-white border-stone-200 text-neutral-700 hover:border-[#2B8FFF]'
                   }`}
                 >
-                  {opt.label}
+                  {t(opt.labelKey)}
                 </button>
               );
             })}
@@ -176,7 +179,7 @@ export default function SessionReviewPage() {
           <textarea
             value={note}
             onChange={e => setNote(e.target.value)}
-            placeholder="Anything else you want to share? (optional)"
+            placeholder={t('sessionReview.notePlaceholder')}
             rows={3}
             className="w-full px-4 py-3 rounded-xl border border-stone-200 text-sm text-neutral-700 placeholder:text-stone-400 resize-none focus:outline-none focus:border-[#2B8FFF]"
           />
@@ -189,13 +192,13 @@ export default function SessionReviewPage() {
             disabled={!selected && !note.trim()}
             className="w-full py-3.5 btn-primary text-white font-bold rounded-xl text-sm disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            Submit
+            {t('sessionReview.submit')}
           </button>
           <button
             onClick={() => submit(true)}
             className="w-full py-2 text-sm text-stone-400 hover:text-stone-600 transition-colors"
           >
-            Skip
+            {t('sessionReview.skip')}
           </button>
         </div>
 

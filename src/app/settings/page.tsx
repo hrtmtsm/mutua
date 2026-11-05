@@ -5,8 +5,10 @@ import { useRouter } from 'next/navigation';
 import { X, LogOut, Eye, EyeOff } from 'lucide-react';
 import AppShell from '@/components/AppShell';
 import { supabase } from '@/lib/supabase';
+import { useLocale } from '@/components/LocaleProvider';
 
 export default function SettingsPage() {
+  const { t } = useLocale();
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [loggingOut, setLoggingOut] = useState(false);
@@ -49,13 +51,13 @@ export default function SettingsPage() {
     <AppShell>
       <main className="flex-1 px-6 py-10 max-w-2xl mx-auto w-full space-y-5">
 
-        <h1 className="font-serif font-semibold text-2xl text-[#171717]">Settings</h1>
+        <h1 className="font-serif font-semibold text-2xl text-[#171717]">{t('settings.heading')}</h1>
 
         <div className="space-y-3">
           <div className="bg-white rounded-2xl shadow-sm divide-y divide-stone-100">
             {/* Email — display only */}
             <div className="px-6 py-4 flex items-center justify-between">
-              <span className="text-sm font-medium text-neutral-700">Email</span>
+              <span className="text-sm font-medium text-neutral-700">{t('settings.emailLabel')}</span>
               <span className="text-sm text-stone-400 truncate max-w-[55%] text-right">{email || '—'}</span>
             </div>
 
@@ -63,7 +65,7 @@ export default function SettingsPage() {
               onClick={openPassword}
               className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-stone-50 transition-colors"
             >
-              <span className="text-sm font-medium text-neutral-700">Password</span>
+              <span className="text-sm font-medium text-neutral-700">{t('settings.passwordLabel')}</span>
               <span className="text-stone-300 text-sm tracking-widest">••••••••</span>
             </button>
           </div>
@@ -76,7 +78,7 @@ export default function SettingsPage() {
               className="w-full px-6 py-4 flex items-center gap-3 text-left hover:bg-stone-50 transition-colors rounded-2xl disabled:opacity-50"
             >
               <LogOut className="w-4 h-4 text-red-400 shrink-0" />
-              <span className="text-sm font-medium text-red-500">{loggingOut ? 'Signing out…' : 'Sign out'}</span>
+              <span className="text-sm font-medium text-red-500">{loggingOut ? t('settings.signingOut') : t('settings.signOut')}</span>
             </button>
           </div>
         </div>
@@ -94,22 +96,22 @@ export default function SettingsPage() {
           </button>
           {passwordSaved ? (
             <div className="py-4 text-center space-y-2">
-              <p className="font-semibold text-neutral-900">Password updated</p>
-              <p className="text-sm text-stone-400">You're all set.</p>
-              <button onClick={() => setShowPassword(false)} className="mt-3 px-5 py-2.5 btn-primary text-white text-sm font-semibold rounded-xl">Done</button>
+              <p className="font-semibold text-neutral-900">{t('settings.passwordUpdatedTitle')}</p>
+              <p className="text-sm text-stone-400">{t('settings.allSet')}</p>
+              <button onClick={() => setShowPassword(false)} className="mt-3 px-5 py-2.5 btn-primary text-white text-sm font-semibold rounded-xl">{t('settings.done')}</button>
             </div>
 
           ) : passwordView === 'forgot' ? (
             <>
-              <button onClick={() => setPasswordView('change')} className="text-xs text-stone-400 hover:text-neutral-700 mb-3 flex items-center gap-1">← Back</button>
-              <p className="font-semibold text-neutral-900 mb-1">Reset your password</p>
-              <p className="text-sm text-stone-400 mb-3">Enter your email and we'll send you a reset link.</p>
+              <button onClick={() => setPasswordView('change')} className="text-xs text-stone-400 hover:text-neutral-700 mb-3 flex items-center gap-1">{t('settings.back')}</button>
+              <p className="font-semibold text-neutral-900 mb-1">{t('settings.resetPasswordTitle')}</p>
+              <p className="text-sm text-stone-400 mb-3">{t('settings.resetPasswordBody')}</p>
               {resetSent ? (
-                <p className="text-sm text-emerald-600 py-2">Reset link sent — check your inbox.</p>
+                <p className="text-sm text-emerald-600 py-2">{t('settings.resetLinkSent')}</p>
               ) : (
                 <>
                   <input type="email" value={resetEmail} onChange={e => setResetEmail(e.target.value)}
-                    placeholder="Your email address"
+                    placeholder={t('settings.emailPlaceholder')}
                     className="w-full border border-stone-200 rounded-xl px-3 py-2.5 text-sm text-neutral-800 placeholder:text-stone-300 focus:outline-none focus:border-neutral-400" />
                   {passwordError && <p className="text-xs text-red-500 mt-2">{passwordError}</p>}
                   <button
@@ -123,7 +125,7 @@ export default function SettingsPage() {
                     }}
                     className="mt-3 w-full py-3 btn-primary text-white font-semibold text-sm rounded-xl disabled:opacity-40"
                   >
-                    Send reset link
+                    {t('settings.sendResetLink')}
                   </button>
                 </>
               )}
@@ -131,12 +133,12 @@ export default function SettingsPage() {
 
           ) : (
             <>
-              <p className="font-semibold text-neutral-900 mb-3">Change password</p>
+              <p className="font-semibold text-neutral-900 mb-3">{t('settings.changePasswordTitle')}</p>
               <div className="space-y-2">
                 {([
-                  { value: currentPass, set: setCurrentPass, show: showCurrentPass, toggle: () => setShowCurrentPass(v => !v), placeholder: 'Current password' },
-                  { value: newPassword, set: setNewPassword, show: showNewPass,     toggle: () => setShowNewPass(v => !v),     placeholder: 'New password' },
-                  { value: confirmPass, set: setConfirmPass, show: showConfirmPass, toggle: () => setShowConfirmPass(v => !v), placeholder: 'Confirm new password' },
+                  { value: currentPass, set: setCurrentPass, show: showCurrentPass, toggle: () => setShowCurrentPass(v => !v), placeholder: t('settings.currentPasswordPlaceholder') },
+                  { value: newPassword, set: setNewPassword, show: showNewPass,     toggle: () => setShowNewPass(v => !v),     placeholder: t('settings.newPasswordPlaceholder') },
+                  { value: confirmPass, set: setConfirmPass, show: showConfirmPass, toggle: () => setShowConfirmPass(v => !v), placeholder: t('settings.confirmPasswordPlaceholder') },
                 ] as const).map(({ value, set, show, toggle, placeholder }) => (
                   <div key={placeholder} className="relative">
                     <input
@@ -157,11 +159,11 @@ export default function SettingsPage() {
               <button
                 disabled={!currentPass || !newPassword || !confirmPass || savingPassword}
                 onClick={async () => {
-                  if (newPassword.length < 6) { setPasswordError('Password must be at least 6 characters.'); return; }
-                  if (newPassword !== confirmPass) { setPasswordError("Passwords don't match."); return; }
+                  if (newPassword.length < 6) { setPasswordError(t('settings.passwordTooShort')); return; }
+                  if (newPassword !== confirmPass) { setPasswordError(t('settings.passwordsDontMatch')); return; }
                   setSavingPassword(true);
                   const { error: signInError } = await supabase.auth.signInWithPassword({ email, password: currentPass });
-                  if (signInError) { setSavingPassword(false); setPasswordError('Current password is incorrect.'); return; }
+                  if (signInError) { setSavingPassword(false); setPasswordError(t('settings.currentPasswordIncorrect')); return; }
                   const { error } = await supabase.auth.updateUser({ password: newPassword });
                   setSavingPassword(false);
                   if (error) { setPasswordError(error.message); return; }
@@ -169,12 +171,12 @@ export default function SettingsPage() {
                 }}
                 className="mt-3 w-full py-3 btn-primary text-white font-semibold text-sm rounded-xl disabled:opacity-40"
               >
-                {savingPassword ? 'Updating…' : 'Update password'}
+                {savingPassword ? t('settings.updating') : t('settings.updatePassword')}
               </button>
               <div className="flex justify-center mt-3">
                 <button type="button" onClick={() => { setPasswordView('forgot'); setResetEmail(email); setPasswordError(''); }}
                   className="text-xs text-stone-400 hover:text-neutral-700 hover:underline">
-                  Forgot password?
+                  {t('settings.forgotPassword')}
                 </button>
               </div>
             </>

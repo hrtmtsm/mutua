@@ -1,34 +1,30 @@
 'use client';
 
 import Link from 'next/link';
-import { defaultAvatarFor } from '@/lib/glyphAvatars';
 import { ThemeSwitcher, useTheme } from './ThemeProvider';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { User, ArrowLeftRight, TrendingUp, Bell, ArrowLeft, Send, Settings, MessageSquarePlus, X, Home, Calendar, MessageCircle } from 'lucide-react';
+import { User, ArrowLeftRight, Bell, ArrowLeft, Send, Settings, MessageSquarePlus, X, Home, Calendar, MessageCircle } from 'lucide-react';
 import { LANG_AVATAR_COLOR } from '@/lib/constants';
+import { isRealPhoto } from '@/lib/glyphAvatars';
 import { supabase, getMessages, sendMessage, getNotifications, markNotificationsSeen, type Message, type AppNotification } from '@/lib/supabase';
 import { track } from '@/lib/analytics';
+import { useLocale } from './LocaleProvider';
+import type { DictionaryKey } from '@/lib/i18n/dictionary';
 
 const BOTTOM_NAV = [
   {
     href: '/app',
-    label: 'Exchange',
+    labelKey: 'nav.exchange' as DictionaryKey,
     icon: Home,
     match: ['/app', '/match-result', '/find-match', '/partners', '/partner'],
   },
   {
     href: '/exchanges',
-    label: 'Log',
+    labelKey: 'nav.log' as DictionaryKey,
     icon: ArrowLeftRight,
     match: ['/exchanges', '/session-confirmed', '/session-schedule', '/pre-session', '/session'],
-  },
-  {
-    href: '/history',
-    label: 'Progress',
-    icon: TrendingUp,
-    match: ['/history'],
   },
 ];
 
@@ -39,10 +35,9 @@ function useNavState() {
   const [initials, setInitials]   = useState('');
   const [name,     setName]       = useState('');
   const [avatarBg, setAvatarBg]   = useState('#171717');
-  const [avatarUrl, setAvatarUrl] = useState(defaultAvatarFor('guest'));
+  const [avatarUrl, setAvatarUrl] = useState('');
   const [sessionId, setSessionId] = useState('');
   const [hasUnread, setHasUnreadState] = useState(false);
-  const [hasRematchBadge, setHasRematchBadge] = useState(false);
   const [hasExchangesBadge, setHasExchangesBadge] = useState(false);
 
   const refreshProfile = () => {
@@ -58,7 +53,7 @@ function useNavState() {
       setName(n);
       const lang: string = profile.native_language ?? '';
       setAvatarBg(LANG_AVATAR_COLOR[lang] ?? '#171717');
-      setAvatarUrl(profile.avatar_url || defaultAvatarFor(profile.session_id || 'guest'));
+      setAvatarUrl(profile.avatar_url || '');
       setSessionId(profile.session_id ?? '');
     }
     setHasUnreadState(
@@ -73,36 +68,6 @@ function useNavState() {
     window.addEventListener('mutua:profile-updated', refreshProfile);
     return () => window.removeEventListener('mutua:profile-updated', refreshProfile);
   }, []);
-
-  // Poll for pending rematch intents from partner; clear badge on history page
-  useEffect(() => {
-    if (pathname === '/history') { setHasRematchBadge(false); return; }
-    const sid = localStorage.getItem('mutua_session_id');
-    if (!sid) return;
-
-    const check = async () => {
-      const { data: myMatches } = await supabase
-        .from('matches')
-        .select('id')
-        .or(`session_id_a.eq.${sid},session_id_b.eq.${sid}`)
-        .neq('scheduling_state', 'archived');
-
-      const ids = (myMatches ?? []).map((m: any) => m.id);
-      if (ids.length === 0) { setHasRematchBadge(false); return; }
-
-      const { data: intents } = await supabase
-        .from('rematch_intents')
-        .select('id')
-        .in('match_id', ids)
-        .neq('user_id', sid);
-
-      setHasRematchBadge((intents ?? []).length > 0);
-    };
-
-    check();
-    const t = setInterval(check, 15_000);
-    return () => clearInterval(t);
-  }, [pathname]);
 
   // Poll for actionable scheduling state changes; clear badge when on exchanges
   const ACTIONABLE_STATES = ['scheduled', 'no_overlap', 'pending_a', 'pending_b'];
@@ -136,7 +101,7 @@ function useNavState() {
   }, [pathname]);
 
   const setHasUnread = (v: boolean) => setHasUnreadState(v);
-  return { pathname, initials, name, avatarBg, avatarUrl, sessionId, hasUnread, setHasUnread, hasRematchBadge, hasExchangesBadge };
+  return { pathname, initials, name, avatarBg, avatarUrl, sessionId, hasUnread, setHasUnread, hasExchangesBadge };
 }
 
 // ── Thread list ───────────────────────────────────────────────────────────────
@@ -161,12 +126,13 @@ function MessagesList({
   myId: string;
   onOpen: (matchId: string, partnerName: string) => void;
 }) {
+  const { t } = useLocale();
   if (conversations.length === 0) {
     return (
       <div className="px-4 py-8 text-center">
-        <p className="text-sm font-semibold text-neutral-900 mb-1">No messages</p>
+        <p className="text-sm font-semibold text-neutral-900 mb-1">{t('sidebar.noMessagesTitle')}</p>
         <p className="text-xs text-stone-400 leading-relaxed">
-          Messages from your exchange partners will appear here.
+          {t('sidebar.noMessagesBody')}
         </p>
       </div>
     );
@@ -186,7 +152,7 @@ function MessagesList({
             onClick={() => onOpen(c.matchId, c.partnerName)}
             className="w-full flex items-center gap-3 px-5 py-4 hover:bg-stone-50 transition-colors text-left border-b border-stone-50 last:border-0"
           >
-            {c.avatarUrl
+            {isRealPhoto(c.avatarUrl)
               ? <img src={c.avatarUrl} alt={c.partnerName} className="w-9 h-9 rounded-full object-cover shrink-0" />
               : <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: c.avatarBg }}><span className="text-xs font-black text-white">{ini}</span></div>
             }
@@ -194,7 +160,7 @@ function MessagesList({
               <p className={`text-sm leading-tight ${hasUnreadMsg ? 'font-bold text-neutral-900' : 'font-semibold text-neutral-900'}`}>{c.partnerName}</p>
               {last && (
                 <p className={`text-xs truncate mt-0.5 ${hasUnreadMsg ? 'text-neutral-700 font-medium' : 'text-stone-400'}`}>
-                  {last.sender_id === myId ? 'You: ' : ''}{last.text}
+                  {last.sender_id === myId ? t('sidebar.youPrefix') : ''}{last.text}
                 </p>
               )}
             </div>
@@ -221,6 +187,7 @@ function MessageChat({
   avatarBg: string;
   avatarUrl?: string | null;
 }) {
+  const { t } = useLocale();
   const [draft, setDraft] = useState('');
   const [error, setError] = useState('');
   const [localMessages, setLocalMessages] = useState<Message[]>(serverMessages);
@@ -269,7 +236,7 @@ function MessageChat({
       await sendMessage(matchId, myId, text);
       track('message_sent');
     } catch (e: any) {
-      setError('Failed to send. Try again.');
+      setError(t('sidebar.sendFailed'));
       setLocalMessages(prev => prev.filter(m => m.id !== optimistic.id));
       console.error('sendMessage error:', e);
     }
@@ -287,7 +254,7 @@ function MessageChat({
         <button onClick={onBack} className="text-stone-400 hover:text-neutral-700 transition-colors">
           <ArrowLeft className="w-4 h-4" />
         </button>
-        {avatarUrl
+        {isRealPhoto(avatarUrl)
           ? <img src={avatarUrl} alt={partnerName} className="w-7 h-7 rounded-full object-cover shrink-0" />
           : <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: avatarBg }}><span className="text-[10px] font-black text-white">{initials}</span></div>
         }
@@ -297,7 +264,7 @@ function MessageChat({
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
         {messages.length === 0 ? (
-          <p className="text-xs text-stone-400 text-center mt-6">Say hello!</p>
+          <p className="text-xs text-stone-400 text-center mt-6">{t('sidebar.sayHello')}</p>
         ) : messages.map(m => {
           const isMe = m.sender_id === myId;
           return (
@@ -324,7 +291,7 @@ function MessageChat({
           value={draft}
           onChange={e => setDraft(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && send()}
-          placeholder="Message..."
+          placeholder={t('sidebar.chatPlaceholder')}
           className="flex-1 text-base px-3 py-2 border border-stone-200 rounded-xl focus:outline-none focus:border-neutral-400 bg-stone-50"
         />
         <button
@@ -343,7 +310,8 @@ function MessageChat({
 
 export default function TopNav() {
   const router = useRouter();
-  const { pathname, initials, name, avatarBg, avatarUrl, hasUnread, setHasUnread, hasRematchBadge } = useNavState();
+  const { t } = useLocale();
+  const { pathname, initials, name, avatarBg, avatarUrl, hasUnread, setHasUnread } = useNavState();
   const { theme } = useTheme();
   const immersive = theme === 'night';
   const navIconColor = immersive ? 'text-white/60 hover:text-white' : 'text-stone-400 hover:text-neutral-700';
@@ -439,7 +407,7 @@ export default function TopNav() {
       );
       const [{ data: allMessages }, { data: profiles }] = await Promise.all([
         supabase.from('messages').select('*').in('match_id', matchIds).order('created_at', { ascending: true }),
-        supabase.from('profiles').select('session_id, name, avatar_url, native_language').in('session_id', partnerSessionIds),
+        supabase.from('public_profile_cards').select('session_id, name, avatar_url, native_language').in('session_id', partnerSessionIds),
       ]);
 
       const profileMap = Object.fromEntries((profiles ?? []).map(p => [p.session_id, p]));
@@ -458,7 +426,7 @@ export default function TopNav() {
           const msgs = msgsByMatch[m.id] ?? [];
           return {
             matchId:     m.id,
-            partnerName: profile?.name ?? (isA ? m.name_b : m.name_a) ?? 'Partner',
+            partnerName: profile?.name ?? (isA ? m.name_b : m.name_a) ?? t('app.partner'),
             avatarBg:    LANG_AVATAR_COLOR[partnerLang] ?? '#171717',
             avatarUrl:   profile?.avatar_url ?? null,
             lastMessage: msgs[msgs.length - 1] ?? null,
@@ -489,7 +457,7 @@ export default function TopNav() {
 
   // Shared message state loaded once when inbox opens
   const [matchId, setMatchId]               = useState<string | null>(null);
-  const [partnerName, setPartnerName]       = useState('Partner');
+  const [partnerName, setPartnerName]       = useState(t('app.partner'));
   const [myId, setMyId]                     = useState('');
   const [messages, setMessages]             = useState<Message[]>([]);
   const [scheduleState, setScheduleState]   = useState<string | null>(null);
@@ -602,7 +570,7 @@ export default function TopNav() {
     // Clear stale state immediately so old chat doesn't flash
     setMatchId(null);
     setMessages([]);
-    setPartnerName('Partner');
+    setPartnerName(t('app.partner'));
     setPartnerAvatarUrl(null);
     setScheduleState(null);
 
@@ -627,11 +595,11 @@ export default function TopNav() {
       if (!match) return;
       setMatchId(match.id);
       const isA = match.session_id_a === sessionId;
-      setPartnerName(isA ? (match.name_b ?? 'Partner') : (match.name_a ?? 'Partner'));
+      setPartnerName(isA ? (match.name_b ?? t('app.partner')) : (match.name_a ?? t('app.partner')));
       const partnerLang = isA ? (match.native_language_b ?? '') : (match.native_language_a ?? '');
       setPartnerAvatarBg(LANG_AVATAR_COLOR[partnerLang] ?? '#171717');
       const partnerSessionId = isA ? match.session_id_b : match.session_id_a;
-      const { data: pProfile } = await supabase.from('profiles').select('avatar_url, name').eq('session_id', partnerSessionId).maybeSingle();
+      const { data: pProfile } = await supabase.from('public_profile_cards').select('avatar_url, name').eq('session_id', partnerSessionId).maybeSingle();
       setPartnerAvatarUrl(pProfile?.avatar_url ?? null);
       if (pProfile?.name) setPartnerName(pProfile.name);
       const msgs = await getMessages(match.id);
@@ -680,27 +648,25 @@ export default function TopNav() {
         <span className={`md:hidden text-xl shrink-0 ${immersive ? 'text-white' : 'text-neutral-900'}`}
           style={{ fontFamily: 'var(--font-logo), Figtree, sans-serif', fontWeight: 900, letterSpacing: '-0.045em' }}>
           {(() => {
-            if (pathname === '/app' || pathname.startsWith('/app/')) return 'Exchange';
-            if (pathname === '/exchanges' || pathname.startsWith('/exchanges/')) return 'Log';
-            if (pathname === '/history' || pathname.startsWith('/history/')) return 'Progress';
-            if (pathname === '/set-availability') return 'Schedule';
-            if (pathname === '/notifications') return 'Notifications';
-            if (pathname.startsWith('/messages')) return 'Messages';
-            if (pathname.startsWith('/partner')) return 'Profile';
-            if (pathname.startsWith('/find-match')) return 'Find a Partner';
-            if (pathname.startsWith('/match-result')) return 'Match';
-            if (pathname.startsWith('/session')) return 'Session';
-            if (pathname.startsWith('/onboarding')) return 'Get Started';
-            if (pathname.startsWith('/auth')) return 'Sign In';
+            if (pathname === '/app' || pathname.startsWith('/app/')) return t('nav.exchange');
+            if (pathname === '/exchanges' || pathname.startsWith('/exchanges/')) return t('nav.log');
+            if (pathname === '/set-availability') return t('nav.titleSchedule');
+            if (pathname === '/notifications') return t('nav.titleNotifications');
+            if (pathname.startsWith('/messages')) return t('nav.titleMessages');
+            if (pathname.startsWith('/partner')) return t('nav.titleProfile');
+            if (pathname.startsWith('/find-match')) return t('nav.titleFindPartner');
+            if (pathname.startsWith('/match-result')) return t('nav.titleMatch');
+            if (pathname.startsWith('/session')) return t('nav.titleSession');
+            if (pathname.startsWith('/onboarding')) return t('nav.titleGetStarted');
+            if (pathname.startsWith('/auth')) return t('nav.titleSignIn');
             return 'Mutua';
           })()}
         </span>
 
         {/* Nav links — desktop only */}
         <nav className="hidden md:flex items-center gap-1 flex-1 ml-8">
-          {DESKTOP_NAV.map(({ href, label, icon: Icon, match }) => {
+          {DESKTOP_NAV.map(({ href, labelKey, icon: Icon, match }) => {
             const active = match.some(p => pathname === p || pathname.startsWith(p + '/'));
-            const showDot = href === '/history' && hasRematchBadge;
             return (
               <Link
                 key={href}
@@ -713,11 +679,8 @@ export default function TopNav() {
               >
                 <span className="relative">
                   <Icon className="w-4 h-4" strokeWidth={active ? 2.5 : 1.8} />
-                  {showDot && (
-                    <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-rose-500 rounded-full" />
-                  )}
                 </span>
-                {label}
+                {t(labelKey)}
               </Link>
             );
           })}
@@ -786,7 +749,7 @@ export default function TopNav() {
                       }`}
                     >
                       <span className="relative inline-flex items-center gap-1">
-                        {tab === 'notifications' ? 'Notifications' : 'Messages'}
+                        {tab === 'notifications' ? t('nav.titleNotifications') : t('nav.titleMessages')}
                         {tab === 'notifications' && !!localStorage.getItem('mutua_unread_notification') && (
                           <span className="w-1.5 h-1.5 rounded-full bg-red-500 inline-block" />
                         )}
@@ -818,8 +781,8 @@ export default function TopNav() {
                     </div>
                   ) : desktopNotifs.length === 0 ? (
                     <div className="py-10 text-center px-4">
-                      <p className="text-sm font-semibold text-neutral-900 mb-1">No notifications yet</p>
-                      <p className="text-xs text-stone-400 leading-relaxed">We'll let you know when something happens.</p>
+                      <p className="text-sm font-semibold text-neutral-900 mb-1">{t('sidebar.noNotificationsTitle')}</p>
+                      <p className="text-xs text-stone-400 leading-relaxed">{t('sidebar.noNotificationsBody')}</p>
                     </div>
                   ) : (
                     desktopNotifs.map(n => {
@@ -828,7 +791,10 @@ export default function TopNav() {
                         : '?';
                       const diff = Date.now() - new Date(n.created_at).getTime();
                       const m = Math.floor(diff / 60000);
-                      const ago = m < 1 ? 'just now' : m < 60 ? `${m}m ago` : m < 1440 ? `${Math.floor(m/60)}h ago` : `${Math.floor(m/1440)}d ago`;
+                      const ago = m < 1 ? t('sidebar.agoJustNow')
+                        : m < 60 ? t('sidebar.agoMinutes').replace('{n}', String(m))
+                        : m < 1440 ? t('sidebar.agoHours').replace('{n}', String(Math.floor(m/60)))
+                        : t('sidebar.agoDays').replace('{n}', String(Math.floor(m/1440)));
                       return (
                         <button
                           key={n.id}
@@ -879,9 +845,9 @@ export default function TopNav() {
             <button
               onClick={() => setProfileOpen(o => !o)}
               className={`w-8 h-8 rounded-full overflow-hidden flex items-center justify-center text-white text-xs font-bold hover:opacity-80 transition-opacity shrink-0 ${immersive ? 'ring-1 ring-white/25' : ''}`}
-              style={avatarUrl ? undefined : { backgroundColor: avatarBg }}
+              style={isRealPhoto(avatarUrl) ? undefined : { backgroundColor: avatarBg }}
             >
-              {avatarUrl
+              {isRealPhoto(avatarUrl)
                 ? <img src={avatarUrl} alt="" className="w-full h-full object-cover"
                     onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
                   />
@@ -895,15 +861,15 @@ export default function TopNav() {
                 <Link href="/profile" onClick={() => setProfileOpen(false)}
                   className="flex items-center gap-3 px-4 py-4 hover:bg-stone-50 transition-colors border-b border-stone-100">
                   <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 flex items-center justify-center text-white text-sm font-bold"
-                    style={avatarUrl ? undefined : { backgroundColor: avatarBg }}>
-                    {avatarUrl
+                    style={isRealPhoto(avatarUrl) ? undefined : { backgroundColor: avatarBg }}>
+                    {isRealPhoto(avatarUrl)
                       ? <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
                       : (initials || <User className="w-4 h-4" />)
                     }
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-neutral-900 truncate">{name || 'Your profile'}</p>
-                    <p className="text-xs text-stone-400">View profile</p>
+                    <p className="text-sm font-semibold text-neutral-900 truncate">{name || t('sidebar.yourProfile')}</p>
+                    <p className="text-xs text-stone-400">{t('sidebar.viewProfile')}</p>
                   </div>
                 </Link>
 
@@ -912,14 +878,14 @@ export default function TopNav() {
                   <Link href="/settings" onClick={() => setProfileOpen(false)}
                     className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-stone-50 transition-colors">
                     <Settings className="w-4 h-4 text-stone-400 shrink-0" />
-                    <span className="text-sm font-medium text-neutral-700">Settings</span>
+                    <span className="text-sm font-medium text-neutral-700">{t('sidebar.settingsLabel')}</span>
                   </Link>
                   <button
                     onClick={() => { setProfileOpen(false); setFeedbackText(''); setFeedbackSent(false); setShowFeedback(true); }}
                     className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-stone-50 transition-colors text-left"
                   >
                     <MessageSquarePlus className="w-4 h-4 text-stone-400 shrink-0" />
-                    <span className="text-sm font-medium text-neutral-700">Send feedback</span>
+                    <span className="text-sm font-medium text-neutral-700">{t('sidebar.sendFeedback')}</span>
                   </button>
                 </div>
 
@@ -943,18 +909,18 @@ export default function TopNav() {
           {feedbackSent ? (
             <div className="py-6 text-center space-y-2">
               <p className="text-3xl">💙</p>
-              <p className="font-bold text-neutral-900 text-lg">You're the best</p>
-              <p className="text-sm text-stone-400 leading-relaxed">We read every single message.<br/>This really helps us improve.</p>
-              <button onClick={() => setShowFeedback(false)} className="mt-4 px-6 py-2.5 btn-primary text-white text-sm font-semibold rounded-xl">Close</button>
+              <p className="font-bold text-neutral-900 text-lg">{t('sidebar.feedbackThanksTitle')}</p>
+              <p className="text-sm text-stone-400 leading-relaxed">{t('sidebar.feedbackThanksBody1')}<br/>{t('sidebar.feedbackThanksBody2')}</p>
+              <button onClick={() => setShowFeedback(false)} className="mt-4 px-6 py-2.5 btn-primary text-white text-sm font-semibold rounded-xl">{t('setup.close')}</button>
             </div>
           ) : (
             <>
               <div className="mb-4">
-                <p className="font-bold text-neutral-900 text-lg mb-1">We love feedback 💬</p>
-                <p className="text-sm text-stone-400 leading-relaxed">Seriously — every message gets read. Tell us what&rsquo;s working, what&rsquo;s broken, or what you wish existed.</p>
+                <p className="font-bold text-neutral-900 text-lg mb-1">{t('sidebar.feedbackTitle')}</p>
+                <p className="text-sm text-stone-400 leading-relaxed">{t('sidebar.feedbackBody')}</p>
               </div>
               <textarea value={feedbackText} onChange={e => setFeedbackText(e.target.value)}
-                placeholder="What's on your mind?" rows={4}
+                placeholder={t('sidebar.feedbackPlaceholder')} rows={4}
                 className="w-full border border-stone-200 rounded-xl px-3 py-2.5 text-sm text-neutral-800 placeholder:text-stone-300 focus:outline-none focus:border-[#2B8FFF] resize-none" />
               <button
                 disabled={!feedbackText.trim() || sendingFeedback}
@@ -974,7 +940,7 @@ export default function TopNav() {
                 }}
                 className="mt-3 w-full py-3 btn-primary text-white font-semibold text-sm rounded-xl disabled:opacity-40"
               >
-                {sendingFeedback ? 'Sending…' : 'Send it →'}
+                {sendingFeedback ? t('app.sending') : t('sidebar.sendFeedbackCta')}
               </button>
             </>
           )}
@@ -986,15 +952,16 @@ export default function TopNav() {
 }
 
 export function BottomNav() {
-  const { pathname, hasRematchBadge, hasExchangesBadge } = useNavState();
+  const { t } = useLocale();
+  const { pathname, hasExchangesBadge } = useNavState();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
   const nav = (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-stone-200/60 flex items-center">
-      {BOTTOM_NAV.map(({ href, label, icon: Icon, match }) => {
+      {BOTTOM_NAV.map(({ href, labelKey, icon: Icon, match }) => {
         const active = match.some(p => pathname === p || pathname.startsWith(p + '/'));
-        const showDot = (href === '/history' && hasRematchBadge) || (href === '/exchanges' && hasExchangesBadge);
+        const showDot = href === '/exchanges' && hasExchangesBadge;
         return (
           <Link
             key={href}
@@ -1009,7 +976,7 @@ export function BottomNav() {
                 <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-rose-500 rounded-full" />
               )}
             </span>
-            <span className="text-[10px] font-semibold">{label}</span>
+            <span className="text-[10px] font-semibold">{t(labelKey)}</span>
           </Link>
         );
       })}

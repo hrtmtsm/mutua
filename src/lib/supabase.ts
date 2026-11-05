@@ -24,7 +24,7 @@ export async function saveProfile(
 export async function findCandidates(profile: UserProfile): Promise<UserProfile[]> {
   if (!isConfigured) return [];
   const { data, error } = await supabase
-    .from('profiles')
+    .from('public_profile_cards')
     .select('*')
     .eq('native_language', profile.learning_language)
     .eq('learning_language', profile.native_language)

@@ -2,6 +2,8 @@
 
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useLocale } from '@/components/LocaleProvider';
+import type { DictionaryKey } from '@/lib/i18n/dictionary';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -19,7 +21,9 @@ for (let h = START_HOUR; h < END_HOUR; h++) {
 }
 
 const DAY_FULL  = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-const DAY_SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const WEEKDAY_KEYS: DictionaryKey[] = [
+  'weekday.sun', 'weekday.mon', 'weekday.tue', 'weekday.wed', 'weekday.thu', 'weekday.fri', 'weekday.sat',
+];
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -80,6 +84,7 @@ function slotToUTC(day: Date, minuteOfDay: number, timezone: string): string {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, blockedSlots, onChange, onTimezoneChange }: Props) {
+  const { t } = useLocale();
   const days = useMemo(() => getNext7Days(), []);
 
   const slotsToKeys = (slots: SessionSlot[]): Set<string> => {
@@ -242,7 +247,7 @@ export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, b
           {visibleDays.map((day, i) => (
             <div key={i} className="text-center">
               <p className="text-[11px] font-semibold text-stone-400 uppercase tracking-widest">
-                {DAY_SHORT[day.getDay()]}
+                {t(WEEKDAY_KEYS[day.getDay()])}
               </p>
               <p className="text-sm font-bold text-neutral-800 mt-0.5">{day.getMonth() + 1}/{day.getDate()}</p>
             </div>
@@ -264,20 +269,20 @@ export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, b
       {/* Legend */}
       <div className="flex items-center gap-3 mb-2 text-xs text-stone-500">
         <span className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-sm bg-[#2B8FFF] inline-block" />You
+          <span className="w-2.5 h-2.5 rounded-sm bg-[#2B8FFF] inline-block" />{t('weekSlotPicker.legendYou')}
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-sm bg-amber-200 inline-block" />Partner
+          <span className="w-2.5 h-2.5 rounded-sm bg-amber-200 inline-block" />{t('weekSlotPicker.legendPartner')}
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-sm bg-emerald-200 inline-block" />Overlap
+          <span className="w-2.5 h-2.5 rounded-sm bg-emerald-200 inline-block" />{t('weekSlotPicker.legendOverlap')}
         </span>
       </div>
 
       {/* Timezone */}
       <div className="flex items-center gap-1.5 text-xs text-stone-400 mb-4">
         <span>
-          In your time zone,{' '}
+          {t('weekSlotPicker.inYourTimezone')}{' '}
           <span className="font-semibold text-neutral-600">{timezone.replace(/_/g, ' ')}</span>
           {' '}
           <span>
@@ -288,7 +293,7 @@ export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, b
           </span>
         </span>
         {onTimezoneChange && (
-          <button onClick={onTimezoneChange} className="text-[#2B8FFF] font-medium hover:underline ml-1">Change</button>
+          <button onClick={onTimezoneChange} className="text-[#2B8FFF] font-medium hover:underline ml-1">{t('weekSlotPicker.change')}</button>
         )}
       </div>
 
@@ -345,7 +350,7 @@ export default function WeekSlotPicker({ timezone, partnerSlots, initialSlots, b
 
       {/* Hint */}
       {selected.size === 0 && (
-        <p className="text-xs text-stone-400 mt-3 text-center">Tap any slot to mark when you're free</p>
+        <p className="text-xs text-stone-400 mt-3 text-center">{t('weekSlotPicker.tapHint')}</p>
       )}
     </div>
   );

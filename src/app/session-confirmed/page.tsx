@@ -5,10 +5,12 @@ import { useRouter } from 'next/navigation';
 import TopNav from '@/components/Sidebar';
 import { CheckCircle2 } from 'lucide-react';
 import { track } from '@/lib/analytics';
+import { useLocale } from '@/components/LocaleProvider';
 
 export default function SessionConfirmedPage() {
+  const { t } = useLocale();
   const router = useRouter();
-  const [partnerName,   setPartnerName]   = useState('Your partner');
+  const [partnerName,   setPartnerName]   = useState(t('sessionConfirmed.yourPartnerFallback'));
   const [scheduledTime, setScheduledTime] = useState('');
 
   useEffect(() => {
@@ -18,7 +20,7 @@ export default function SessionConfirmedPage() {
     if (!partner || !time) { router.replace('/match-result'); return; }
 
     const parsed = JSON.parse(partner);
-    setPartnerName(parsed.name ?? 'Your partner');
+    setPartnerName(parsed.name ?? t('sessionConfirmed.yourPartnerFallback'));
     setScheduledTime(time);
     track('session_scheduled', { partner_name: parsed.name ?? '', scheduled_time: time });
   }, [router]);
@@ -43,10 +45,10 @@ export default function SessionConfirmedPage() {
           {/* Confirmation text */}
           <div className="space-y-2">
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#2B8FFF]">
-              Session scheduled
+              {t('sessionConfirmed.heading')}
             </p>
             <p className="font-serif font-black text-2xl text-neutral-900 leading-snug">
-              Your first practice with {partnerName} is set for
+              {t('sessionConfirmed.subtitle').replace('{partner}', partnerName)}
             </p>
             <p className="font-serif font-black text-3xl text-[#2B8FFF]">
               {scheduledTime}
@@ -59,19 +61,19 @@ export default function SessionConfirmedPage() {
               onClick={() => router.push('/pre-session')}
               className="w-full py-4 btn-primary text-white font-bold text-base rounded-xl shadow-md"
             >
-              Go to session room →
+              {t('sessionConfirmed.goToSession')}
             </button>
             <button
               onClick={() => router.push('/session-schedule')}
               className="w-full py-3 border border-stone-200 bg-white text-neutral-600 font-semibold text-sm rounded-xl hover:border-stone-300 transition-all"
             >
-              Change time
+              {t('sessionConfirmed.changeTime')}
             </button>
             <button
               onClick={() => router.push('/app')}
               className="w-full py-2 text-stone-400 hover:text-neutral-700 text-sm font-medium transition-colors"
             >
-              ← Back to sessions
+              {t('sessionConfirmed.backToSessions')}
             </button>
           </div>
 

@@ -41,7 +41,7 @@
 }
 :root[data-theme='night'] .live-exchange-scene { background: #141613; }
 
-.live-content { position: relative; z-index: 10; display: flex; flex-direction: column; flex: 1; min-height: 560px; }
+.live-content { position: relative; z-index: 10; display: flex; flex-direction: column; flex: 1; min-height: 480px; }
 
 /* Omegle/OmeTV-style instant layout: no click-through landing copy — the
    stage always shows live state (connecting/searching/chat), and Next/Stop
@@ -49,66 +49,121 @@
 .live-stage { position: relative; z-index: 10; flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .live-stage-center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 14px; padding: 24px; }
 
-.live-control-bar { position: relative; z-index: 10; display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
-.live-control { flex: 1 1 130px; min-height: 52px; }
-.live-control-next { flex: 1 1 160px; font-size: 15px; }
-.live-control-stop {
-  flex: 1 1 130px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  border-radius: 999px; border: 1px solid #8f4433; color: #fff8f0;
-  background: linear-gradient(180deg, #c8705d 0%, #a24c39 100%);
-  font-family: inherit; font-weight: 700; font-size: 14px; cursor: pointer;
-  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, .3), inset 0 -3px 6px rgba(0, 0, 0, .2), 0 8px 16px rgba(90, 30, 20, .22);
-  transition: transform 140ms ease-out, filter 140ms ease-out;
+.live-control-bar { position: relative; z-index: 10; display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 10px; }
+
+/* Slack Huddle–style circular AV controls — mic/next/leave as icon buttons
+   rather than labeled pills. aria-label carries the name for screen readers. */
+.live-icon-btn {
+  width: 48px; height: 48px; border-radius: 50%; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid #e7e9e5; background: var(--live-cream); color: var(--live-ink);
+  cursor: pointer; box-shadow: 0 2px 6px rgba(20, 22, 16, .1);
+  transition: transform 140ms ease-out, filter 140ms ease-out, background 140ms ease-out;
 }
-.live-control-stop:hover:not(:disabled) { filter: brightness(1.06); transform: translateY(-1px); }
-.live-control-stop:active:not(:disabled) { transform: translateY(1px); box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, .25), inset 0 -2px 4px rgba(0, 0, 0, .22), 0 3px 8px rgba(90, 30, 20, .18); }
-.live-control-stop:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+:root[data-theme='night'] .live-icon-btn { border-color: #33372f; }
+.live-icon-btn:hover:not(:disabled) { filter: brightness(1.05); transform: translateY(-1px); }
+.live-icon-btn:active:not(:disabled) { transform: translateY(1px); }
+.live-icon-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+.live-icon-btn[aria-pressed='true'] { background: var(--live-sage); }
+.live-icon-btn-danger {
+  background: linear-gradient(180deg, #c8705d 0%, #a24c39 100%);
+  border-color: #8f4433; color: #fff8f0;
+}
+.live-icon-btn-danger:hover:not(:disabled) { filter: brightness(1.08); }
 
 .live-chat-input-bar { position: relative; z-index: 10; display: flex; gap: 10px; margin-top: 10px; }
 
-/* Shared shell for the call pane + chat pane split — used both as a live
-   "video left / text right" preview before starting, and for the real
-   matched conversation once one begins. */
-.live-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 16px; flex: 1; min-height: 460px; }
-.live-call-pane {
-  display: flex; flex-direction: column; align-items: stretch; text-align: center;
-  gap: 10px; padding: 16px;
+/* Shared shell for the video column (two big tiles side by side, plus call
+   controls underneath) and the chat side panel — used both as a live
+   preview before starting, and for the real matched conversation once one
+   begins. */
+.live-split { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 14px; flex: 1; min-height: 460px; }
+.live-call-column { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+.live-video-row { display: flex; gap: 14px; flex: 1; min-height: 280px; }
+.live-call-controls {
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  gap: 10px; padding: 14px 16px;
 }
 .live-avatar-ring-lg {
   width: 64px; height: 64px; border-radius: 50%; overflow: hidden; flex-shrink: 0;
   border: 3px solid #ffffffc0; box-shadow: 0 6px 20px #193d4520; background: var(--live-cream);
 }
 .live-avatar-ring-lg img { width: 100%; height: 100%; object-fit: cover; }
+.live-avatar-fallback {
+  width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 800; font-size: 20px; letter-spacing: 0.02em;
+}
 
-/* Each side gets its own "screen", stacked top/bottom like a real two-party
-   call — you on top, the other side below, even before anyone fills it. */
-.live-call-tiles { display: flex; flex-direction: column; gap: 10px; flex: 1; min-height: 0; }
-.live-call-tile {
-  position: relative; flex: 1; min-height: 100px; width: 100%; border-radius: 16px; overflow: hidden;
-  display: flex; align-items: center; justify-content: center;
-  background: var(--live-sage);
+/* Single-tile "focus on the other person" video stage — the matched partner
+   (or, while searching, your own radar-pulse preview) fills the frame, with
+   the other participant as a small picture-in-picture circle in a corner. */
+.live-main-tile {
+  position: relative; flex: 1; min-height: 280px; width: 100%; border-radius: 18px; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+  background: var(--live-sage); text-align: center; padding: 20px;
+  box-shadow: inset 0 0 0 0 var(--live-ink);
+  transition: box-shadow 150ms ease-out;
 }
-:root[data-theme='night'] .live-call-tile { background: #262b24; }
-.live-tile-label {
-  position: absolute; left: 10px; bottom: 10px; padding: 4px 11px; border-radius: 999px;
-  background: #1c2622b3; color: #fff; font-size: 11px; font-weight: 700;
-  max-width: calc(100% - 20px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.live-call-tile-empty { background: var(--live-label); border: 1px dashed #cfd4cc; }
-:root[data-theme='night'] .live-call-tile-empty { border-color: #3a3f36; }
+:root[data-theme='night'] .live-main-tile { background: #262b24; }
+.live-main-tile[data-speaking='true'] { box-shadow: inset 0 0 0 3px var(--live-ink); }
 .live-tile-empty-text { font-size: 12px; font-weight: 700; font-style: italic; letter-spacing: .02em; color: var(--live-muted); }
-.live-chat-pane { display: flex; flex-direction: column; min-height: 0; padding: 20px; }
-.live-chat-pane-empty { flex: 1; display: flex; align-items: center; justify-content: center; text-align: center; padding: 20px; }
+
+.live-avatar-hero {
+  width: 120px; height: 120px; border-radius: 50%; overflow: hidden; position: relative; z-index: 2;
+  border: 3px solid #ffffffc0; box-shadow: 0 6px 20px #193d4520; background: var(--live-cream); flex-shrink: 0;
+}
+.live-avatar-hero img { width: 100%; height: 100%; object-fit: cover; }
+.live-avatar-hero .live-avatar-fallback { font-size: 36px; }
+
+.live-partner-badge {
+  position: absolute; top: 14px; left: 14px; z-index: 2; display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 999px; background: #1c2622b3; color: #fff; font-size: 12px; font-weight: 700;
+  max-width: calc(100% - 28px);
+}
+.live-partner-badge .fi { border-radius: 2px; width: 1.1em; flex-shrink: 0; }
+.live-partner-badge-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.live-partner-badge-native { flex-shrink: 0; padding: 2px 8px; border-radius: 999px; background: #ffffff26; }
+
+.live-pip-self {
+  position: absolute; bottom: 14px; left: 14px; z-index: 2; width: 68px; height: 68px; border-radius: 50%;
+  overflow: hidden; border: 3px solid #ffffffd0; box-shadow: 0 4px 14px #00000033;
+  transition: box-shadow 150ms ease-out;
+}
+.live-pip-self img { width: 100%; height: 100%; object-fit: cover; }
+.live-pip-self .live-avatar-fallback { font-size: 18px; }
+.live-pip-self[data-speaking='true'] { box-shadow: 0 0 0 3px var(--live-ink), 0 4px 14px #00000033; }
+
+/* Radar/sonar pulse rings while searching for a partner. */
+.live-radar { position: relative; width: 140px; height: 140px; display: flex; align-items: center; justify-content: center; }
+.live-radar-ring {
+  position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--live-btn-bottom);
+  opacity: 0; animation: live-radar-pulse 2.4s ease-out infinite;
+}
+.live-radar-ring:nth-child(2) { animation-delay: 0.8s; }
+.live-radar-ring:nth-child(3) { animation-delay: 1.6s; }
+@keyframes live-radar-pulse {
+  0% { transform: scale(0.6); opacity: 0.55; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+.live-finding-text { font-size: 14px; font-weight: 700; color: var(--live-ink); }
+.live-finding-dots span { display: inline-block; animation: live-dot-bounce 1.2s infinite; }
+.live-finding-dots span:nth-child(2) { animation-delay: 0.15s; }
+.live-finding-dots span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes live-dot-bounce { 0%, 60%, 100% { transform: translateY(0); opacity: .4; } 30% { transform: translateY(-4px); opacity: 1; } }
+.live-chat-pane { display: flex; flex-direction: column; min-height: 0; padding: 14px 20px; }
+.live-chat-pane-empty { flex: 1; display: flex; align-items: center; justify-content: center; text-align: center; padding: 12px; }
 @media (max-width: 760px) {
   .live-split { grid-template-columns: 1fr; min-height: 0; }
-  .live-call-tiles { min-height: 220px; }
-  .live-call-tile { min-height: 90px; }
-  .live-call-pane { padding: 16px; }
+  .live-video-row { min-height: 220px; }
+  .live-main-tile { min-height: 220px; }
+  .live-avatar-hero { width: 96px; height: 96px; }
+  .live-call-controls { padding: 12px; }
+  .live-chat-pane { min-height: 220px; }
 }
 
 /* Below the preview: an explicit Start button plus the matching conditions —
    nothing begins until this is pressed. */
-.live-start-row { position: relative; z-index: 10; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 16px; margin-top: 16px; }
+.live-start-row { position: relative; z-index: 10; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 16px; margin-top: 10px; }
 .live-start-button { flex: 0 0 auto; min-width: 180px; }
 .live-conditions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .live-select {
@@ -132,27 +187,18 @@
 .live-note { font-size: 12px; line-height: 1.7; color: var(--live-muted); }
 .live-note a { color: inherit; text-decoration: underline; }
 
-/* Glossy "popped out" pill — a soft inner highlight near the top, a soft
-   inner shadow near the bottom, and a real drop shadow for lift. */
 .live-button {
   display: inline-flex; align-items: center; justify-content: center; gap: 10px;
   padding: 15px 26px; border-radius: 999px; border: 1px solid rgba(20, 22, 16, .14);
-  background: linear-gradient(180deg, var(--live-btn-top) 0%, var(--live-btn-bottom) 100%);
+  background: var(--live-btn-bottom);
   color: var(--live-btn-fg);
   font-family: inherit; font-weight: 700; font-size: 14px; line-height: 1.2;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, .3),
-    inset 0 -2px 4px rgba(0, 0, 0, .12),
-    0 4px 10px rgba(20, 22, 16, .14),
-    0 1px 2px rgba(20, 22, 16, .08);
+  box-shadow: 0 2px 6px rgba(20, 22, 16, .12);
   cursor: pointer;
   transition: transform 140ms ease-out, box-shadow 140ms ease-out, filter 140ms ease-out;
 }
 .live-button:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); }
-.live-button:active:not(:disabled) {
-  transform: translateY(1px);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), inset 0 -1px 3px rgba(0, 0, 0, .15), 0 2px 5px rgba(20, 22, 16, .1);
-}
+.live-button:active:not(:disabled) { transform: translateY(1px); box-shadow: 0 1px 3px rgba(20, 22, 16, .1); }
 .live-button:disabled { opacity: .5; cursor: not-allowed; transform: none; }
 .live-button:focus-visible { outline: 2px solid var(--live-muted); outline-offset: 4px; }
 

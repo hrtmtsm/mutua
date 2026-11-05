@@ -6,15 +6,18 @@ import type { UserProfile } from '@/lib/types';
 import { findCandidates, saveToWaitlist, checkWaitlistForMatch, supabase } from '@/lib/supabase';
 import { buildMatchResult } from '@/lib/matching';
 import AppShell from '@/components/AppShell';
+import { useLocale } from '@/components/LocaleProvider';
+import type { DictionaryKey } from '@/lib/i18n/dictionary';
 
-const MESSAGES = [
-  'Looking for language partners...',
-  'Checking compatibility...',
-  'Analyzing shared goals...',
-  'Almost there...',
+const MESSAGE_KEYS: DictionaryKey[] = [
+  'findMatch.messageSearching',
+  'findMatch.messageChecking',
+  'findMatch.messageAnalyzing',
+  'findMatch.messageAlmost',
 ];
 
 export default function FindMatchPage() {
+  const { t } = useLocale();
   const router = useRouter();
   const [msgIdx,     setMsgIdx]     = useState(0);
   const [noMatch,    setNoMatch]    = useState(false);
@@ -24,8 +27,8 @@ export default function FindMatchPage() {
   const [submitted,  setSubmitted]  = useState(false);
 
   useEffect(() => {
-    const t = setInterval(() => setMsgIdx(i => Math.min(i + 1, MESSAGES.length - 1)), 900);
-    return () => clearInterval(t);
+    const interval = setInterval(() => setMsgIdx(i => Math.min(i + 1, MESSAGE_KEYS.length - 1)), 900);
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -117,18 +120,18 @@ export default function FindMatchPage() {
 
             {submitted ? (
               <div className="space-y-2">
-                <p className="font-serif font-bold text-lg text-neutral-900">You&rsquo;re on the list.</p>
+                <p className="font-serif font-bold text-lg text-neutral-900">{t('findMatch.onListTitle')}</p>
                 <p className="text-sm text-stone-500 leading-relaxed">
-                  We&rsquo;ll notify you as soon as a compatible exchange partner joins Mutua.
+                  {t('findMatch.onListBody')}
                 </p>
               </div>
             ) : (
               <>
                 <div className="space-y-2">
-                  <p className="font-serif font-bold text-lg text-neutral-900">You&rsquo;re early.</p>
+                  <p className="font-serif font-bold text-lg text-neutral-900">{t('findMatch.earlyTitle')}</p>
                   <p className="text-sm text-stone-500 leading-relaxed">
-                    Mutua is still growing, so a compatible partner might take a little time.<br /><br />
-                    Leave your email and we&rsquo;ll notify you as soon as we find someone who matches you.
+                    {t('findMatch.earlyBody1')}<br /><br />
+                    {t('findMatch.earlyBody2')}
                   </p>
                 </div>
 
@@ -138,7 +141,7 @@ export default function FindMatchPage() {
                     required
                     value={email}
                     onChange={e => setEmail(e.target.value)}
-                    placeholder="your@email.com"
+                    placeholder={t('setup.email')}
                     disabled={submitting}
                     className="w-full px-4 py-2.5 border border-stone-200 rounded-lg text-sm text-neutral-900 placeholder:text-stone-400 focus:outline-none focus:border-[#2B8FFF] disabled:opacity-50"
                   />
@@ -147,7 +150,7 @@ export default function FindMatchPage() {
                     disabled={submitting}
                     className="w-full py-2.5 btn-primary text-white font-bold text-sm rounded-lg shadow-sm disabled:opacity-50 disabled:pointer-events-none"
                   >
-                    {submitting ? 'Saving...' : 'Notify me'}
+                    {submitting ? t('findMatch.saving') : t('findMatch.notifyMe')}
                   </button>
                 </form>
               </>
@@ -165,8 +168,8 @@ export default function FindMatchPage() {
 
             {/* Status */}
             <div className="space-y-2">
-              <p className="font-serif font-bold text-lg text-neutral-900">{MESSAGES[msgIdx]}</p>
-              <p className="text-sm text-stone-500">This only takes a moment</p>
+              <p className="font-serif font-bold text-lg text-neutral-900">{t(MESSAGE_KEYS[msgIdx])}</p>
+              <p className="text-sm text-stone-500">{t('findMatch.momentHint')}</p>
             </div>
 
             {/* Dots */}

@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { Search, Globe, X, ArrowLeft } from 'lucide-react';
+import { useLocale } from '@/components/LocaleProvider';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -114,6 +115,7 @@ function TZRow({ entry, active, label, onSelect, handleClose }: {
 }
 
 export default function TimezonePickerModal({ current, onSelect, onClose }: Props) {
+  const { t } = useLocale();
   const [query, setQuery] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
   const deviceTz = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone, []);
@@ -172,7 +174,7 @@ export default function TimezonePickerModal({ current, onSelect, onClose }: Prop
             className="flex items-center gap-1.5 text-sm text-stone-400 hover:text-neutral-900 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            Back
+            {t('setAvailability.back')}
           </button>
         </div>
 
@@ -181,7 +183,7 @@ export default function TimezonePickerModal({ current, onSelect, onClose }: Prop
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" />
           <input
             type="text"
-            placeholder="Time zone"
+            placeholder={t('timezonePicker.placeholder')}
             value={query}
             onChange={e => setQuery(e.target.value)}
             className="w-full pl-9 pr-9 py-2.5 bg-stone-100 rounded-xl text-neutral-800 placeholder-stone-400 focus:outline-none"
@@ -208,13 +210,13 @@ export default function TimezonePickerModal({ current, onSelect, onClose }: Prop
           return (
             <>
               {selectedEntry && (
-                <TZRow entry={selectedEntry} active label="Selected" onSelect={onSelect} handleClose={handleClose} />
+                <TZRow entry={selectedEntry} active label={t('timezonePicker.selected')} onSelect={onSelect} handleClose={handleClose} />
               )}
               {showDevice && deviceEntry && (
-                <TZRow entry={deviceEntry} active={deviceEntry.tz === current} label="Your location" onSelect={onSelect} handleClose={handleClose} />
+                <TZRow entry={deviceEntry} active={deviceEntry.tz === current} label={t('timezonePicker.yourLocation')} onSelect={onSelect} handleClose={handleClose} />
               )}
               <div className="px-4 py-2 bg-stone-50 border-b border-stone-100">
-                <span className="text-[10px] font-semibold uppercase tracking-wide text-stone-400">All time zones</span>
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-stone-400">{t('timezonePicker.allTimezones')}</span>
               </div>
             </>
           );
@@ -225,7 +227,7 @@ export default function TimezonePickerModal({ current, onSelect, onClose }: Prop
         ))}
 
         {filtered.length === 0 && (
-          <p className="text-center text-sm text-stone-400 py-16">No results for "{query}"</p>
+          <p className="text-center text-sm text-stone-400 py-16">{t('timezonePicker.noResults').replace('{query}', query)}</p>
         )}
       </div>
     </div>

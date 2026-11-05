@@ -8,3 +8,5 @@ tsconfig.tsbuildinfo
 .next-staging/
 .staging-test/
 supabase/.temp/
+
+.next-staging-*/

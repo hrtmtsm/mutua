@@ -7,6 +7,7 @@ import { LANG_FLAGS, LANG_AVATAR_COLOR } from '@/lib/constants';
 import AppShell from '@/components/AppShell';
 import { ArrowLeft, MessageCircle, Calendar } from 'lucide-react';
 import { markPop } from '@/lib/navigation';
+import { useLocale } from '@/components/LocaleProvider';
 
 interface PartnerData {
   name: string;
@@ -50,6 +51,7 @@ function fmtDate(iso: string) {
 }
 
 export default function PartnerProfilePage() {
+  const { t } = useLocale();
   const { matchId } = useParams<{ matchId: string }>();
   const router = useRouter();
 
@@ -72,14 +74,14 @@ export default function PartnerProfilePage() {
       const partnerSessionId = isA ? match.session_id_b : match.session_id_a;
 
       const { data: profile } = await supabase
-        .from('profiles')
+        .from('public_profile_cards')
         .select('name, interests, bio, avatar_url')
         .eq('session_id', partnerSessionId)
         .maybeSingle();
 
       const baseName = isA
-        ? (match.name_b ?? match.email_b?.split('@')[0] ?? 'Partner')
-        : (match.name_a ?? match.email_a?.split('@')[0] ?? 'Partner');
+        ? (match.name_b ?? match.email_b?.split('@')[0] ?? t('app.partner'))
+        : (match.name_a ?? match.email_a?.split('@')[0] ?? t('app.partner'));
       setPartner({
         name:             profile?.name ?? baseName,
         nativeLang:       isA ? match.native_language_b : match.native_language_a,
@@ -111,7 +113,7 @@ export default function PartnerProfilePage() {
   if (!partner) return (
     <AppShell>
       <main className="flex-1 px-6 py-10 max-w-2xl mx-auto w-full">
-        <p className="text-sm text-stone-400">Partner not found.</p>
+        <p className="text-sm text-stone-400">{t('partnerProfile.notFound')}</p>
       </main>
     </AppShell>
   );
@@ -134,7 +136,7 @@ export default function PartnerProfilePage() {
             className="flex items-center gap-1.5 px-4 py-2 bg-stone-100 hover:bg-stone-200 transition-colors rounded-full text-sm font-semibold text-neutral-700"
           >
             <MessageCircle className="w-4 h-4" />
-            Message
+            {t('partnerProfile.messageButton')}
           </button>
         </div>
 
@@ -143,7 +145,7 @@ export default function PartnerProfilePage() {
           <Avatar name={partner.name} lang={partner.nativeLang} avatarUrl={partner.avatarUrl} />
           <div>
             <h1 className="font-serif font-bold text-3xl text-[#171717]">{partner.name}</h1>
-            <p className="text-sm text-stone-400 mt-1">{nativeFlag} {partner.nativeLang} · Native</p>
+            <p className="text-sm text-stone-400 mt-1">{nativeFlag} {partner.nativeLang} · {t('partnerProfile.nativeSuffix')}</p>
             {partner.bio && (
               <p className="text-sm text-stone-500 mt-3 leading-relaxed max-w-xs">{partner.bio}</p>
             )}
@@ -154,7 +156,7 @@ export default function PartnerProfilePage() {
 
           {/* Session */}
           <div className="bg-white rounded-2xl shadow-sm p-5 space-y-3">
-            <p className="text-xs font-semibold text-stone-400">Session</p>
+            <p className="text-xs font-semibold text-stone-400">{t('partnerProfile.sessionLabel')}</p>
 
             {s === 'scheduled' && partner.scheduledAt ? (
               <div className="flex items-start gap-3">
@@ -162,28 +164,28 @@ export default function PartnerProfilePage() {
                   <Calendar className="w-4 h-4 text-green-600" />
                 </div>
                 <div>
-                  <p className="text-xs text-stone-400">Confirmed session</p>
+                  <p className="text-xs text-stone-400">{t('partnerProfile.confirmedSession')}</p>
                   <p className="font-semibold text-neutral-900 text-sm mt-0.5">{fmtDate(partner.scheduledAt)}</p>
                 </div>
               </div>
             ) : s === 'computing' ? (
-              <p className="text-sm text-stone-500">Finding a time that works for both of you…</p>
+              <p className="text-sm text-stone-500">{t('exchanges.findingTime')}</p>
             ) : s === 'no_overlap' ? (
-              <p className="text-sm text-stone-500">No overlapping availability yet. Update your free times to get matched.</p>
+              <p className="text-sm text-stone-500">{t('partnerProfile.noOverlapYet')}</p>
             ) : (
-              <p className="text-sm text-stone-500">Waiting on availability from both sides.</p>
+              <p className="text-sm text-stone-500">{t('partnerProfile.waitingBothSides')}</p>
             )}
           </div>
 
           {/* Preferences */}
           <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-            <p className="text-xs font-semibold text-stone-400 px-5 pt-5 pb-3">Preferences</p>
+            <p className="text-xs font-semibold text-stone-400 px-5 pt-5 pb-3">{t('partnerProfile.preferencesLabel')}</p>
             {[
-              { label: 'Learning',   value: `${learningFlag} ${partner.learningLang}` },
-              { label: 'Goal',       value: partner.goal },
-              { label: 'Style',      value: partner.commStyle },
-              { label: 'Frequency',  value: partner.frequency },
-              ...(partner.interests ? [{ label: 'Interests', value: partner.interests }] : []),
+              { label: t('partnerProfile.learningLabel'),   value: `${learningFlag} ${partner.learningLang}` },
+              { label: t('partnerProfile.goalLabel'),       value: partner.goal },
+              { label: t('partnerProfile.styleLabel'),      value: partner.commStyle },
+              { label: t('partnerProfile.frequencyLabel'),  value: partner.frequency },
+              ...(partner.interests ? [{ label: t('partnerProfile.interestsLabel'), value: partner.interests }] : []),
             ].map(({ label, value }) => (
               <div key={label} className="flex items-center justify-between px-5 py-3 border-t border-stone-100">
                 <span className="text-xs font-semibold text-stone-400">{label}</span>

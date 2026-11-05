@@ -9,6 +9,8 @@ import {
 import { GOAL_DETAILS, COMM_STYLE_DETAILS, FREQUENCY_DETAILS, LANG_FLAGS } from '@/lib/constants';
 import { supabase, saveProfile, saveToWaitlist } from '@/lib/supabase';
 import { track } from '@/lib/analytics';
+import { useLocale } from '@/components/LocaleProvider';
+import type { DictionaryKey } from '@/lib/i18n/dictionary';
 
 // ---- sub-components --------------------------------------------------------
 
@@ -85,25 +87,26 @@ function LangCard({
 
 // ---- page ------------------------------------------------------------------
 
-const QUESTIONS = [
-  'What is your native language?',
-  'Which language do you want to practice?',
-  'Why do you want to practice this language?',
-  'How would you like to practice?',
-  'How often do you want to practice?',
-  'Create your account',
+const QUESTION_KEYS: DictionaryKey[] = [
+  'onboarding.q1',
+  'onboarding.q2',
+  'onboarding.q3',
+  'onboarding.q4',
+  'onboarding.q5',
+  'onboarding.q6',
 ];
 
-const SUBTITLES = [
-  'The language you speak most fluently.',
-  'Your partner will be a native speaker of this language.',
-  'We use this to find a partner with the same purpose.',
-  'We match you with someone who prefers the same format.',
-  'We match you with someone who has the same commitment level.',
-  'Your partner will see your name. Choose something you\'re comfortable with.',
+const SUBTITLE_KEYS: DictionaryKey[] = [
+  'onboarding.s1',
+  'onboarding.s2',
+  'onboarding.s3',
+  'onboarding.s4',
+  'onboarding.s5',
+  'onboarding.s6',
 ];
 
 export default function OnboardingPage() {
+  const { t } = useLocale();
   const router = useRouter();
 
   useEffect(() => {
@@ -270,9 +273,9 @@ export default function OnboardingPage() {
           {/* Question heading */}
           <div className="mb-6">
             <h2 className="font-serif font-black text-2xl text-neutral-900 leading-snug mb-1">
-              {QUESTIONS[step - 1]}
+              {t(QUESTION_KEYS[step - 1])}
             </h2>
-            <p className="text-sm text-stone-500">{SUBTITLES[step - 1]}</p>
+            <p className="text-sm text-stone-500">{t(SUBTITLE_KEYS[step - 1])}</p>
           </div>
 
           {/* Q1 — Native language */}
@@ -327,7 +330,7 @@ export default function OnboardingPage() {
                 type="text"
                 value={name}
                 onChange={e => setName(e.target.value)}
-                placeholder="Your name"
+                placeholder={t('profile.namePlaceholder')}
                 autoFocus
                 className="w-full px-4 py-3 border border-stone-200 rounded-xl text-sm text-neutral-900 placeholder:text-stone-400 focus:outline-none focus:border-[#2B8FFF]"
               />
@@ -335,7 +338,7 @@ export default function OnboardingPage() {
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                placeholder="your@email.com"
+                placeholder={t('setup.email')}
                 className="w-full px-4 py-3 border border-stone-200 rounded-xl text-sm text-neutral-900 placeholder:text-stone-400 focus:outline-none focus:border-[#2B8FFF]"
               />
               <div className="relative">
@@ -343,7 +346,7 @@ export default function OnboardingPage() {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  placeholder="Password (min 8 characters)"
+                  placeholder={t('onboarding.passwordPlaceholder')}
                   className="w-full px-4 py-3 pr-14 border border-stone-200 rounded-xl text-sm text-neutral-900 placeholder:text-stone-400 focus:outline-none focus:border-[#2B8FFF]"
                 />
                 <button
@@ -351,13 +354,13 @@ export default function OnboardingPage() {
                   onClick={() => setShowPassword(s => !s)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-stone-400 hover:text-neutral-900 font-medium"
                 >
-                  {showPassword ? 'Hide' : 'Show'}
+                  {showPassword ? t('onboarding.hide') : t('onboarding.show')}
                 </button>
               </div>
               {authError && <p className="text-xs text-red-500">{authError}</p>}
               <p className="text-xs text-stone-400">
-                Already have an account?{' '}
-                <a href="/auth/send" className="text-[#2B8FFF] font-semibold">Sign in</a>
+                {t('onboarding.alreadyHaveAccount')}{' '}
+                <a href="/auth/send" className="text-[#2B8FFF] font-semibold">{t('onboarding.signIn')}</a>
               </p>
             </div>
           )}
@@ -370,7 +373,7 @@ export default function OnboardingPage() {
               onClick={() => setStep(s => s - 1)}
               className="px-5 py-3 border border-stone-200 bg-white text-neutral-900 text-sm font-semibold rounded-xl hover:border-stone-400 transition-all"
             >
-              Back
+              {t('setAvailability.back')}
             </button>
           )}
           <button
@@ -378,7 +381,7 @@ export default function OnboardingPage() {
             disabled={!canAdvance || saving}
             className="flex-1 px-6 py-3 btn-primary text-white text-sm font-bold rounded-xl shadow-md disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {saving ? 'Saving...' : step === 6 ? 'Start speaking' : 'Continue'}
+            {saving ? t('profile.saving') : step === 6 ? t('onboarding.startSpeaking') : t('onboarding.continue')}
           </button>
         </div>
       </main>

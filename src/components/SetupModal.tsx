@@ -4,19 +4,27 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { type Language } from '@/lib/types';
 import LanguagePicker from './LanguagePicker';
+import { useLocale } from './LocaleProvider';
 import './liveExchange.css';
 
 interface SetupModalProps {
   open:       boolean;
   onClose:    () => void;
   /** Called once auth + native/learning language are both confirmed saved.
-   *  Never triggers mic access or matching — the caller decides what to do next. */
-  onComplete: () => void;
+   *  Never triggers mic access or matching — the caller decides what to do next.
+   *  `isSignup` tells the caller whether this was a brand-new account (which
+   *  arrived with a clear "start practicing now" intent) or an existing
+   *  account signing back in (which should just land on the home screen,
+   *  not be dropped straight into a search). */
+  onComplete: (result: { isSignup: boolean }) => void;
   /** Carried over from wherever the caller already picked a language pair
    *  (e.g. the landing page's own pickers) — just pre-fills the fields below,
    *  the person can still change them before submitting. */
   initialNative?:   Language;
   initialLearning?: Language;
+  /** Which tab to open on — e.g. a dedicated "Log in" entry point opens
+   *  straight to the login tab instead of signup. Defaults to 'signup'. */
+  initialTab?: Tab;
 }
 
 type Tab   = 'signup' | 'login';
@@ -72,8 +80,9 @@ async function persistProfile(opts: {
   localStorage.setItem('mutua_profile', JSON.stringify(profile));
 }
 
-export default function SetupModal({ open, onClose, onComplete, initialNative, initialLearning }: SetupModalProps) {
-  const [tab,      setTab]      = useState<Tab>('signup');
+export default function SetupModal({ open, onClose, onComplete, initialNative, initialLearning, initialTab }: SetupModalProps) {
+  const { t } = useLocale();
+  const [tab,      setTab]      = useState<Tab>(initialTab ?? 'signup');
   const [stage,    setStage]    = useState<Stage>('form');
   const [native,   setNative]   = useState<Language | ''>(initialNative ?? '');
   const [learning, setLearning] = useState<Language | ''>(initialLearning ?? '');
@@ -95,10 +104,11 @@ export default function SetupModal({ open, onClose, onComplete, initialNative, i
       setStage('form');
       setError('');
       setPassword('');
+      setTab(initialTab ?? 'signup');
       setNative(current => current || initialNative || current);
       setLearning(current => current || initialLearning || current);
     }
-  }, [open, initialNative, initialLearning]);
+  }, [open, initialNative, initialLearning, initialTab]);
 
   if (!open) return null;
 
@@ -111,9 +121,9 @@ export default function SetupModal({ open, onClose, onComplete, initialNative, i
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    if (!native || !learning) { setError('母語と学習言語を選んでください。'); return; }
-    if (native === learning)  { setError('母語と学習言語は別の言語を選んでください。'); return; }
-    if (!email || !password)  { setError('メールアドレスとパスワードを入力してください。'); return; }
+    if (!native || !learning) { setError(t('setupModal.selectLanguagesError')); return; }
+    if (native === learning)  { setError(t('liveExchange.sameLanguageError')); return; }
+    if (!email || !password)  { setError(t('setupModal.emailPasswordRequired')); return; }
 
     setStage('saving');
     try {
@@ -134,10 +144,10 @@ export default function SetupModal({ open, onClose, onComplete, initialNative, i
 
       const sessionId = await resolveSessionId(email);
       await persistProfile({ sessionId, email, nativeLanguage: native, learningLanguage: learning });
-      onComplete();
+      onComplete({ isSignup: true });
     } catch (err) {
       console.error('SetupModal signup error:', err);
-      setError('設定の保存に失敗しました。もう一度お試しください。');
+      setError(t('setupModal.saveFailed'));
       setStage('form');
     }
   };
@@ -145,7 +155,7 @@ export default function SetupModal({ open, onClose, onComplete, initialNative, i
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    if (!email || !password) { setError('メールアドレスとパスワードを入力してください。'); return; }
+    if (!email || !password) { setError(t('setupModal.emailPasswordRequired')); return; }
 
     setStage('saving');
     try {
@@ -153,14 +163,14 @@ export default function SetupModal({ open, onClose, onComplete, initialNative, i
         email: email.trim().toLowerCase(),
         password,
       });
-      if (signInErr) { setError('メールアドレスまたはパスワードが違います。'); setStage('form'); return; }
+      if (signInErr) { setError(t('setupModal.loginInvalid')); setStage('form'); return; }
 
       const profile = await lookupProfileByEmail(email);
 
       if (profile?.native_language && profile?.learning_language) {
         // Already fully set up — never re-ask.
         localStorage.setItem('mutua_session_id', profile.session_id);
-              onComplete();
+              onComplete({ isSignup: false });
         return;
       }
 
@@ -170,7 +180,7 @@ export default function SetupModal({ open, onClose, onComplete, initialNative, i
       setStage('login-needs-language');
     } catch (err) {
       console.error('SetupModal login error:', err);
-      setError('ログインに失敗しました。もう一度お試しください。');
+      setError(t('setupModal.loginFailed'));
       setStage('form');
     }
   };
@@ -178,8 +188,8 @@ export default function SetupModal({ open, onClose, onComplete, initialNative, i
   const handleFinishLoginLanguage = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    if (!native || !learning) { setError('母語と学習言語を選んでください。'); return; }
-    if (native === learning)  { setError('母語と学習言語は別の言語を選んでください。'); return; }
+    if (!native || !learning) { setError(t('setupModal.selectLanguagesError')); return; }
+    if (native === learning)  { setError(t('liveExchange.sameLanguageError')); return; }
 
     setStage('saving');
     try {
@@ -187,10 +197,10 @@ export default function SetupModal({ open, onClose, onComplete, initialNative, i
         sessionId: pendingSessionId, email: pendingEmail,
         nativeLanguage: native, learningLanguage: learning,
       });
-      onComplete();
+      onComplete({ isSignup: false });
     } catch (err) {
       console.error('SetupModal finish-login error:', err);
-      setError('設定の保存に失敗しました。もう一度お試しください。');
+      setError(t('setupModal.saveFailed'));
       setStage('login-needs-language');
     }
   };
@@ -200,7 +210,7 @@ export default function SetupModal({ open, onClose, onComplete, initialNative, i
       <div className="live-modal-card w-full max-w-sm rounded-2xl shadow-2xl p-6 relative">
         <button
           onClick={resetAndClose}
-          aria-label="閉じる"
+          aria-label={t('setup.close')}
           className="absolute top-3 right-3 opacity-60 hover:opacity-100 text-sm w-7 h-7 flex items-center justify-center"
         >
           ✕
@@ -208,12 +218,12 @@ export default function SetupModal({ open, onClose, onComplete, initialNative, i
 
         {stage === 'confirm-email' && (
           <div className="text-center space-y-4 py-4">
-            <p className="live-modal-title text-lg">確認メールを送信しました</p>
+            <p className="live-modal-title text-lg">{t('setup.confirmEmailTitle')}</p>
             <p className="live-subtitle text-sm leading-relaxed">
-              メール内のリンクを開いてください。確認後、このままの画面に戻ってこられます。
+              {t('setup.confirmEmailBody')}
             </p>
             <button onClick={resetAndClose} className="w-full live-button-ghost justify-center text-sm">
-              閉じる
+              {t('setup.close')}
             </button>
           </div>
         )}
@@ -221,13 +231,13 @@ export default function SetupModal({ open, onClose, onComplete, initialNative, i
         {stage === 'login-needs-language' && (
           <form onSubmit={handleFinishLoginLanguage} className="space-y-4">
             <div>
-              <p className="live-modal-title text-lg">あと少しです</p>
-              <p className="live-subtitle text-sm mt-1">言語だけ教えてください。</p>
+              <p className="live-modal-title text-lg">{t('setup.almostThereTitle')}</p>
+              <p className="live-subtitle text-sm mt-1">{t('setup.almostThereBody')}</p>
             </div>
             <LanguageFields native={native} learning={learning} setNative={setNative} setLearning={setLearning} />
             {error && <p className="text-xs text-red-600">{error}</p>}
             <button type="submit" className="w-full live-button justify-center text-sm">
-              はじめる
+              {t('setup.start')}
             </button>
           </form>
         )}
@@ -241,7 +251,7 @@ export default function SetupModal({ open, onClose, onComplete, initialNative, i
                 data-active={tab === 'signup'}
                 className="live-modal-tab flex-1 py-1.5 rounded-full transition-colors"
               >
-                新規登録
+                {t('setup.signup')}
               </button>
               <button
                 type="button"
@@ -249,7 +259,7 @@ export default function SetupModal({ open, onClose, onComplete, initialNative, i
                 data-active={tab === 'login'}
                 className="live-modal-tab flex-1 py-1.5 rounded-full transition-colors"
               >
-                ログイン
+                {t('setup.login')}
               </button>
             </div>
 
@@ -257,12 +267,12 @@ export default function SetupModal({ open, onClose, onComplete, initialNative, i
               <form onSubmit={handleSignup} className="space-y-3">
                 <LanguageFields native={native} learning={learning} setNative={setNative} setLearning={setLearning} />
                 <input
-                  type="email" required placeholder="your@email.com" value={email}
+                  type="email" required placeholder={t('setup.email')} value={email}
                   onChange={e => setEmail(e.target.value)} disabled={stage === 'saving'}
                   className="live-modal-input disabled:opacity-50"
                 />
                 <input
-                  type="password" required placeholder="パスワード" value={password}
+                  type="password" required placeholder={t('setup.password')} value={password}
                   onChange={e => setPassword(e.target.value)} disabled={stage === 'saving'}
                   className="live-modal-input disabled:opacity-50"
                 />
@@ -271,18 +281,18 @@ export default function SetupModal({ open, onClose, onComplete, initialNative, i
                   type="submit" disabled={stage === 'saving'}
                   className="w-full live-button justify-center text-sm"
                 >
-                  {stage === 'saving' ? '処理中...' : 'はじめる'}
+                  {stage === 'saving' ? t('setup.processing') : t('setup.start')}
                 </button>
               </form>
             ) : (
               <form onSubmit={handleLogin} className="space-y-3">
                 <input
-                  type="email" required placeholder="your@email.com" value={email}
+                  type="email" required placeholder={t('setup.email')} value={email}
                   onChange={e => setEmail(e.target.value)} disabled={stage === 'saving'}
                   className="live-modal-input disabled:opacity-50"
                 />
                 <input
-                  type="password" required placeholder="パスワード" value={password}
+                  type="password" required placeholder={t('setup.password')} value={password}
                   onChange={e => setPassword(e.target.value)} disabled={stage === 'saving'}
                   className="live-modal-input disabled:opacity-50"
                 />
@@ -291,7 +301,7 @@ export default function SetupModal({ open, onClose, onComplete, initialNative, i
                   type="submit" disabled={stage === 'saving'}
                   className="w-full live-button justify-center text-sm"
                 >
-                  {stage === 'saving' ? 'サインイン中...' : 'ログイン'}
+                  {stage === 'saving' ? t('setup.signingIn') : t('setup.login')}
                 </button>
               </form>
             )}
@@ -308,10 +318,11 @@ function LanguageFields({
   native: Language | ''; learning: Language | '';
   setNative: (v: Language | '') => void; setLearning: (v: Language | '') => void;
 }) {
+  const { t } = useLocale();
   return (
     <div className="grid grid-cols-2 gap-2">
-      <LanguagePicker value={native} onChange={setNative} placeholder="母語" />
-      <LanguagePicker value={learning} onChange={setLearning} placeholder="学習言語" />
+      <LanguagePicker value={native} onChange={setNative} placeholder={t('setup.nativePlaceholder')} />
+      <LanguagePicker value={learning} onChange={setLearning} placeholder={t('setup.learningPlaceholder')} />
     </div>
   );
 }

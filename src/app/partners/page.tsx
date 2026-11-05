@@ -7,6 +7,8 @@ import { supabase } from '@/lib/supabase';
 import { LANG_AVATAR_COLOR } from '@/lib/constants';
 import { ArrowLeft } from 'lucide-react';
 import { markPop } from '@/lib/navigation';
+import { useLocale } from '@/components/LocaleProvider';
+import type { DictionaryKey } from '@/lib/i18n/dictionary';
 
 interface SessionEntry {
   partnerName: string;
@@ -94,13 +96,15 @@ function computePartnerStats(sessions: SessionEntry[]): PartnerStats[] {
   });
 }
 
-function formatMin(min: number) {
+function formatMin(min: number, t: (key: DictionaryKey) => string) {
   if (min >= 60) {
     const h = Math.floor(min / 60);
     const m = min % 60;
-    return m > 0 ? `${h}h ${m}m` : `${h}h`;
+    return m > 0
+      ? t('partners.durationHoursMinutes').replace('{h}', String(h)).replace('{m}', String(m))
+      : t('partners.durationHoursOnly').replace('{h}', String(h));
   }
-  return `${min}m`;
+  return t('partners.durationMinutesOnly').replace('{m}', String(min));
 }
 
 function PartnerAvatar({ name, nativeLang, avatarUrl }: { name: string; nativeLang: string; avatarUrl: string | null }) {
@@ -118,6 +122,7 @@ function PartnerAvatar({ name, nativeLang, avatarUrl }: { name: string; nativeLa
 }
 
 export default function PartnersPage() {
+  const { t } = useLocale();
   const router = useRouter();
   const [stats,   setStats]   = useState<PartnerStats[]>([]);
   const [profiles, setProfiles] = useState<Record<string, LiveProfile>>({});
@@ -157,7 +162,7 @@ export default function PartnersPage() {
 
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
       const [{ data: profileRows }, { data: matches }] = await Promise.all([
-        supabase.from('profiles').select('session_id, name, avatar_url, native_language').in('session_id', ids),
+        supabase.from('public_profile_cards').select('session_id, name, avatar_url, native_language').in('session_id', ids),
         supabase.from('matches').select('id, session_id_a, session_id_b')
           .or(ids.map(id => `session_id_a.eq.${id},session_id_b.eq.${id}`).join(',')),
       ]);
@@ -190,7 +195,7 @@ export default function PartnersPage() {
           <button onClick={() => { markPop(); router.back(); }} className="text-stone-400 hover:text-neutral-700 transition-colors">
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="font-serif font-semibold text-xl text-[#171717]">Partner streaks</h1>
+          <h1 className="font-serif font-semibold text-xl text-[#171717]">{t('partners.heading')}</h1>
         </div>
 
         {loading ? (
@@ -198,12 +203,12 @@ export default function PartnersPage() {
             <div className="w-6 h-6 border-2 border-[#2B8FFF] border-t-transparent rounded-full animate-spin" />
           </div>
         ) : stats.length === 0 ? (
-          <p className="text-sm text-stone-400 px-6">No partners yet.</p>
+          <p className="text-sm text-stone-400 px-6">{t('partners.noPartnersYet')}</p>
         ) : (
           <div className="px-6 space-y-3">
             {stats.map((s, i) => {
               const live    = profiles[s.partnerId];
-              const name    = live?.name || s.partnerName || 'Partner';
+              const name    = live?.name || s.partnerName || t('app.partner');
               const matchId = live?.matchId ?? null;
               return (
                 <button
@@ -224,14 +229,14 @@ export default function PartnersPage() {
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-[#171717] text-sm truncate">{name}</p>
                     <p className="text-xs text-stone-400 mt-0.5">
-                      {s.sessionCount} {s.sessionCount === 1 ? 'session' : 'sessions'}
-                      {s.totalMin > 0 ? ` · ${formatMin(s.totalMin)}` : ''}
+                      {t(s.sessionCount === 1 ? 'partners.sessionCountSingular' : 'partners.sessionCountPlural').replace('{n}', String(s.sessionCount))}
+                      {s.totalMin > 0 ? ` · ${formatMin(s.totalMin, t)}` : ''}
                     </p>
                   </div>
 
                   <div className="text-right shrink-0">
                     <p className="font-black text-xl text-[#171717]">{s.streak > 0 ? s.streak : '–'}</p>
-                    <p className="text-xs text-stone-400">wk streak</p>
+                    <p className="text-xs text-stone-400">{t('partners.weekStreakLabel')}</p>
                   </div>
                 </button>
               );

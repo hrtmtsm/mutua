@@ -2,11 +2,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { liveAction } from '@/lib/liveExchange';
+import { useLocale } from '@/components/LocaleProvider';
 
 interface Options { callId?: string; conversationId?: string; myId?: string; partnerId?: string; muted: boolean; onFailure: (reason: string) => void }
 export function useLiveAudio({ callId, conversationId, myId, partnerId, muted, onFailure }: Options) {
+ const { t } = useLocale();
  const [state, setState] = useState<'idle'|'connecting'|'connected'|'failed'>('idle');
  const [stats, setStats] = useState({ sentBytes: 0, receivedBytes: 0, receivedEnergy: 0 });
+ const [local, setLocal] = useState<MediaStream|null>(null);
  const [remote, setRemote] = useState<MediaStream|null>(null);
  const streamRef = useRef<MediaStream|null>(null);
  const failureRef = useRef(onFailure); failureRef.current = onFailure;
@@ -72,21 +75,21 @@ export function useLiveAudio({ callId, conversationId, myId, partnerId, muted, o
      if (signal.sender_id === partnerId) await handle(signal.event, signal.payload);
      cursor = signal.id;
     }
-   } catch (error) { fail(error instanceof Error ? error.message : 'シグナリングに失敗しました。'); }
+   } catch (error) { fail(error instanceof Error ? error.message : t('liveAudio.signalingFailed')); }
    finally { busy = false; }
   };
   setState('connecting');
-  deadline = setTimeout(() => fail(phase === 'microphone' ? 'マイクの許可を確認できませんでした。ブラウザでマイクを許可してから、もう一度お試しください。' : '音声接続がタイムアウトしました。ネットワークを確認して、もう一度お試しください。'), 25000);
+  deadline = setTimeout(() => fail(phase === 'microphone' ? t('liveAudio.micPermissionTimeout') : t('liveAudio.audioConnectTimeout')), 25000);
   (async () => {
    try {
     // Permission failure is a real failure. Never substitute an empty stream.
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
     if (stopped || failed) { stream.getTracks().forEach(track => track.stop()); return; }
-    streamRef.current = stream;
+    streamRef.current = stream; setLocal(stream);
     stream.getAudioTracks().forEach(track => { track.enabled = !mutedRef.current; });
     phase = 'ice';
-    const response = await fetch('/api/ice-servers', { signal: AbortSignal.timeout(10000) });
-    if (!response.ok) throw new Error('ICEサーバーを取得できませんでした。');
+    const response = await fetch('/api/ice-servers', { signal: AbortSignal.timeout(10000), headers:{Authorization:`Bearer ${(await supabase.auth.getSession()).data.session?.access_token||''}`} });
+    if (!response.ok) throw new Error(t('liveAudio.iceServersFailed'));
     const iceServers: RTCIceServer[] = await response.json();
     if (stopped || failed) return;
     phase = 'signaling';
@@ -103,35 +106,35 @@ export function useLiveAudio({ callId, conversationId, myId, partnerId, muted, o
       if (!stopped) setStats({ sentBytes, receivedBytes, receivedEnergy });
     }, 1000);
     pc.onicecandidate = event => {
-     if (event.candidate) send('ice', { candidate: event.candidate.toJSON() }).catch(() => fail('接続情報を送れませんでした。'));
+     if (event.candidate) send('ice', { candidate: event.candidate.toJSON() }).catch(() => fail(t('liveAudio.iceSendFailed')));
     };
     pc.ontrack = event => { if (!stopped) setRemote(event.streams[0] || new MediaStream([event.track])); };
     pc.onconnectionstatechange = () => {
      if (stopped || failed || !pc) return;
      if (pc.connectionState === 'connected') {
       clearTimeout(deadline); clearTimeout(disconnected); clearInterval(ready); setState('connected');
-     } else if (pc.connectionState === 'failed') fail('音声接続に失敗しました。');
+     } else if (pc.connectionState === 'failed') fail(t('liveAudio.audioConnectionFailed'));
      else if (pc.connectionState === 'disconnected') {
-      clearTimeout(disconnected); disconnected = setTimeout(() => fail('相手との音声接続が切れました。'), 8000);
+      clearTimeout(disconnected); disconnected = setTimeout(() => fail(t('liveAudio.audioDisconnected')), 8000);
      }
     };
     await send('ready');
     if (stopped || failed) return;
-    ready = setInterval(() => { send('ready').catch(() => fail('音声接続を継続できませんでした。')); }, 1500);
+    ready = setInterval(() => { send('ready').catch(() => fail(t('liveAudio.audioKeepAliveFailed'))); }, 1500);
     poll = setInterval(receive, 400);
     await receive();
    } catch (error) {
     fail(error instanceof DOMException && error.name === 'NotAllowedError'
-     ? 'マイクの使用が拒否されました。ブラウザの設定で許可してから、もう一度お試しください。'
-     : error instanceof Error ? error.message : 'マイクを開始できませんでした。');
+     ? t('liveAudio.micDenied')
+     : error instanceof Error ? error.message : t('liveAudio.micStartFailed'));
    }
   })();
   return () => {
    stopped = true;
    clearInterval(poll); clearInterval(ready); clearInterval(statsTimer); clearTimeout(deadline); clearTimeout(disconnected);
    pc?.close(); streamRef.current?.getTracks().forEach(track => track.stop()); streamRef.current = null;
-   setRemote(null);
+   setRemote(null); setLocal(null);
   };
  }, [callId, conversationId, myId, partnerId]);
- return { state, remote, stats };
+ return { state, remote, stats, local };
 }

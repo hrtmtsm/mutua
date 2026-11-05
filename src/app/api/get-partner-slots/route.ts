@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
   const sessionId = req.nextUrl.searchParams.get('sessionId'); // fallback for non-auth users
 
   if (!matchId) return NextResponse.json({ error: 'matchId required' }, { status: 400 });
-  if (!token && !sessionId) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  if (!token) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
   const db = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

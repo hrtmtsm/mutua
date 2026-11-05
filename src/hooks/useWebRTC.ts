@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
+import {authorizedFetch} from '@/lib/practice';
 
 const FALLBACK_ICE: RTCIceServer[] = [
   { urls: 'stun:stun.l.google.com:19302' },
@@ -231,7 +232,7 @@ export function useWebRTC({ myId, partnerId, matchId, muted, cameraOn, audioDevi
         .catch(() => new MediaStream());
 
     const getIce = () =>
-      fetch('/api/ice-servers').then(r => r.json()).catch(() => FALLBACK_ICE);
+      authorizedFetch('/api/ice-servers').then(r => r.json()).catch(() => FALLBACK_ICE);
 
     Promise.all([getMedia(), getIce()]).then(([stream, iceServers]) => {
         if (cancelled) { stream.getTracks().forEach(t => t.stop()); return; }

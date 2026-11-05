@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import {requireAuth} from '@/lib/presenceAuth';
 import { Resend } from 'resend';
 import { createClient } from '@supabase/supabase-js';
 
@@ -106,6 +107,11 @@ export async function POST(request: Request) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   );
 
+  const auth=await requireAuth(request);if(!auth.ok)return NextResponse.json({error:auth.error},{status:auth.status});
+  const membership=await auth.rpcDb.from('matches').select('session_id_a,session_id_b,email_a,email_b').eq('id',matchId).maybeSingle();
+  if(!membership.data)return NextResponse.json({error:'forbidden'},{status:403});
+  const recipient=[membership.data.email_a,membership.data.email_b].find(e=>e&&e.toLowerCase()!==auth.email.toLowerCase());
+  if(!recipient||recipient.toLowerCase()!==partnerEmail.toLowerCase())return NextResponse.json({error:'forbidden'},{status:403});
   let scheduledTime: string;
   if (scheduledAt) {
     // Look up recipient's auth user_id by email, then fetch their timezone

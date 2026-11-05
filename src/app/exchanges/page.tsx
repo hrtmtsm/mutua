@@ -1,4 +1,6 @@
 'use client';
+import {authorizedFetch} from '@/lib/practice';
+import VoiceHistory from '@/components/VoiceHistory';
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
@@ -8,6 +10,7 @@ import type { SavedPartner } from '@/lib/types';
 import { track } from '@/lib/analytics';
 import AppShell from '@/components/AppShell';
 import { Avatar, PartnerCardShell, type PartnerCardData } from '@/components/PartnerCard';
+import { useLocale } from '@/components/LocaleProvider';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -140,22 +143,23 @@ function SchedulingCardView({ card, onSetAvailability, onViewProfile }: {
   onSetAvailability: () => void;
   onViewProfile:     () => void;
 }) {
+  const { t } = useLocale();
   const s            = card.schedulingState;
   const iNeedToAct   = needsMyAction(s, card.iAmA);
   const waitingOnPartner = !iNeedToAct && s !== 'computing' && s !== 'no_overlap';
 
   const ctaLabel =
-    s === 'no_overlap'  ? 'Update your times →'    :
-    waitingOnPartner    ? 'Scheduling…'             :
-    s === 'computing'   ? 'Scheduling…'             :
-    s === 'pending_both'? 'Schedule exchange →'       :
-                          'Update your times →';
+    s === 'no_overlap'  ? t('exchanges.updateTimesCta')    :
+    waitingOnPartner    ? t('exchanges.schedulingEllipsis') :
+    s === 'computing'   ? t('exchanges.schedulingEllipsis') :
+    s === 'pending_both'? t('exchanges.scheduleExchangeCta') :
+                          t('exchanges.updateTimesCta');
 
   return (
     <PartnerCardShell
       partner={card}
       onViewProfile={onViewProfile}
-      topRight={<OverflowMenu items={[{ label: 'View profile', onClick: onViewProfile }]} />}
+      topRight={<OverflowMenu items={[{ label: t('sidebar.viewProfile'), onClick: onViewProfile }]} />}
     >
       <div className="space-y-2">
         <div className="flex items-center gap-2 w-fit">
@@ -163,7 +167,7 @@ function SchedulingCardView({ card, onSetAvailability, onViewProfile }: {
             onClick={() => window.dispatchEvent(new CustomEvent('mutua:open-chat', { detail: { matchId: card.matchId } }))}
             className="px-5 py-3 border border-stone-200 text-sm font-semibold rounded-xl text-neutral-700 hover:bg-stone-50 transition-colors shrink-0"
           >
-            Say hi 👋
+            {t('exchanges.sayHiEmoji')}
           </button>
           <button
             onClick={iNeedToAct || s === 'no_overlap' ? onSetAvailability : undefined}
@@ -173,10 +177,10 @@ function SchedulingCardView({ card, onSetAvailability, onViewProfile }: {
             {ctaLabel}
           </button>
         </div>
-        {waitingOnPartner && <p className="text-xs text-stone-400">Waiting on {card.name} to pick their times.</p>}
-        {iNeedToAct && s !== 'pending_both' && <p className="text-xs text-stone-400">Your partner picked their times — now it's your turn.</p>}
-        {s === 'computing'  && <p className="text-xs text-stone-400">Finding a time that works for both of you…</p>}
-        {s === 'no_overlap' && <p className="text-xs text-stone-400">No overlap found. Update your times and we'll try again.</p>}
+        {waitingOnPartner && <p className="text-xs text-stone-400">{t('exchanges.waitingOnPartnerTimes').replace('{name}', card.name)}</p>}
+        {iNeedToAct && s !== 'pending_both' && <p className="text-xs text-stone-400">{t('exchanges.partnerPickedTimes')}</p>}
+        {s === 'computing'  && <p className="text-xs text-stone-400">{t('exchanges.findingTime')}</p>}
+        {s === 'no_overlap' && <p className="text-xs text-stone-400">{t('exchanges.noOverlapFound')}</p>}
       </div>
     </PartnerCardShell>
   );
@@ -190,11 +194,12 @@ function UpcomingCardView({ card, onJoin, onReschedule, onViewProfile }: {
   onReschedule:  () => void;
   onViewProfile: () => void;
 }) {
+  const { t } = useLocale();
   const [now, setNow] = useState(Date.now());
   const [showNotYet, setShowNotYet] = useState(false);
   useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 60_000);
-    return () => clearInterval(t);
+    const timer = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(timer);
   }, []);
 
   const sessionDate   = new Date(card.scheduledAt);
@@ -206,10 +211,10 @@ function UpcomingCardView({ card, onJoin, onReschedule, onViewProfile }: {
   const timeLine      = sessionDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 
   const statusPill = sessionPassed
-    ? { label: 'Missed :(', cls: 'bg-stone-100 text-stone-500' }
-    : isLive   ? { label: '● Live now',      cls: 'bg-emerald-50 text-emerald-600' }
-    : isSoon   ? { label: '● Starting soon', cls: 'bg-amber-50 text-amber-600' }
-    :            { label: 'Upcoming',         cls: 'bg-blue-50 text-blue-600' };
+    ? { label: t('exchanges.statusMissed'), cls: 'bg-stone-100 text-stone-500' }
+    : isLive   ? { label: t('exchanges.statusLiveNow'),      cls: 'bg-emerald-50 text-emerald-600' }
+    : isSoon   ? { label: t('exchanges.statusStartingSoon'), cls: 'bg-amber-50 text-amber-600' }
+    :            { label: t('exchanges.statusUpcoming'),         cls: 'bg-blue-50 text-blue-600' };
 
   return (
     <PartnerCardShell
@@ -217,9 +222,9 @@ function UpcomingCardView({ card, onJoin, onReschedule, onViewProfile }: {
       onViewProfile={onViewProfile}
       topRight={
         <OverflowMenu items={[
-          { label: 'View profile', onClick: onViewProfile },
-          { label: 'Say hi', onClick: () => window.dispatchEvent(new CustomEvent('mutua:open-chat', { detail: { matchId: card.matchId } })) },
-          { label: 'Reschedule', onClick: onReschedule },
+          { label: t('sidebar.viewProfile'), onClick: onViewProfile },
+          { label: t('exchanges.sayHi'), onClick: () => window.dispatchEvent(new CustomEvent('mutua:open-chat', { detail: { matchId: card.matchId } })) },
+          { label: t('exchanges.reschedule'), onClick: onReschedule },
         ]} />
       }
     >
@@ -237,13 +242,13 @@ function UpcomingCardView({ card, onJoin, onReschedule, onViewProfile }: {
           onClick={() => window.dispatchEvent(new CustomEvent('mutua:open-chat', { detail: { matchId: card.matchId } }))}
           className="px-4 py-3 border border-stone-200 bg-white text-sm text-neutral-500 font-medium rounded-xl hover:bg-stone-50 transition-colors shrink-0"
         >
-          Say hi
+          {t('exchanges.sayHi')}
         </button>
         <button
           onClick={sessionPassed ? onReschedule : isLive ? onJoin : () => setShowNotYet(true)}
           className="px-5 py-3 btn-primary text-white text-sm font-semibold rounded-xl"
         >
-          {sessionPassed ? 'Reschedule →' : isLive ? 'Join now →' : 'Start exchange →'}
+          {sessionPassed ? t('exchanges.rescheduleCta') : isLive ? t('exchanges.joinNowCta') : t('exchanges.startExchangeCta')}
         </button>
       </div>
 
@@ -252,12 +257,12 @@ function UpcomingCardView({ card, onJoin, onReschedule, onViewProfile }: {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-6" onClick={() => setShowNotYet(false)}>
           <div className="bg-white rounded-2xl px-6 py-6 w-full max-w-sm text-center space-y-2" onClick={e => e.stopPropagation()}>
             <p className="text-2xl">⏳</p>
-            <p className="font-bold text-neutral-900 text-base">Not yet!</p>
+            <p className="font-bold text-neutral-900 text-base">{t('exchanges.notYetTitle')}</p>
             <p className="text-sm text-stone-400 leading-relaxed">
-              Your session with {card.name} is on <span className="font-semibold text-neutral-700">{dateLine} at {timeLine}</span>. You'll be able to join 30 minutes before.
+              {t('exchanges.notYetBodyPrefix').replace('{name}', card.name)} <span className="font-semibold text-neutral-700">{dateLine} at {timeLine}</span>{t('exchanges.notYetBodySuffix')}
             </p>
             <button onClick={() => setShowNotYet(false)} className="mt-2 w-full py-3 btn-primary text-white text-sm font-semibold rounded-xl">
-              Got it
+              {t('exchanges.gotIt')}
             </button>
           </div>
         </div>
@@ -273,6 +278,7 @@ function PastCardView({ card, onReview, onReschedule }: {
   onReview:     () => void;
   onReschedule: () => void;
 }) {
+  const { t } = useLocale();
   const [showOverflow, setShowOverflow] = useState(false);
   const nativeFlag   = LANG_FLAGS[card.nativeLang]   ?? '';
   const learningFlag = LANG_FLAGS[card.learningLang] ?? '';
@@ -306,8 +312,8 @@ function PastCardView({ card, onReview, onReschedule }: {
             <>
               <div className="fixed inset-0 z-40" onClick={() => setShowOverflow(false)} />
               <div className="absolute right-0 top-9 z-50 bg-white rounded-xl shadow-lg border border-stone-100 py-1 w-44 text-sm">
-                <button onClick={() => { setShowOverflow(false); onReview(); }}     className="w-full px-4 py-2.5 text-left text-neutral-700 hover:bg-stone-50">Review session</button>
-                <button onClick={() => { setShowOverflow(false); onReschedule(); }} className="w-full px-4 py-2.5 text-left text-neutral-700 hover:bg-stone-50">Schedule again</button>
+                <button onClick={() => { setShowOverflow(false); onReview(); }}     className="w-full px-4 py-2.5 text-left text-neutral-700 hover:bg-stone-50">{t('exchanges.reviewSession')}</button>
+                <button onClick={() => { setShowOverflow(false); onReschedule(); }} className="w-full px-4 py-2.5 text-left text-neutral-700 hover:bg-stone-50">{t('exchanges.scheduleAgain')}</button>
               </div>
             </>
           )}
@@ -320,13 +326,13 @@ function PastCardView({ card, onReview, onReschedule }: {
           onClick={onReview}
           className="px-4 py-2.5 btn-primary text-white text-sm font-semibold rounded-xl"
         >
-          Review session →
+          {t('exchanges.reviewSessionCta')}
         </button>
         <button
           onClick={onReschedule}
           className="px-4 py-2.5 border border-stone-200 text-sm font-medium text-neutral-600 rounded-xl hover:bg-stone-50 transition-colors"
         >
-          Schedule again
+          {t('exchanges.scheduleAgain')}
         </button>
       </div>
     </div>
@@ -336,6 +342,7 @@ function PastCardView({ card, onReview, onReschedule }: {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function ExchangesPage() {
+  const { t } = useLocale();
   const router = useRouter();
   const [sessionId,  setSessionId]  = useState<string | null>(null);
   const [scheduling, setScheduling] = useState<SchedulingCard[]>([]);
@@ -368,7 +375,7 @@ export default function ExchangesPage() {
     // Batch fetch all partner profiles (including bio + interests) + their timezones
     const partnerIds = matches.map(m => m.session_id_a === sid ? m.session_id_b : m.session_id_a);
     const { data: profiles } = await supabase
-      .from('profiles').select('session_id, name, avatar_url, native_language, bio, interests').in('session_id', partnerIds);
+      .from('public_profile_cards').select('session_id, name, avatar_url, native_language, bio, interests').in('session_id', partnerIds);
 
     const timezoneMap: Record<string, string> = {}; // filled in background below
 
@@ -395,7 +402,7 @@ export default function ExchangesPage() {
       const isA        = m.session_id_a === sid;
       const partnerId  = isA ? m.session_id_b : m.session_id_a;
       const prof       = profileMap[partnerId];
-      const name       = prof?.name || (isA ? (m.name_b ?? 'Partner') : (m.name_a ?? 'Partner'));
+      const name       = prof?.name || (isA ? (m.name_b ?? t('app.partner')) : (m.name_a ?? t('app.partner')));
       const nativeLang   = isA ? (m.native_language_b ?? '') : (m.native_language_a ?? '');
       const learningLang = isA ? (m.native_language_a ?? '') : (m.native_language_b ?? '');
 
@@ -426,7 +433,7 @@ export default function ExchangesPage() {
 
     // Fetch timezones in background and merge into cards
     if (partnerIds.length > 0) {
-      fetch('/api/get-partner-timezones', {
+      authorizedFetch('/api/get-partner-timezones', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionIds: partnerIds }),
@@ -447,7 +454,7 @@ export default function ExchangesPage() {
     if (logs && logs.length > 0) {
       const pastPartnerIds = [...new Set(logs.map(l => l.partner_id).filter(Boolean))];
       const { data: pastProfiles } = await supabase
-        .from('profiles')
+        .from('public_profile_cards')
         .select('session_id, name, avatar_url, native_language, bio, interests')
         .in('session_id', pastPartnerIds);
       const pastMap: Record<string, { name: string; avatarUrl: string | null; nativeLang: string; bio?: string; sharedInterests: string[] }> = {};
@@ -473,7 +480,7 @@ export default function ExchangesPage() {
         logId:        l.id,
         partnerId:    l.partner_id,
         matchId:      partnerMatchMap[l.partner_id] ?? null,
-        name:         pastMap[l.partner_id]?.name || 'Partner',
+        name:         pastMap[l.partner_id]?.name || t('app.partner'),
         nativeLang:   myNativeLang,
         learningLang: pastMap[l.partner_id]?.nativeLang || '',
         avatarUrl:    pastMap[l.partner_id]?.avatarUrl ?? null,
@@ -486,7 +493,7 @@ export default function ExchangesPage() {
         endedAt:      l.ended_at,
       })));
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     const sid = localStorage.getItem('mutua_session_id');
@@ -548,27 +555,21 @@ export default function ExchangesPage() {
     router.push(`/set-availability?${params.toString()}`);
   };
 
-  const isEmpty = !loading && scheduling.length === 0 && upcoming.length === 0 && past.length === 0;
-
   const tabs: { id: Tab; label: string; count: number }[] = [
-    { id: 'upcoming',   label: 'Upcoming',   count: upcoming.length },
-    { id: 'scheduling', label: 'Scheduling', count: scheduling.length },
-    { id: 'past',       label: 'Past',       count: past.length },
+    { id: 'upcoming',   label: t('exchanges.statusUpcoming'),   count: upcoming.length },
+    { id: 'scheduling', label: t('exchanges.schedulingTabLabel'), count: scheduling.length },
+    { id: 'past',       label: t('exchanges.pastTabLabel'),       count: past.length },
   ];
 
   return (
     <AppShell>
       <main className="flex-1 px-6 pt-2 pb-10 md:py-10 max-w-3xl mx-auto w-full space-y-6">
-        <h1 className="hidden md:block font-serif font-semibold text-2xl text-[#171717]">Exchanges</h1>
+        <h1 className="hidden md:block font-serif font-semibold text-2xl text-[#171717]">{t('nav.log')}</h1>
+        <VoiceHistory />
 
         {loading ? (
           <div className="flex justify-center py-12">
             <div className="w-6 h-6 border-2 border-[#2B8FFF] border-t-transparent rounded-full animate-spin" />
-          </div>
-        ) : isEmpty ? (
-          <div className="bg-white border border-stone-200 rounded-2xl px-6 py-10 text-center space-y-2">
-            <p className="text-sm font-semibold text-neutral-700">No exchanges yet</p>
-            <p className="text-sm text-stone-400 leading-relaxed">Head to Home to find a match and get started.</p>
           </div>
         ) : (
           <>
@@ -577,7 +578,7 @@ export default function ExchangesPage() {
             <div className="space-y-6">
               {activeTab === 'upcoming' && (
                 upcoming.length === 0 ? (
-                  <p className="text-sm text-stone-400 text-center py-8">No upcoming sessions.</p>
+                  <p className="text-sm text-stone-400 text-center py-8">{t('exchanges.noUpcoming')}</p>
                 ) : upcoming.map(card => (
                   <UpcomingCardView
                     key={card.matchId}
@@ -591,7 +592,7 @@ export default function ExchangesPage() {
 
               {activeTab === 'scheduling' && (
                 scheduling.length === 0 ? (
-                  <p className="text-sm text-stone-400 text-center py-8">No sessions being scheduled.</p>
+                  <p className="text-sm text-stone-400 text-center py-8">{t('exchanges.noScheduling')}</p>
                 ) : scheduling.map(card => (
                   <SchedulingCardView
                     key={card.matchId}
@@ -604,7 +605,7 @@ export default function ExchangesPage() {
 
               {activeTab === 'past' && (
                 past.length === 0 ? (
-                  <p className="text-sm text-stone-400 text-center py-8">No past sessions yet.</p>
+                  <p className="text-sm text-stone-400 text-center py-8">{t('exchanges.noPast')}</p>
                 ) : past.map(card => (
                   <PastCardView
                     key={card.logId}

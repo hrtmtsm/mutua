@@ -11,11 +11,13 @@ import type { UserAvailability } from '@/lib/supabase';
 import AppShell from '@/components/AppShell';
 import { AVATAR_OPTIONS, defaultAvatarFor } from '@/lib/glyphAvatars';
 import { Pencil, Camera, ChevronDown } from 'lucide-react';
+import { useLocale } from '@/components/LocaleProvider';
 
 
 const CROP_SIZE = 260;
 
 function CropModal({ src, onConfirm, onCancel }: { src: string; onConfirm: (blob: Blob) => void; onCancel: () => void }) {
+  const { t } = useLocale();
   const imgRef = useRef<HTMLImageElement>(null);
 
   // Render state — only these drive the JSX
@@ -152,8 +154,8 @@ function CropModal({ src, onConfirm, onCancel }: { src: string; onConfirm: (blob
     <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl overflow-hidden shadow-2xl w-full max-w-sm">
         <div className="px-5 py-4 border-b border-stone-100">
-          <p className="text-sm font-semibold text-neutral-900">Crop photo</p>
-          <p className="text-xs text-stone-400 mt-0.5">Drag to reposition · pinch or scroll to zoom</p>
+          <p className="text-sm font-semibold text-neutral-900">{t('profile.cropTitle')}</p>
+          <p className="text-xs text-stone-400 mt-0.5">{t('profile.cropHint')}</p>
         </div>
 
         <div className="flex justify-center py-6">
@@ -193,10 +195,10 @@ function CropModal({ src, onConfirm, onCancel }: { src: string; onConfirm: (blob
 
         <div className="flex gap-3 px-5 pb-5">
           <button onClick={onCancel} className="flex-1 py-2.5 text-sm font-semibold text-stone-500 border border-stone-200 rounded-full hover:bg-stone-50 transition-colors">
-            Cancel
+            {t('profile.cancel')}
           </button>
           <button onClick={handleConfirm} className="flex-1 py-2.5 btn-primary text-white text-sm font-semibold rounded-full">
-            Use photo
+            {t('profile.usePhoto')}
           </button>
         </div>
       </div>
@@ -205,6 +207,7 @@ function CropModal({ src, onConfirm, onCancel }: { src: string; onConfirm: (blob
 }
 
 export default function ProfilePage() {
+  const { t }      = useLocale();
   const router     = useRouter();
   const fileRef    = useRef<HTMLInputElement>(null);
 
@@ -431,7 +434,7 @@ export default function ProfilePage() {
     <AppShell>
       <main className="flex-1 px-6 py-10 max-w-2xl mx-auto w-full space-y-5">
 
-        <h1 className="font-serif font-semibold text-2xl text-[#171717]">Profile</h1>
+        <h1 className="font-serif font-semibold text-2xl text-[#171717]">{t('profile.heading')}</h1>
 
         {profile ? (
           <>
@@ -439,27 +442,27 @@ export default function ProfilePage() {
             <div className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
 
               <div className="flex items-center justify-between">
-                <p className="text-xs font-semibold text-stone-400">Your identity</p>
+                <p className="text-xs font-semibold text-stone-400">{t('profile.identityLabel')}</p>
                 {!editingIdentity ? (
-                  <button onClick={() => { setDraftName(name); setEditingIdentity(true); }} title="Edit" className="text-stone-300 hover:text-neutral-900 transition-colors">
+                  <button onClick={() => { setDraftName(name); setEditingIdentity(true); }} title={t('profile.editTooltip')} className="text-stone-300 hover:text-neutral-900 transition-colors">
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
                 ) : (
-                  <button onClick={() => setEditingIdentity(false)} className="text-xs text-stone-400 hover:text-neutral-900 transition-colors">Cancel</button>
+                  <button onClick={() => setEditingIdentity(false)} className="text-xs text-stone-400 hover:text-neutral-900 transition-colors">{t('profile.cancel')}</button>
                 )}
               </div>
 
               <div className="flex items-center gap-3">
                 <button type="button" onClick={handleAvatarClick} disabled={uploading}
                   aria-expanded={iconPickerOpen} aria-controls="glyph-icon-picker"
-                  className="text-sm font-semibold text-blue-600 hover:text-blue-700 disabled:opacity-50">Choose icon</button>
+                  className="text-sm font-semibold text-blue-600 hover:text-blue-700 disabled:opacity-50">{t('profile.chooseIcon')}</button>
                 <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading}
-                  className="text-sm text-stone-500 hover:text-neutral-900 disabled:opacity-50">Upload photo</button>
-                {iconSaved && <span role="status" className="text-xs text-emerald-700">Icon saved</span>}
+                  className="text-sm text-stone-500 hover:text-neutral-900 disabled:opacity-50">{t('profile.uploadPhoto')}</button>
+                {iconSaved && <span role="status" className="text-xs text-emerald-700">{t('profile.iconSaved')}</span>}
               </div>
               {iconPickerOpen && (
-                <section id="glyph-icon-picker" aria-label="Choose your icon" className="rounded-2xl border border-stone-200 bg-stone-50 p-4 space-y-4">
-                  <p className="text-sm font-semibold text-neutral-900">Pick your icon</p>
+                <section id="glyph-icon-picker" aria-label={t('profile.chooseIconAriaLabel')} className="rounded-2xl border border-stone-200 bg-stone-50 p-4 space-y-4">
+                  <p className="text-sm font-semibold text-neutral-900">{t('profile.pickIcon')}</p>
                   <div className="grid grid-cols-6 gap-2">
                     {AVATAR_OPTIONS.map((url, index) => (
                       <button type="button" key={url} aria-label={`Avatar ${index + 1}`} aria-pressed={draftAvatar === url}
@@ -470,9 +473,9 @@ export default function ProfilePage() {
                     ))}
                   </div>
                   <div className="flex items-center justify-between gap-3">
-                    <button type="button" onClick={() => setIconPickerOpen(false)} disabled={uploading} className="text-sm text-stone-500">Cancel</button>
+                    <button type="button" onClick={() => setIconPickerOpen(false)} disabled={uploading} className="text-sm text-stone-500">{t('profile.cancel')}</button>
                     <button type="button" onClick={saveGlyphAvatar} disabled={uploading || !AVATAR_OPTIONS.includes(draftAvatar)}
-                      className="rounded-full bg-blue-600 hover:bg-blue-700 px-5 py-2 text-sm font-semibold text-white disabled:opacity-50">{uploading ? 'Saving…' : 'Save icon'}</button>
+                      className="rounded-full bg-blue-600 hover:bg-blue-700 px-5 py-2 text-sm font-semibold text-white disabled:opacity-50">{uploading ? t('profile.savingIcon') : t('profile.saveIcon')}</button>
                   </div>
                   <p className="text-xs text-stone-500">Adventurer / Glyphs by <a href="https://www.dicebear.com/styles/" target="_blank" rel="noreferrer" className="underline">DiceBear</a> / Lisa Wischofsky &amp; Matt Houser · <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer" className="underline">CC BY 4.0</a></p>
                 </section>
@@ -480,7 +483,7 @@ export default function ProfilePage() {
 
               <div className="flex items-center gap-5">
                 <div className="relative shrink-0">
-                  <button className="block w-16 h-16 rounded-2xl overflow-hidden cursor-pointer group" onClick={handleAvatarClick} aria-label="Choose your icon" aria-expanded={iconPickerOpen} aria-controls="glyph-icon-picker" disabled={uploading}>
+                  <button className="block w-16 h-16 rounded-2xl overflow-hidden cursor-pointer group" onClick={handleAvatarClick} aria-label={t('profile.chooseIconAriaLabel')} aria-expanded={iconPickerOpen} aria-controls="glyph-icon-picker" disabled={uploading}>
                     {avatarUrl ? (
                       <img src={avatarUrl} alt={name} className="w-full h-full object-cover"
                         onError={() => {
@@ -511,14 +514,14 @@ export default function ProfilePage() {
 
                 <div className="flex-1 min-w-0">
                   {uploadError && <p className="text-xs text-rose-500 mb-1.5">{uploadError}</p>}
-                  <p className="text-xs font-semibold text-stone-400 mb-1.5">Name</p>
+                  <p className="text-xs font-semibold text-stone-400 mb-1.5">{t('profile.nameLabel')}</p>
                   {editingIdentity ? (
                     <input
                       type="text"
                       value={draftName}
                       onChange={e => setDraftName(e.target.value)}
                       autoFocus
-                      placeholder="Your name"
+                      placeholder={t('profile.namePlaceholder')}
                       className="w-full text-base font-bold text-neutral-900 border border-stone-200 rounded-lg px-3 py-1.5 focus:outline-none focus:border-[#2B8FFF] transition-colors"
                     />
                   ) : (
@@ -530,27 +533,27 @@ export default function ProfilePage() {
               {/* About me */}
               <div className="space-y-1.5 pt-1">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs font-semibold text-stone-400">About me</p>
+                  <p className="text-xs font-semibold text-stone-400">{t('profile.aboutMeLabel')}</p>
                   {editingIdentity && <span className="text-xs text-stone-400">{bio.length}/150</span>}
                 </div>
                 {editingIdentity ? (
                   <textarea
                     value={bio}
                     onChange={e => setBio(e.target.value.slice(0, 150))}
-                    placeholder="Tell your partner a bit about yourself..."
+                    placeholder={t('profile.bioPlaceholder')}
                     rows={3}
                     className="w-full px-3 py-2 border border-stone-200 rounded-xl text-sm text-neutral-900 placeholder:text-stone-300 focus:outline-none focus:border-neutral-400 transition-all resize-none leading-relaxed"
                   />
                 ) : (
                   <p className="text-sm text-neutral-500 leading-relaxed">
-                    {bio || <span className="text-stone-300">Not set</span>}
+                    {bio || <span className="text-stone-300">{t('profile.notSet')}</span>}
                   </p>
                 )}
               </div>
 
               {editingIdentity && (
                 <button onClick={handleSaveIdentity} disabled={saving} className="w-full py-2.5 btn-primary text-white font-bold text-sm rounded-full shadow-md disabled:opacity-50">
-                  {saving ? 'Saving...' : 'Save changes'}
+                  {saving ? t('profile.saving') : t('profile.saveChanges')}
                 </button>
               )}
 
@@ -560,23 +563,23 @@ export default function ProfilePage() {
             <div className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
 
               <div className="flex items-center justify-between">
-                <p className="text-xs font-semibold text-stone-400">Your preferences</p>
+                <p className="text-xs font-semibold text-stone-400">{t('profile.preferencesLabel')}</p>
                 {!editing ? (
-                  <button onClick={() => setEditing(true)} title="Edit" className="text-stone-300 hover:text-neutral-900 transition-colors">
+                  <button onClick={() => setEditing(true)} title={t('profile.editTooltip')} className="text-stone-300 hover:text-neutral-900 transition-colors">
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
                 ) : (
-                  <button onClick={() => setEditing(false)} className="text-xs text-stone-400 hover:text-neutral-900 transition-colors">Cancel</button>
+                  <button onClick={() => setEditing(false)} className="text-xs text-stone-400 hover:text-neutral-900 transition-colors">{t('profile.cancel')}</button>
                 )}
               </div>
 
               <div className="space-y-0">
                 {[
-                  { label: 'Native language', value: `${LANG_FLAGS[native] ?? ''} ${native}`, editor: <SelectWrap><select value={native} onChange={e => setNative(e.target.value as Language)} className={selectClass}>{LANGUAGES.map(l => <option key={l}>{l}</option>)}</select></SelectWrap> },
-                  { label: 'Learning',         value: `${LANG_FLAGS[learning] ?? ''} ${learning}`, editor: <SelectWrap><select value={learning} onChange={e => setLearning(e.target.value as Language)} className={selectClass}>{LANGUAGES.filter(l => l !== native).map(l => <option key={l}>{l}</option>)}</select></SelectWrap> },
-                  { label: 'Goal',             value: goal,             editor: <SelectWrap><select value={goal} onChange={e => setGoal(e.target.value as Goal)} className={selectClass}>{GOALS.map(g => <option key={g}>{g}</option>)}</select></SelectWrap> },
-                  { label: 'Style',            value: commStyle,        editor: <SelectWrap><select value={commStyle} onChange={e => setCommStyle(e.target.value as CommStyle)} className={selectClass}>{COMM_STYLES.map(s => <option key={s}>{s}</option>)}</select></SelectWrap> },
-                  { label: 'Frequency',        value: practiceFrequency, editor: <SelectWrap><select value={practiceFrequency} onChange={e => setPracticeFrequency(e.target.value as Frequency)} className={selectClass}>{FREQUENCY.map(f => <option key={f}>{f}</option>)}</select></SelectWrap> },
+                  { label: t('profile.nativeLanguageLabel'), value: `${LANG_FLAGS[native] ?? ''} ${native}`, editor: <SelectWrap><select value={native} onChange={e => setNative(e.target.value as Language)} className={selectClass}>{LANGUAGES.map(l => <option key={l}>{l}</option>)}</select></SelectWrap> },
+                  { label: t('partnerProfile.learningLabel'), value: `${LANG_FLAGS[learning] ?? ''} ${learning}`, editor: <SelectWrap><select value={learning} onChange={e => setLearning(e.target.value as Language)} className={selectClass}>{LANGUAGES.filter(l => l !== native).map(l => <option key={l}>{l}</option>)}</select></SelectWrap> },
+                  { label: t('partnerProfile.goalLabel'),     value: goal,             editor: <SelectWrap><select value={goal} onChange={e => setGoal(e.target.value as Goal)} className={selectClass}>{GOALS.map(g => <option key={g}>{g}</option>)}</select></SelectWrap> },
+                  { label: t('partnerProfile.styleLabel'),    value: commStyle,        editor: <SelectWrap><select value={commStyle} onChange={e => setCommStyle(e.target.value as CommStyle)} className={selectClass}>{COMM_STYLES.map(s => <option key={s}>{s}</option>)}</select></SelectWrap> },
+                  { label: t('partnerProfile.frequencyLabel'), value: practiceFrequency, editor: <SelectWrap><select value={practiceFrequency} onChange={e => setPracticeFrequency(e.target.value as Frequency)} className={selectClass}>{FREQUENCY.map(f => <option key={f}>{f}</option>)}</select></SelectWrap> },
                 ].map(({ label, value, editor }) => (
                   <div key={label} className="flex items-center justify-between py-3 border-b border-stone-100 last:border-0">
                     <span className="text-xs font-semibold text-stone-400">{label}</span>
@@ -588,8 +591,8 @@ export default function ProfilePage() {
               {/* Interests tag picker */}
               <div className="pt-2 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-stone-400">Interests</span>
-                  <span className="text-xs text-stone-400">{editing ? `${interests.length}/5` : interests.length > 0 ? `${interests.length} selected` : ''}</span>
+                  <span className="text-xs font-semibold text-stone-400">{t('partnerProfile.interestsLabel')}</span>
+                  <span className="text-xs text-stone-400">{editing ? t('profile.interestsCountMax').replace('{n}', String(interests.length)) : interests.length > 0 ? t('profile.interestsCountSelected').replace('{n}', String(interests.length)) : ''}</span>
                 </div>
                 {editing ? (
                   <div className="space-y-3">
@@ -638,7 +641,7 @@ export default function ProfilePage() {
 
               {editing && (
                 <button onClick={handleSavePrefs} disabled={saving} className="w-full py-2.5 btn-primary text-white font-bold text-sm rounded-full shadow-md disabled:opacity-50">
-                  {saving ? 'Saving...' : 'Save changes'}
+                  {saving ? t('profile.saving') : t('profile.saveChanges')}
                 </button>
               )}
 
@@ -648,10 +651,10 @@ export default function ProfilePage() {
           </>
         ) : (
           <div className="bg-white rounded-2xl shadow-sm px-8 py-12 text-center space-y-3">
-            <p className="font-serif font-black text-xl text-neutral-900">No profile yet</p>
-            <p className="text-sm text-stone-500">Complete onboarding to set up your profile.</p>
+            <p className="font-serif font-black text-xl text-neutral-900">{t('profile.noProfileTitle')}</p>
+            <p className="text-sm text-stone-500">{t('profile.noProfileBody')}</p>
             <button onClick={() => router.push('/onboarding')} className="mt-2 inline-block px-6 py-2.5 btn-primary text-white font-bold text-sm rounded-full shadow-md">
-              Get started
+              {t('profile.getStarted')}
             </button>
           </div>
         )}

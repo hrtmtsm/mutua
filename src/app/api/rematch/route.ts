@@ -106,7 +106,7 @@ export async function POST(req: Request) {
       const partnerEmail  = isA ? match.email_b : match.email_a;
       const partnerName   = isA ? match.name_b  : match.name_a;
       try {
-        await sendRematchEmail(partnerEmail, requesterName, partnerName, `${APP_URL}/history`);
+        await sendRematchEmail(partnerEmail, requesterName, partnerName, `${APP_URL}/exchanges`);
       } catch { /* non-fatal */ }
     }
 
