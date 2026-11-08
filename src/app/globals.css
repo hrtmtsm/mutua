@@ -96,7 +96,15 @@ body {
   --line: #26344a;
 }
 body, .app-shell { background-color: var(--page); color: var(--ink); }
-.theme-switcher { background: var(--surface); color: var(--ink); border-color: var(--line); }
+/* Quiet, no-background look — matches the landing page's time/locale pickers
+   instead of standing out as a white pill. Scoped to the trigger button
+   inside .theme-switcher (a custom dropdown, same structure/markup as
+   LocaleSwitcher) rather than a native <select>. */
+.theme-switcher .lang-picker-trigger {
+  background: transparent; color: var(--ink); border-color: transparent; opacity: .76;
+  transition: opacity 160ms ease-out, background-color 160ms ease-out;
+}
+.theme-switcher .lang-picker-trigger:hover, .theme-switcher .lang-picker-trigger[aria-expanded='true'] { opacity: 1; background: rgba(128,140,120,.14); }
 .immersive-scene { background: radial-gradient(ellipse at 50% 30%, #0b1b33 0%, #040a17 60%, #02050d 100%); }
 :root[data-theme='night'] :is(.bg-white, .bg-stone-50, .bg-stone-100, .bg-neutral-50) { background-color: var(--surface); }
 :root[data-theme='night'] :is(.text-neutral-900, .text-neutral-800, .text-neutral-700, .text-neutral-600, .text-black, .text-\[\#171717\]) { color: var(--ink); }

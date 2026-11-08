@@ -121,8 +121,6 @@ export default function LandingExperience({ preview = false }: { preview?: boole
       <span role="status">{!checked?'背景を準備中':live?`${mobile?'モバイル':'デスクトップ'} · ${reduced?'動きを抑制':hidden?'一時停止':'雲がゆっくり移動'}`:'静的な空を表示中'}{failed?'（WebGLまたは雲の読み込みに失敗）':''}</span>
       <a href="/clouds/ATTRIBUTION.md">Cloud credits · CC0</a>
     </footer>
-    ) : (
-      <footer className="study-footer"><Link href="/auth/send">{t('landing.footerSignIn')}</Link><a href="mailto:hello@trymutua.com">{t('landing.footerContact')}</a></footer>
-    )}
+    ) : null}
   </main>;
 }

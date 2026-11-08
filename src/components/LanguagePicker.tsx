@@ -24,7 +24,19 @@ export default function LanguagePicker({ value, onChange, placeholder, disabled 
   disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const [placement, setPlacement] = useState<'below' | 'above'>('below');
   const rootRef = useRef<HTMLDivElement>(null);
+
+  const toggleOpen = () => {
+    if (!open && rootRef.current) {
+      const rect = rootRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      // Flip upward only when there isn't room below and there's more room above.
+      setPlacement(spaceBelow < 200 && spaceAbove > spaceBelow ? 'above' : 'below');
+    }
+    setOpen(value => !value);
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -48,7 +60,7 @@ export default function LanguagePicker({ value, onChange, placeholder, disabled 
         disabled={disabled}
         aria-haspopup="listbox"
         aria-expanded={open}
-        onClick={() => setOpen(value => !value)}
+        onClick={toggleOpen}
       >
         {value ? (
           <>
@@ -61,7 +73,7 @@ export default function LanguagePicker({ value, onChange, placeholder, disabled 
         <span className="lang-picker-caret" aria-hidden="true">▾</span>
       </button>
       {open && (
-        <div className="lang-picker-menu" role="listbox">
+        <div className="lang-picker-menu" data-placement={placement} role="listbox">
           {ORDERED_LANGUAGES.map(language => (
             <button
               key={language}

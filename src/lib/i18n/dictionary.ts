@@ -25,7 +25,6 @@ export const DICTIONARIES = {
     'landing.step2Title': 'パートナーを見つける', 'landing.step2Body': 'テキストか通話を選択。お互いの言語が噛み合う相手とマッチします。',
     'landing.step3Title': 'お互いに練習する', 'landing.step3Body': 'メッセージや通話で交流。順番に教え合いましょう。',
     'landing.arrivalHeading1': '次の「こんにちは」は、', 'landing.arrivalHeading2': 'ここから始まる。',
-    'landing.footerSignIn': 'サインイン', 'landing.footerContact': 'お問い合わせ',
     'locale.switcherLabel': '表示言語',
 
     'app.eyebrow': 'LANGUAGE EXCHANGE',
@@ -56,6 +55,7 @@ export const DICTIONARIES = {
     'app.searchingStatus': '相手を探しています… 最大90秒で終了します。',
 
     'setup.signup': '新規登録', 'setup.login': 'ログイン',
+    'theme.auto': '自動', 'theme.light': 'ライト', 'theme.night': 'ナイト', 'theme.switcherLabel': '表示モード', 'theme.switcherTitle': '自動: 7:00〜19:00はライト、それ以外はナイト',
     'setup.nativePlaceholder': '母語', 'setup.learningPlaceholder': '学習言語',
     'setup.email': 'your@email.com', 'setup.password': 'パスワード',
     'setup.start': 'はじめる', 'setup.processing': '処理中...', 'setup.signingIn': 'サインイン中...',
@@ -326,7 +326,6 @@ export const DICTIONARIES = {
     'landing.step2Title': 'Find your partner', 'landing.step2Body': 'Choose text or voice. Match with someone whose languages complement yours.',
     'landing.step3Title': 'Help each other practice', 'landing.step3Body': 'Exchange messages or talk by voice. Take turns learning from each other.',
     'landing.arrivalHeading1': 'Your next hello', 'landing.arrivalHeading2': 'starts here.',
-    'landing.footerSignIn': 'Sign in', 'landing.footerContact': 'Get in touch',
     'locale.switcherLabel': 'Language',
 
     'app.eyebrow': 'LANGUAGE EXCHANGE',
@@ -357,6 +356,7 @@ export const DICTIONARIES = {
     'app.searchingStatus': 'Looking for a partner… ends automatically after 90 seconds.',
 
     'setup.signup': 'Sign up', 'setup.login': 'Log in',
+    'theme.auto': 'Auto', 'theme.light': 'Light', 'theme.night': 'Night', 'theme.switcherLabel': 'Display mode', 'theme.switcherTitle': 'Auto: light from 7:00–19:00, night otherwise',
     'setup.nativePlaceholder': 'Native language', 'setup.learningPlaceholder': 'Learning language',
     'setup.email': 'your@email.com', 'setup.password': 'Password',
     'setup.start': 'Get started', 'setup.processing': 'Working…', 'setup.signingIn': 'Signing in…',
@@ -627,7 +627,6 @@ export const DICTIONARIES = {
     'landing.step2Title': '파트너를 찾아요', 'landing.step2Body': '텍스트 또는 통화를 선택하고, 언어가 맞는 상대와 매칭돼요.',
     'landing.step3Title': '함께 연습해요', 'landing.step3Body': '메시지나 통화로 교류하며 서로 가르쳐 주세요.',
     'landing.arrivalHeading1': '다음 "안녕"은,', 'landing.arrivalHeading2': '여기서 시작돼요.',
-    'landing.footerSignIn': '로그인', 'landing.footerContact': '문의하기',
     'locale.switcherLabel': '표시 언어',
 
     'app.eyebrow': 'LANGUAGE EXCHANGE',
@@ -658,6 +657,7 @@ export const DICTIONARIES = {
     'app.searchingStatus': '상대를 찾는 중… 최대 90초 후 종료돼요.',
 
     'setup.signup': '회원가입', 'setup.login': '로그인',
+    'theme.auto': '자동', 'theme.light': '라이트', 'theme.night': '나이트', 'theme.switcherLabel': '표시 모드', 'theme.switcherTitle': '자동: 7:00~19:00는 라이트, 그 외는 나이트',
     'setup.nativePlaceholder': '모국어', 'setup.learningPlaceholder': '학습 언어',
     'setup.email': 'your@email.com', 'setup.password': '비밀번호',
     'setup.start': '시작하기', 'setup.processing': '처리 중...', 'setup.signingIn': '로그인 중...',
@@ -928,7 +928,6 @@ export const DICTIONARIES = {
     'landing.step2Title': '找到你的伙伴', 'landing.step2Body': '选择文字或语音，匹配语言互补的伙伴。',
     'landing.step3Title': '一起练习', 'landing.step3Body': '通过消息或语音交流，轮流互相指导。',
     'landing.arrivalHeading1': '你的下一声问候，', 'landing.arrivalHeading2': '从这里开始。',
-    'landing.footerSignIn': '登录', 'landing.footerContact': '联系我们',
     'locale.switcherLabel': '显示语言',
 
     'app.eyebrow': 'LANGUAGE EXCHANGE',
@@ -959,6 +958,7 @@ export const DICTIONARIES = {
     'app.searchingStatus': '正在寻找伙伴… 最长90秒后结束。',
 
     'setup.signup': '注册', 'setup.login': '登录',
+    'theme.auto': '自动', 'theme.light': '浅色', 'theme.night': '深色', 'theme.switcherLabel': '显示模式', 'theme.switcherTitle': '自动：7:00–19:00 为浅色，其余为深色',
     'setup.nativePlaceholder': '母语', 'setup.learningPlaceholder': '学习语言',
     'setup.email': 'your@email.com', 'setup.password': '密码',
     'setup.start': '开始使用', 'setup.processing': '处理中…', 'setup.signingIn': '登录中…',
@@ -1229,7 +1229,6 @@ export const DICTIONARIES = {
     'landing.step2Title': 'Encuentra tu compañero', 'landing.step2Body': 'Elige texto o voz. Te emparejamos con alguien complementario.',
     'landing.step3Title': 'Practiquen juntos', 'landing.step3Body': 'Intercambien mensajes o hablen por voz, turnándose para enseñar.',
     'landing.arrivalHeading1': 'Tu próximo saludo', 'landing.arrivalHeading2': 'empieza aquí.',
-    'landing.footerSignIn': 'Iniciar sesión', 'landing.footerContact': 'Contáctanos',
     'locale.switcherLabel': 'Idioma',
 
     'app.eyebrow': 'LANGUAGE EXCHANGE',
@@ -1260,6 +1259,7 @@ export const DICTIONARIES = {
     'app.searchingStatus': 'Buscando compañero… termina a los 90 segundos como máximo.',
 
     'setup.signup': 'Registrarme', 'setup.login': 'Iniciar sesión',
+    'theme.auto': 'Automático', 'theme.light': 'Claro', 'theme.night': 'Oscuro', 'theme.switcherLabel': 'Modo de visualización', 'theme.switcherTitle': 'Automático: claro de 7:00 a 19:00, oscuro el resto del tiempo',
     'setup.nativePlaceholder': 'Idioma nativo', 'setup.learningPlaceholder': 'Idioma que aprendo',
     'setup.email': 'your@email.com', 'setup.password': 'Contraseña',
     'setup.start': 'Empezar', 'setup.processing': 'Procesando…', 'setup.signingIn': 'Iniciando sesión…',
@@ -1530,7 +1530,6 @@ export const DICTIONARIES = {
     'landing.step2Title': 'Trouvez votre partenaire', 'landing.step2Body': 'Choisissez le texte ou la voix. Soyez mis en relation avec quelqu\'un dont les langues sont complémentaires.',
     'landing.step3Title': 'Entraidez-vous', 'landing.step3Body': 'Échangez des messages ou parlez à l\'oral. Enseignez-vous à tour de rôle.',
     'landing.arrivalHeading1': 'Votre prochain bonjour', 'landing.arrivalHeading2': 'commence ici.',
-    'landing.footerSignIn': 'Se connecter', 'landing.footerContact': 'Nous contacter',
     'locale.switcherLabel': 'Langue',
 
     'app.eyebrow': 'LANGUAGE EXCHANGE',
@@ -1561,6 +1560,7 @@ export const DICTIONARIES = {
     'app.searchingStatus': 'Recherche d\'un partenaire… se termine automatiquement après 90 secondes.',
 
     'setup.signup': 'Inscription', 'setup.login': 'Connexion',
+    'theme.auto': 'Auto', 'theme.light': 'Clair', 'theme.night': 'Sombre', 'theme.switcherLabel': 'Mode d’affichage', 'theme.switcherTitle': 'Auto : clair de 7h à 19h, sombre sinon',
     'setup.nativePlaceholder': 'Langue maternelle', 'setup.learningPlaceholder': 'Langue apprise',
     'setup.email': 'votre@email.com', 'setup.password': 'Mot de passe',
     'setup.start': 'Commencer', 'setup.processing': 'Traitement en cours…', 'setup.signingIn': 'Connexion en cours…',
@@ -1831,7 +1831,6 @@ export const DICTIONARIES = {
     'landing.step2Title': 'Finde deinen Partner', 'landing.step2Body': 'Wähle Text oder Sprache. Wir bringen dich mit jemandem zusammen, dessen Sprachen zu deinen passen.',
     'landing.step3Title': 'Helft euch gegenseitig', 'landing.step3Body': 'Tauscht Nachrichten aus oder sprecht miteinander. Lernt abwechselnd voneinander.',
     'landing.arrivalHeading1': 'Dein nächstes Hallo', 'landing.arrivalHeading2': 'beginnt hier.',
-    'landing.footerSignIn': 'Anmelden', 'landing.footerContact': 'Kontakt',
     'locale.switcherLabel': 'Sprache',
 
     'app.eyebrow': 'LANGUAGE EXCHANGE',
@@ -1862,6 +1861,7 @@ export const DICTIONARIES = {
     'app.searchingStatus': 'Partner wird gesucht… endet automatisch nach 90 Sekunden.',
 
     'setup.signup': 'Registrieren', 'setup.login': 'Anmelden',
+    'theme.auto': 'Automatisch', 'theme.light': 'Hell', 'theme.night': 'Dunkel', 'theme.switcherLabel': 'Anzeigemodus', 'theme.switcherTitle': 'Automatisch: hell von 7:00–19:00 Uhr, sonst dunkel',
     'setup.nativePlaceholder': 'Muttersprache', 'setup.learningPlaceholder': 'Lernsprache',
     'setup.email': 'deine@email.com', 'setup.password': 'Passwort',
     'setup.start': 'Los geht\'s', 'setup.processing': 'Wird bearbeitet…', 'setup.signingIn': 'Anmeldung läuft…',
@@ -2132,7 +2132,6 @@ export const DICTIONARIES = {
     'landing.step2Title': 'Encontre seu parceiro', 'landing.step2Body': 'Escolha texto ou voz. Encontre alguém cujos idiomas complementam os seus.',
     'landing.step3Title': 'Ajudem-se a praticar', 'landing.step3Body': 'Troquem mensagens ou conversem por voz. Ensinem-se por turnos.',
     'landing.arrivalHeading1': 'Seu próximo olá', 'landing.arrivalHeading2': 'começa aqui.',
-    'landing.footerSignIn': 'Entrar', 'landing.footerContact': 'Fale conosco',
     'locale.switcherLabel': 'Idioma',
 
     'app.eyebrow': 'LANGUAGE EXCHANGE',
@@ -2163,6 +2162,7 @@ export const DICTIONARIES = {
     'app.searchingStatus': 'Procurando um parceiro… termina automaticamente após 90 segundos.',
 
     'setup.signup': 'Cadastrar', 'setup.login': 'Entrar',
+    'theme.auto': 'Automático', 'theme.light': 'Claro', 'theme.night': 'Escuro', 'theme.switcherLabel': 'Modo de exibição', 'theme.switcherTitle': 'Automático: claro das 7h às 19h, escuro no resto do tempo',
     'setup.nativePlaceholder': 'Idioma nativo', 'setup.learningPlaceholder': 'Idioma que está aprendendo',
     'setup.email': 'seu@email.com', 'setup.password': 'Senha',
     'setup.start': 'Começar', 'setup.processing': 'Processando…', 'setup.signingIn': 'Entrando…',
@@ -2433,7 +2433,6 @@ export const DICTIONARIES = {
     'landing.step2Title': 'Tìm đối tác của bạn', 'landing.step2Body': 'Chọn tin nhắn hoặc gọi thoại. Được ghép với người có ngôn ngữ phù hợp với bạn.',
     'landing.step3Title': 'Cùng nhau luyện tập', 'landing.step3Body': 'Trao đổi tin nhắn hoặc nói chuyện bằng giọng nói. Lần lượt dạy nhau.',
     'landing.arrivalHeading1': 'Lời chào tiếp theo của bạn', 'landing.arrivalHeading2': 'bắt đầu từ đây.',
-    'landing.footerSignIn': 'Đăng nhập', 'landing.footerContact': 'Liên hệ',
     'locale.switcherLabel': 'Ngôn ngữ',
 
     'app.eyebrow': 'LANGUAGE EXCHANGE',
@@ -2464,6 +2463,7 @@ export const DICTIONARIES = {
     'app.searchingStatus': 'Đang tìm đối tác… tự động kết thúc sau 90 giây.',
 
     'setup.signup': 'Đăng ký', 'setup.login': 'Đăng nhập',
+    'theme.auto': 'Tự động', 'theme.light': 'Sáng', 'theme.night': 'Tối', 'theme.switcherLabel': 'Chế độ hiển thị', 'theme.switcherTitle': 'Tự động: sáng từ 7:00–19:00, tối ngoài khung giờ đó',
     'setup.nativePlaceholder': 'Ngôn ngữ mẹ đẻ', 'setup.learningPlaceholder': 'Ngôn ngữ đang học',
     'setup.email': 'your@email.com', 'setup.password': 'Mật khẩu',
     'setup.start': 'Bắt đầu', 'setup.processing': 'Đang xử lý…', 'setup.signingIn': 'Đang đăng nhập…',

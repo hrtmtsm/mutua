@@ -1,6 +1,8 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { Clock3, Sun, Moon } from 'lucide-react';
+import { useLocale } from './LocaleProvider';
 
 export type ThemePreference = 'auto' | 'light' | 'night';
 export function localTheme(hour: number): 'light' | 'night' {
@@ -57,9 +59,64 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
 
 export function ThemeSwitcher() {
   const { preference, setPreference } = useTheme();
-  return <select aria-label="表示モード" title="自動: 7:00〜19:00はライト、それ以外はナイト"
-    value={preference} onChange={e => setPreference(e.target.value as ThemePreference)}
-    className="theme-switcher rounded-full border px-2 py-1.5 text-xs focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500">
-    <option value="auto">◐ 自動</option><option value="light">☀ ライト</option><option value="night">☾ ナイト</option>
-  </select>;
+  const { t } = useLocale();
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onClickOutside = (event: MouseEvent) => {
+      if (rootRef.current && !rootRef.current.contains(event.target as Node)) setOpen(false);
+    };
+    const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') setOpen(false); };
+    document.addEventListener('mousedown', onClickOutside);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onClickOutside);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [open]);
+
+  const OPTIONS: { value: ThemePreference; label: string; Icon: typeof Clock3 }[] = [
+    { value: 'auto',  label: t('theme.auto'),  Icon: Clock3 },
+    { value: 'light', label: t('theme.light'), Icon: Sun },
+    { value: 'night', label: t('theme.night'), Icon: Moon },
+  ];
+  const current = OPTIONS.find(o => o.value === preference) ?? OPTIONS[0];
+
+  return (
+    <div className="lang-picker theme-switcher" ref={rootRef}>
+      <button
+        type="button"
+        className="live-select lang-picker-trigger"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label={t('theme.switcherLabel')}
+        title={t('theme.switcherTitle')}
+        onClick={() => setOpen(value => !value)}
+      >
+        <current.Icon className="lang-picker-icon" aria-hidden="true" />
+        {current.label}
+        <span className="lang-picker-caret" aria-hidden="true">▾</span>
+      </button>
+      {open && (
+        <div className="lang-picker-menu locale-switcher-menu" role="listbox">
+          {OPTIONS.map(option => (
+            <button
+              key={option.value}
+              type="button"
+              role="option"
+              aria-selected={preference === option.value}
+              data-active={preference === option.value}
+              className="lang-picker-option"
+              onClick={() => { setPreference(option.value); setOpen(false); }}
+            >
+              <option.Icon className="lang-picker-icon" aria-hidden="true" />
+              {option.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
