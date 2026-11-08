@@ -5,7 +5,7 @@ import { ThemeSwitcher, useTheme } from './ThemeProvider';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { User, ArrowLeftRight, Bell, ArrowLeft, Send, Settings, MessageSquarePlus, X, Home, Calendar, MessageCircle } from 'lucide-react';
+import { User, ArrowLeftRight, Bell, ArrowLeft, Send, Settings, MessageSquarePlus, X, History, Calendar, MessageCircle } from 'lucide-react';
 import { LANG_AVATAR_COLOR } from '@/lib/constants';
 import { isRealPhoto } from '@/lib/glyphAvatars';
 import { supabase, getMessages, sendMessage, getNotifications, markNotificationsSeen, type Message, type AppNotification } from '@/lib/supabase';
@@ -17,13 +17,13 @@ const BOTTOM_NAV = [
   {
     href: '/app',
     labelKey: 'nav.exchange' as DictionaryKey,
-    icon: Home,
+    icon: ArrowLeftRight,
     match: ['/app', '/match-result', '/find-match', '/partners', '/partner'],
   },
   {
     href: '/exchanges',
     labelKey: 'nav.log' as DictionaryKey,
-    icon: ArrowLeftRight,
+    icon: History,
     match: ['/exchanges', '/session-confirmed', '/session-schedule', '/pre-session', '/session'],
   },
 ];

@@ -1,4 +1,5 @@
 .sky-study { position:relative; isolation:isolate; overflow:clip; color:var(--study-ink); background:var(--study-top); font-family:Arial,Helvetica,sans-serif; }
+.sky-study ::selection { background:rgba(61,104,232,.22); color:inherit; }
 .study-background { position:fixed; inset:0; z-index:-1; pointer-events:none; overflow:hidden; }
 .study-background > div:not(.study-sky):not(.study-stars):not(.study-meadow):not(.study-static-clouds) { position:absolute!important; inset:0; pointer-events:none!important; }
 .study-sky { position:absolute; inset:0; background:linear-gradient(180deg,var(--study-top) 0%,var(--study-middle) 58%,var(--study-horizon) 100%); }
@@ -294,6 +295,11 @@
 .study-how h2 { margin:0; font-family:var(--font-study-serif),'EB Garamond',Georgia,serif; font-weight:400; font-size:clamp(40px,4.8vw,66px); line-height:1.04; text-wrap:balance; }
 .study-how-steps { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:24px; max-width:1080px; margin:0 auto; padding:0; list-style:none; }
 .study-how-steps li { padding:28px; background:var(--exchange-label); border:1px solid #ffffff40; border-radius:22px; }
+/* Night mode reuses the light card (cream, dark ink) dimmed with opacity,
+   same as .person-greeting, instead of its own dark-green recoloring. */
+.sky-study[data-hero-tone='night'] .study-how-steps li { background:#f6f2e5e8; border-color:#ffffff40; opacity:.84; }
+.sky-study[data-hero-tone='night'] .study-how-steps li,.sky-study[data-hero-tone='night'] .study-how-steps h3 { color:#1c1e1a; }
+.sky-study[data-hero-tone='night'] .study-how-steps p,.sky-study[data-hero-tone='night'] .study-step-number { color:#5b5f58; }
 .study-step-number { display:block; margin-bottom:22px; font-family:var(--font-study-serif),'EB Garamond',Georgia,serif; font-size:36px; line-height:1; color:var(--exchange-muted); }
 .study-how-steps h3 { font-size:17px; line-height:1.35; font-weight:600; margin:0 0 12px; text-wrap:balance; }
 .study-how-steps p { font-size:14px; line-height:1.7; color:var(--exchange-muted); margin:0; text-wrap:pretty; }
@@ -639,16 +645,20 @@ body:has(.how-story) > .overflow-hidden { overflow:clip; }
 .possibility-person[data-person='4'] .tapback-portrait { background:#c9e59e; }
 .possibility-person[data-person='5'] .tapback-portrait { background:#f3bb96; }
 @media(min-width:1101px) {
- .possibility-person[data-desktop-slot='0'] { left:6%; top:31%; width:110px; height:110px; }
- .possibility-person[data-desktop-slot='1'] { right:7%; top:19%; width:84px; height:84px; }
- .possibility-person[data-desktop-slot='2'] { left:18%; top:76%; width:78px; height:78px; }
- .possibility-person[data-desktop-slot='3'] { right:10%; top:63%; width:116px; height:116px; }
+ /* Pulled a bit toward the center so the greetings read as part of the
+    hero, framing the heading/CTA instead of hugging the viewport edges. */
+ .possibility-person[data-desktop-slot='0'] { left:10.5%; top:31%; width:110px; height:110px; }
+ .possibility-person[data-desktop-slot='1'] { right:11.5%; top:19%; width:84px; height:84px; }
+ .possibility-person[data-desktop-slot='2'] { left:23.5%; top:71%; width:78px; height:78px; }
+ .possibility-person[data-desktop-slot='3'] { right:17.5%; top:63%; width:116px; height:116px; }
 }
 @media(min-width:701px) and (max-width:1100px) {
- .possibility-person[data-desktop-slot='0'] { left:3%; top:23%; width:84px; height:84px; }
- .possibility-person[data-desktop-slot='1'] { right:4%; top:16%; width:70px; height:70px; }
- .possibility-person[data-desktop-slot='2'] { left:15%; top:77%; width:68px; height:68px; }
- .possibility-person[data-desktop-slot='3'] { right:8%; top:67%; width:94px; height:94px; }
+ /* Narrower hero: same inward pull, scaled down so bubbles still clear
+    the heading/CTA instead of crowding them. */
+ .possibility-person[data-desktop-slot='0'] { left:5.5%; top:23%; width:84px; height:84px; }
+ .possibility-person[data-desktop-slot='1'] { right:6.5%; top:16%; width:70px; height:70px; }
+ .possibility-person[data-desktop-slot='2'] { left:18%; top:75%; width:68px; height:68px; }
+ .possibility-person[data-desktop-slot='3'] { right:12%; top:67%; width:94px; height:94px; }
 }
 @media(max-width:700px) {
  .possibility-person[data-mobile-slot='0'] { left:4%; top:43px; width:82px; height:82px; }

@@ -312,7 +312,7 @@ export default function LiveExchange() {
          <div className="live-partner-badge">
           {partner?.nativeLanguage && LANG_FLAG_CODE[partner.nativeLanguage] && <span className={`fi fi-${LANG_FLAG_CODE[partner.nativeLanguage]}`} aria-hidden="true" />}
           <span className="live-partner-badge-name">{partner?.name || t('liveExchange.partnerFallbackName')}</span>
-          {partner?.nativeLanguage && <span className="live-partner-badge-native">{partner.nativeLanguage} · ネイティブ</span>}
+          {partner?.nativeLanguage && <span className="live-partner-badge-native">{partner.nativeLanguage} · {t('partnerProfile.nativeSuffix')}</span>}
          </div>
          <span className="live-avatar-hero"><AvatarTile url={partner?.avatarUrl} name={partner?.name} color={LANG_AVATAR_COLOR[partner?.nativeLanguage ?? ''] ?? '#171717'} /></span>
          <div className="live-pip-self" data-speaking={call && selfSpeaking ? 'true' : undefined}>
@@ -381,7 +381,7 @@ export default function LiveExchange() {
              <span className="live-radar-ring" /><span className="live-radar-ring" /><span className="live-radar-ring" />
              <span className="live-avatar-hero"><AvatarTile url={myAvatarUrl} name={myName} color={LANG_AVATAR_COLOR[nativeLanguage] ?? '#171717'} /></span>
             </div>
-            <p className="live-finding-text">相手を探しています<span className="live-finding-dots"><span>.</span><span>.</span><span>.</span></span></p>
+            <p className="live-finding-text">{t('liveExchange.findingPartnerText')}<span className="live-finding-dots"><span>.</span><span>.</span><span>.</span></span></p>
            </>
           ) : (
            <>
