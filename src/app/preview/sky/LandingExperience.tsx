@@ -8,10 +8,8 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties } from 're
 import { paletteAt, selectedHour, type SkyMode } from '@/components/sky/palette';
 import StaticMeadow from '@/components/sky/StaticMeadow';
 import PeoplePossibilities from './PeoplePossibilities';
-import LanguagePicker from '@/components/LanguagePicker';
 import LocaleSwitcher from '@/components/LocaleSwitcher';
 import { useLocale } from '@/components/LocaleProvider';
-import { type Language } from '@/lib/types';
 import './sky.css';
 const logoFont = localFont({ src:'./fonts/Nunito-Variable.ttf', variable:'--font-study-logo', weight:'200 1000', display:'swap' });
 const SkyCanvas = dynamic(() => import('@/components/sky/SkyCanvas'),{ssr:false});
@@ -29,8 +27,6 @@ export default function LandingExperience({ preview = false }: { preview?: boole
   const [checked,setChecked] = useState(false);
   const [failed,setFailed] = useState(false);
   const [staticMode,setStaticMode] = useState(false);
-  const [native,setNative] = useState<Language|''>('');
-  const [learning,setLearning] = useState<Language|''>('');
   const root = useRef<HTMLElement>(null);
   const fail = useCallback(()=>setFailed(true),[]);
   const palette = paletteAt(hour);
@@ -70,10 +66,7 @@ export default function LandingExperience({ preview = false }: { preview?: boole
     return ()=>{cancelAnimationFrame(frame);clearTimeout(trailing);window.removeEventListener('scroll',update);window.removeEventListener('resize',update);};
   },[]);
   const live = supported&&!failed&&!staticMode;
-  const ctaParams = new URLSearchParams({ start:'text' });
-  if (native) ctaParams.set('native', native);
-  if (learning) ctaParams.set('learning', learning);
-  const ctaHref = `/app?${ctaParams.toString()}`;
+  const ctaHref = '/app?start=text';
   const skyStyle={ '--study-top':palette.top,'--study-middle':palette.middle,'--study-horizon':palette.horizon,'--study-ink':palette.ink,'--study-ground':palette.foreground } as CSSProperties;
   return <main ref={root} className={`sky-study ${logoFont.variable}`} style={skyStyle} data-hero-tone={palette.night>.55?'night':'day'} data-mode={mode} data-renderer={live?'webgl':'static'} data-reduced-motion={reduced} data-paused={hidden} data-landscape="meadow">
     <div className="study-background" aria-hidden="true">
@@ -96,16 +89,11 @@ export default function LandingExperience({ preview = false }: { preview?: boole
       <div className="study-hero-copy">
         <p className="study-eyebrow">{t('landing.eyebrow')}</p>
         <h1 id="exchange-heading"><span>{t('landing.heading1')}</span><span>{t('landing.heading2')}</span></h1>
-        <p className="study-subtitle">{t('landing.subtitle1')}<br/>{t('landing.subtitle2')}</p>
-        <div className="landing-conditions" role="group" aria-label="条件">
-          <LanguagePicker value={native} onChange={setNative} placeholder={t('landing.nativePlaceholder')} />
-          <LanguagePicker value={learning} onChange={setLearning} placeholder={t('landing.learningPlaceholder')} />
-        </div>
-        <div className="landing-start-options">
+        <p className="study-subtitle">{t('landing.subtitle1')}{t('landing.subtitle2') && <><br/>{t('landing.subtitle2')}</>}</p>
+        <div className="landing-cta-row">
           <Link href={ctaHref} className="study-button possibility-start">{t('landing.cta')}</Link>
+          <Link href="/app?login=1" className="landing-login-button">{t('setup.login')}</Link>
         </div>
-        <p className="landing-start-note">{t('landing.note')}</p>
-        <p className="landing-login-note">{t('landing.alreadyHaveAccount')} <Link href="/app?login=1" className="landing-login-link">{t('setup.login')}</Link></p>
       </div>
       <PeoplePossibilities reduced={reduced} hidden={hidden} mobile={mobile}/>
     </section>
@@ -121,7 +109,6 @@ export default function LandingExperience({ preview = false }: { preview?: boole
       </ol>
     </section>
     <section className="study-arrival">
-      <p className="study-eyebrow">{t('landing.arrivalEyebrow')}</p>
       <h2>{t('landing.arrivalHeading1')}<br/>{t('landing.arrivalHeading2')}</h2>
       <Link href="/app" className="study-button">{t('landing.arrivalCta')}</Link>
       <p className="study-signature" aria-hidden="true">Mutua</p>
