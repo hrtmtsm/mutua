@@ -110,9 +110,7 @@ export default function LandingExperience({ preview = false }: { preview?: boole
     </section>
     <section className="study-arrival">
       <h2>{t('landing.arrivalHeading1')}<br/>{t('landing.arrivalHeading2')}</h2>
-      <Link href="/app" className="study-button">{t('landing.arrivalCta')}</Link>
-      <p className="study-signature" aria-hidden="true">Mutua</p>
-
+      <Link href={ctaHref} className="study-button possibility-start">{t('landing.cta')}</Link>
     </section>
     {preview ? (
     <footer className="study-footer">

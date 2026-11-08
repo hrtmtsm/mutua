@@ -25,7 +25,6 @@ export const DICTIONARIES = {
     'landing.step2Title': 'パートナーを見つける', 'landing.step2Body': 'テキストか通話を選択。お互いの言語が噛み合う相手とマッチします。',
     'landing.step3Title': 'お互いに練習する', 'landing.step3Body': 'メッセージや通話で交流。順番に教え合いましょう。',
     'landing.arrivalHeading1': '次の「こんにちは」は、', 'landing.arrivalHeading2': 'ここから始まる。',
-    'landing.arrivalCta': 'チャットを始める',
     'landing.footerSignIn': 'サインイン', 'landing.footerContact': 'お問い合わせ',
     'locale.switcherLabel': '表示言語',
 
@@ -327,7 +326,6 @@ export const DICTIONARIES = {
     'landing.step2Title': 'Find your partner', 'landing.step2Body': 'Choose text or voice. Match with someone whose languages complement yours.',
     'landing.step3Title': 'Help each other practice', 'landing.step3Body': 'Exchange messages or talk by voice. Take turns learning from each other.',
     'landing.arrivalHeading1': 'Your next hello', 'landing.arrivalHeading2': 'starts here.',
-    'landing.arrivalCta': 'Start chatting',
     'landing.footerSignIn': 'Sign in', 'landing.footerContact': 'Get in touch',
     'locale.switcherLabel': 'Language',
 
@@ -629,7 +627,6 @@ export const DICTIONARIES = {
     'landing.step2Title': '파트너를 찾아요', 'landing.step2Body': '텍스트 또는 통화를 선택하고, 언어가 맞는 상대와 매칭돼요.',
     'landing.step3Title': '함께 연습해요', 'landing.step3Body': '메시지나 통화로 교류하며 서로 가르쳐 주세요.',
     'landing.arrivalHeading1': '다음 "안녕"은,', 'landing.arrivalHeading2': '여기서 시작돼요.',
-    'landing.arrivalCta': '채팅 시작하기',
     'landing.footerSignIn': '로그인', 'landing.footerContact': '문의하기',
     'locale.switcherLabel': '표시 언어',
 
@@ -931,7 +928,6 @@ export const DICTIONARIES = {
     'landing.step2Title': '找到你的伙伴', 'landing.step2Body': '选择文字或语音，匹配语言互补的伙伴。',
     'landing.step3Title': '一起练习', 'landing.step3Body': '通过消息或语音交流，轮流互相指导。',
     'landing.arrivalHeading1': '你的下一声问候，', 'landing.arrivalHeading2': '从这里开始。',
-    'landing.arrivalCta': '开始聊天',
     'landing.footerSignIn': '登录', 'landing.footerContact': '联系我们',
     'locale.switcherLabel': '显示语言',
 
@@ -1233,7 +1229,6 @@ export const DICTIONARIES = {
     'landing.step2Title': 'Encuentra tu compañero', 'landing.step2Body': 'Elige texto o voz. Te emparejamos con alguien complementario.',
     'landing.step3Title': 'Practiquen juntos', 'landing.step3Body': 'Intercambien mensajes o hablen por voz, turnándose para enseñar.',
     'landing.arrivalHeading1': 'Tu próximo saludo', 'landing.arrivalHeading2': 'empieza aquí.',
-    'landing.arrivalCta': 'Empezar a chatear',
     'landing.footerSignIn': 'Iniciar sesión', 'landing.footerContact': 'Contáctanos',
     'locale.switcherLabel': 'Idioma',
 
@@ -1535,7 +1530,6 @@ export const DICTIONARIES = {
     'landing.step2Title': 'Trouvez votre partenaire', 'landing.step2Body': 'Choisissez le texte ou la voix. Soyez mis en relation avec quelqu\'un dont les langues sont complémentaires.',
     'landing.step3Title': 'Entraidez-vous', 'landing.step3Body': 'Échangez des messages ou parlez à l\'oral. Enseignez-vous à tour de rôle.',
     'landing.arrivalHeading1': 'Votre prochain bonjour', 'landing.arrivalHeading2': 'commence ici.',
-    'landing.arrivalCta': 'Commencer à discuter',
     'landing.footerSignIn': 'Se connecter', 'landing.footerContact': 'Nous contacter',
     'locale.switcherLabel': 'Langue',
 
@@ -1837,7 +1831,6 @@ export const DICTIONARIES = {
     'landing.step2Title': 'Finde deinen Partner', 'landing.step2Body': 'Wähle Text oder Sprache. Wir bringen dich mit jemandem zusammen, dessen Sprachen zu deinen passen.',
     'landing.step3Title': 'Helft euch gegenseitig', 'landing.step3Body': 'Tauscht Nachrichten aus oder sprecht miteinander. Lernt abwechselnd voneinander.',
     'landing.arrivalHeading1': 'Dein nächstes Hallo', 'landing.arrivalHeading2': 'beginnt hier.',
-    'landing.arrivalCta': 'Jetzt chatten',
     'landing.footerSignIn': 'Anmelden', 'landing.footerContact': 'Kontakt',
     'locale.switcherLabel': 'Sprache',
 
@@ -2139,7 +2132,6 @@ export const DICTIONARIES = {
     'landing.step2Title': 'Encontre seu parceiro', 'landing.step2Body': 'Escolha texto ou voz. Encontre alguém cujos idiomas complementam os seus.',
     'landing.step3Title': 'Ajudem-se a praticar', 'landing.step3Body': 'Troquem mensagens ou conversem por voz. Ensinem-se por turnos.',
     'landing.arrivalHeading1': 'Seu próximo olá', 'landing.arrivalHeading2': 'começa aqui.',
-    'landing.arrivalCta': 'Começar a conversar',
     'landing.footerSignIn': 'Entrar', 'landing.footerContact': 'Fale conosco',
     'locale.switcherLabel': 'Idioma',
 
@@ -2441,7 +2433,6 @@ export const DICTIONARIES = {
     'landing.step2Title': 'Tìm đối tác của bạn', 'landing.step2Body': 'Chọn tin nhắn hoặc gọi thoại. Được ghép với người có ngôn ngữ phù hợp với bạn.',
     'landing.step3Title': 'Cùng nhau luyện tập', 'landing.step3Body': 'Trao đổi tin nhắn hoặc nói chuyện bằng giọng nói. Lần lượt dạy nhau.',
     'landing.arrivalHeading1': 'Lời chào tiếp theo của bạn', 'landing.arrivalHeading2': 'bắt đầu từ đây.',
-    'landing.arrivalCta': 'Bắt đầu trò chuyện',
     'landing.footerSignIn': 'Đăng nhập', 'landing.footerContact': 'Liên hệ',
     'locale.switcherLabel': 'Ngôn ngữ',
 
