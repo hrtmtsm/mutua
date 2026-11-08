@@ -647,16 +647,16 @@ body:has(.how-story) > .overflow-hidden { overflow:clip; }
 @media(min-width:1101px) {
  /* Pulled a bit toward the center so the greetings read as part of the
     hero, framing the heading/CTA instead of hugging the viewport edges. */
- .possibility-person[data-desktop-slot='0'] { left:10.5%; top:31%; width:110px; height:110px; }
- .possibility-person[data-desktop-slot='1'] { right:11.5%; top:19%; width:84px; height:84px; }
+ .possibility-person[data-desktop-slot='0'] { left:13%; top:31%; width:110px; height:110px; }
+ .possibility-person[data-desktop-slot='1'] { right:14%; top:19%; width:84px; height:84px; }
  .possibility-person[data-desktop-slot='2'] { left:23.5%; top:71%; width:78px; height:78px; }
  .possibility-person[data-desktop-slot='3'] { right:17.5%; top:63%; width:116px; height:116px; }
 }
 @media(min-width:701px) and (max-width:1100px) {
  /* Narrower hero: same inward pull, scaled down so bubbles still clear
     the heading/CTA instead of crowding them. */
- .possibility-person[data-desktop-slot='0'] { left:5.5%; top:23%; width:84px; height:84px; }
- .possibility-person[data-desktop-slot='1'] { right:6.5%; top:16%; width:70px; height:70px; }
+ .possibility-person[data-desktop-slot='0'] { left:7%; top:23%; width:84px; height:84px; }
+ .possibility-person[data-desktop-slot='1'] { right:8%; top:16%; width:70px; height:70px; }
  .possibility-person[data-desktop-slot='2'] { left:18%; top:75%; width:68px; height:68px; }
  .possibility-person[data-desktop-slot='3'] { right:12%; top:67%; width:94px; height:94px; }
 }
