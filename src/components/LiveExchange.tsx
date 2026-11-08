@@ -378,10 +378,10 @@ export default function LiveExchange() {
           {snapshot?.queue ? (
            <>
             <div className="live-radar" role="status" aria-label={t('liveExchange.searchingLabel')}>
-             <span className="live-radar-ring" /><span className="live-radar-ring" /><span className="live-radar-ring" />
              <span className="live-avatar-hero"><AvatarTile url={myAvatarUrl} name={myName} color={LANG_AVATAR_COLOR[nativeLanguage] ?? '#171717'} /></span>
             </div>
-            <p className="live-finding-text">{t('liveExchange.findingPartnerText')}<span className="live-finding-dots"><span>.</span><span>.</span><span>.</span></span></p>
+            <p className="live-finding-text">{t('liveExchange.findingPartnerText')}</p>
+            <span className="live-finding-dots" role="status"><span aria-hidden="true" /><span aria-hidden="true" /><span aria-hidden="true" /></span>
            </>
           ) : (
            <>

@@ -685,7 +685,7 @@ body:has(.how-story) > .overflow-hidden { overflow:clip; }
    app's usual white pill (which the form pickers elsewhere still use). */
 .study-header-controls .locale-switcher .lang-picker-trigger {
   gap:7px; padding:7px 6px; min-height:34px; border:0; border-radius:9px;
-  background:transparent; box-shadow:none; color:#294d47; font-size:12px; font-weight:600; opacity:.76;
+  background:transparent; box-shadow:none; color:#1c1e1a; font-size:12px; font-weight:600; opacity:.76;
   transition:opacity 160ms ease-out, background-color 160ms ease-out;
 }
 .study-header-controls .locale-switcher .lang-picker-trigger:hover,
@@ -721,16 +721,16 @@ body:has(.how-story) > .overflow-hidden { overflow:clip; }
 
 /* Quiet time control alongside the wordmark, with an intentional menu. */
 .study-brand-time { display:flex; align-items:center; gap:18px; }
-.sky-time-picker { position:relative; color:#294d47; }
+.sky-time-picker { position:relative; color:#1c1e1a; }
 .sky-time-trigger { display:flex; align-items:center; gap:7px; padding:7px 6px; min-height:34px; border:0; border-radius:9px; background:transparent; color:inherit; font:inherit; font-size:12px; cursor:pointer; opacity:.76; }
 .sky-time-trigger:hover,.sky-time-trigger[aria-expanded='true'] { opacity:1; background:#ffffff12; }
 .sky-time-trigger:focus-visible { outline:2px solid #7394b5; outline-offset:3px; opacity:1; }
-.sky-time-menu { position:absolute; top:calc(100% + 10px); left:0; width:174px; padding:6px; border:1px solid #ffffff50; border-radius:15px; background:#f8faf1e6; color:#28483f; box-shadow:0 8px 28px #183b3512; backdrop-filter:blur(18px); z-index:60; }
+.sky-time-menu { position:absolute; top:calc(100% + 10px); left:0; width:174px; padding:6px; border:1px solid #ffffff50; border-radius:15px; background:#f8f8f5e6; color:#1c1e1a; box-shadow:0 8px 28px #18223512; backdrop-filter:blur(18px); z-index:60; }
 .sky-time-menu button { display:flex; align-items:center; gap:11px; width:100%; min-height:39px; padding:9px 11px; border:0; border-radius:9px; background:none; color:inherit; font:inherit; font-size:12px; text-align:left; cursor:pointer; }
 .sky-time-menu button span { flex:1; }
-.sky-time-menu button[aria-checked='true'] { background:#547d6b12; font-weight:700; }
-.sky-time-menu button:hover { background:#547d6b1a; }
-.sky-time-menu button:focus-visible { outline:1px solid #819f94; outline-offset:-1px; background:#547d6b12; }
+.sky-time-menu button[aria-checked='true'] { background:#00000010; font-weight:700; }
+.sky-time-menu button:hover { background:#0000001a; }
+.sky-time-menu button:focus-visible { outline:1px solid #9a9a9a; outline-offset:-1px; background:#00000010; }
 .sky-study[data-hero-tone='night'] .sky-time-picker { color:#edeedf; }
 .sky-study[data-hero-tone='night'] .sky-time-menu { background:#203740ed; border-color:#ffffff15; color:#e9efe6; box-shadow:0 8px 28px #00000020; }
 .sky-study[data-hero-tone='night'] .sky-time-menu button[aria-checked='true'],.sky-study[data-hero-tone='night'] .sky-time-menu button:hover { background:#ffffff0d; }
