@@ -22,7 +22,10 @@ export function voiceInstructions(s: VoiceSession, practiceHistory: readonly str
 export function providerSession(kind: 'ai' | 'transcription', s: VoiceSession, practiceHistory: readonly string[] = []) {
  const transcription={model:process.env.OPENAI_TRANSCRIPTION_MODEL||'gpt-4o-mini-transcribe'};
  if(kind==='transcription'){const model=process.env.OPENAI_LIVE_TRANSCRIPTION_MODEL||'gpt-4o-mini-transcribe';return {type:'transcription',audio:{input:{transcription:{model},turn_detection:model==='gpt-live-transcribe'?null:{type:'server_vad',threshold:0.5,prefix_padding_ms:300,silence_duration_ms:700}}}};}
- return {type:'realtime',model:process.env.OPENAI_REALTIME_MODEL||'gpt-realtime-2.1',instructions:voiceInstructions(s,practiceHistory),audio:{input:{transcription,turn_detection:{type:'server_vad',create_response:true,interrupt_response:true}},output:{voice:'marin'}}};
+ // A new session gets a new draw, while reconnects keep the same voice.
+ const voices = ['marin', 'cedar'] as const;
+ const voiceIndex = createHash('sha256').update(s.id).digest()[0] % voices.length;
+ return {type:'realtime',model:process.env.OPENAI_REALTIME_MODEL||'gpt-realtime-2.1',instructions:voiceInstructions(s,practiceHistory),audio:{input:{transcription,turn_detection:{type:'server_vad',create_response:true,interrupt_response:true}},output:{voice:voices[voiceIndex]}}};
 }
 export function providerHeaders(userId:string){return {Authorization:`Bearer ${process.env.OPENAI_API_KEY}`,'OpenAI-Safety-Identifier':createHash('sha256').update(userId).digest('hex')};}
 export async function hangupProvider(callId:string){
