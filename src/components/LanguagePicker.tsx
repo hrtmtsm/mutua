@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { LANGUAGES, type Language } from '@/lib/types';
 import { LANG_FLAG_CODE, LANG_NATIVE_NAME } from '@/lib/constants';
 import './liveExchange.css';
@@ -17,12 +17,15 @@ const ORDERED_LANGUAGES: Language[] = [
   ...LANGUAGES.filter(language => !MAJOR_ORDER.includes(language)),
 ];
 
-export default function LanguagePicker({ value, onChange, placeholder, disabled }: {
+export default function LanguagePicker({ value, onChange, placeholder, label, disabled }: {
   value: Language | '';
   onChange: (value: Language) => void;
   placeholder: string;
+  label?: string;
   disabled?: boolean;
 }) {
+  const id = useId();
+  const selectedName = value ? LANG_NATIVE_NAME[value] || value : '';
   const [open, setOpen] = useState(false);
   const [placement, setPlacement] = useState<'below' | 'above'>('below');
   const rootRef = useRef<HTMLDivElement>(null);
@@ -54,10 +57,13 @@ export default function LanguagePicker({ value, onChange, placeholder, disabled 
 
   return (
     <div className="lang-picker" ref={rootRef}>
+      {label && <label className="lang-picker-label" htmlFor={id}>{label}</label>}
       <button
+        id={label ? id : undefined}
         type="button"
         className="live-select lang-picker-trigger"
         disabled={disabled}
+        aria-label={label && selectedName ? `${label}: ${selectedName}` : undefined}
         aria-haspopup="listbox"
         aria-expanded={open}
         onClick={toggleOpen}
@@ -65,7 +71,7 @@ export default function LanguagePicker({ value, onChange, placeholder, disabled 
         {value ? (
           <>
             <span className={`fi fi-${LANG_FLAG_CODE[value]} lang-picker-flag`} aria-hidden="true" />
-            {LANG_NATIVE_NAME[value] || value}
+            {selectedName}
           </>
         ) : (
           <span className="lang-picker-placeholder">{placeholder}</span>

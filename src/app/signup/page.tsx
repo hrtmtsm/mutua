@@ -1,5 +1,7 @@
 'use client';
 
+import { SignupPrivacyNotice } from '@/components/PrivacyNotice';
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -100,6 +102,7 @@ export default function SignupPage() {
                   </button>
                 </div>
                 {error && <p className="text-xs text-red-500">{error}</p>}
+                <SignupPrivacyNotice />
                 <button
                   type="submit"
                   disabled={submitting}

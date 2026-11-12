@@ -18,6 +18,7 @@ interface BanInfo {
 export default function BanGate({ children }: { children: React.ReactNode }) {
   const { t } = useLocale();
   const pathname = usePathname();
+  const isPrivacyPage = pathname === '/privacy';
   const [ban,      setBan]      = useState<BanInfo | null>(null);
   const [checked,  setChecked]  = useState(false);
   const [claiming, setClaiming] = useState(false);
@@ -26,6 +27,7 @@ export default function BanGate({ children }: { children: React.ReactNode }) {
   const [showForm, setShowForm] = useState(false);
 
   useEffect(() => {
+    if (isPrivacyPage) return;
     if (isExempt(pathname)) { setChecked(true); return; }
 
     async function check() {
@@ -45,7 +47,7 @@ export default function BanGate({ children }: { children: React.ReactNode }) {
       setChecked(true);
     }
     check();
-  }, [pathname]);
+  }, [pathname, isPrivacyPage]);
 
   const handleClaim = async () => {
     setClaiming(true);
@@ -64,6 +66,8 @@ export default function BanGate({ children }: { children: React.ReactNode }) {
     setClaimed(true);
     setShowForm(false);
   };
+
+  if (isPrivacyPage) return <>{children}</>;
 
   // Don't flash content before check
   if (!checked) return null;

@@ -1,8 +1,41 @@
 import {NextResponse} from 'next/server';
 import {requireAuth} from '@/lib/presenceAuth';
+import type {VoiceSession} from '@/lib/practice';
 import {liveConfigurationError} from '@/lib/releaseConfig';
 import {providerHeaders,providerSession,hangupProvider} from '@/lib/voiceProvider';
 export const maxDuration=30;
+
+async function recentPracticeUtterances(
+ db: Extract<Awaited<ReturnType<typeof requireAuth>>, { ok: true }>['rpcDb'],
+ userId: string,
+ session: VoiceSession,
+) {
+ const { data, error } = await db.from('voice_utterances')
+  .select('body,voice_sessions!inner(user_a,learning_language_a,learning_language_b)')
+  .eq('speaker_id', userId)
+  .eq('speaker_role', 'human')
+  .eq('final', true)
+  .eq('voice_sessions.status', 'ended')
+  .not('voice_sessions.consent_version', 'is', null)
+  .neq('session_id', session.id)
+  .order('created_at', { ascending: false })
+  .limit(60)
+  .returns<{ body: string; voice_sessions: Pick<VoiceSession, 'user_a' | 'learning_language_a' | 'learning_language_b'> }[]>();
+ if (error) throw Error('practice_history_unavailable');
+
+ const utterances = new Set<string>();
+ for (const row of data ?? []) {
+  const prior = row.voice_sessions;
+  const learning = prior.user_a === userId ? prior.learning_language_a : prior.learning_language_b;
+  const body = row.body.trim().slice(0, 180);
+  if (learning === session.learning_language_a && body) utterances.add(body);
+ }
+ const cues = /what (does|do you mean)|how (do|would) you say|could you repeat|say that again|i meant|どういう意味|もう一度|なんて言|言いたかった|무슨 뜻|다시 말|뭐라고|qué significa|comment (dit|dire)/i;
+ const examples = [...utterances];
+ const signals = examples.filter(text => cues.test(text));
+ const other = examples.filter(text => !cues.test(text));
+ return [...signals, ...other].slice(0, 8);
+}
 export async function POST(request:Request){
  const issue=liveConfigurationError();if(issue)return NextResponse.json({error:issue},{status:503});
  const auth=await requireAuth(request);if(!auth.ok)return NextResponse.json({error:auth.error},{status:auth.status});
@@ -25,7 +58,10 @@ export async function POST(request:Request){
  if(prior.data)return NextResponse.json({error:'別のタブで音声処理が接続中です。元のタブで終了してください。'},{status:409});
  let providerId:string|undefined;
  try{
-  const form=new FormData();form.set('sdp',body.sdp);form.set('session',JSON.stringify(providerSession(body.kind,s)));
+  const practiceHistory = body.kind === 'ai' && body.usePracticeHistory === true
+   ? await recentPracticeUtterances(auth.rpcDb, auth.userId, s)
+   : [];
+  const form=new FormData();form.set('sdp',body.sdp);form.set('session',JSON.stringify(providerSession(body.kind,s,practiceHistory)));
   const upstream=await fetch('https://api.openai.com/v1/realtime/calls',{method:'POST',headers:providerHeaders(auth.userId),body:form,signal:AbortSignal.timeout(20000)});
   if(!upstream.ok)throw Error([401,403].includes(upstream.status)?'provider_auth_failed':upstream.status===429?'provider_capacity':'provider_connection_failed');
   const location=upstream.headers.get('location');providerId=location?.split('/').pop();if(!providerId)throw Error('provider_session_missing');
@@ -39,6 +75,6 @@ export async function POST(request:Request){
   if(providerId)await hangupProvider(providerId);
   if(!(error instanceof Error&&error.message==='provider_duplicate'))await auth.rpcDb.rpc('practice_action',{p_action:body.kind==='ai'?'end':'transcript_status',p_data:body.kind==='ai'?{sessionId:s.id,reason:'provider_failure'}:{sessionId:s.id,status:'partial'}});
   const code=error instanceof Error?error.message:'provider_connection_failed';
-  return NextResponse.json({error:code==='provider_auth_failed'?'AIサービスの認証に失敗しました。接続設定を確認してください。':'AIサービスに接続できませんでした。会話ログはそのまま閲覧できます。',code},{status:502});
+  return NextResponse.json({error:code==='practice_history_unavailable'?'過去ログを読み込めませんでした。ログの利用をオフにして練習することもできます。':code==='provider_auth_failed'?'AIサービスの認証に失敗しました。接続設定を確認してください。':'AIサービスに接続できませんでした。会話ログはそのまま閲覧できます。',code},{status:502});
  }
 }

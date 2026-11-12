@@ -4,6 +4,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Component, useEffect, useRef, useState, type ReactNode, lazy, Suspense } from 'react';
 import * as THREE from 'three';
 const MeadowField = lazy(() => import('./MeadowField'));
+export type ScrollProgress = number | { readonly current: number };
 import type { Palette } from './palette';
 
 // Local CC0 images. Replace paths here; attribution lives in public/clouds/ATTRIBUTION.md.
@@ -17,7 +18,7 @@ const PLACEMENTS = [
   { x:.49, y:.01, w:.35, speed:-.002, opacity:.5, depth:0, asset:3 },
   { x:-.69, y:.02, w:.38, speed:.002, opacity:.6, depth:1, asset:4 },
 ];
-function Clouds({ palette, progress, reduced, mobile, onFailure }: { palette: Palette; progress: number; reduced: boolean; mobile: boolean; onFailure:()=>void }) {
+function Clouds({ palette, progress, reduced, mobile, onFailure }: { palette: Palette; progress: ScrollProgress; reduced: boolean; mobile: boolean; onFailure:()=>void }) {
   const viewport = useThree(state => state.viewport);
   const invalidate = useThree(state => state.invalidate);
   const [textures, setTextures] = useState<THREE.Texture[]>([]);
@@ -47,12 +48,13 @@ function Clouds({ palette, progress, reduced, mobile, onFailure }: { palette: Pa
     const dt = Math.min(delta,.05);
     if (!reduced) time.current += dt;
     color.current.lerp(target.current, reduced ? 1 : 1 - Math.exp(-dt * 3));
+    const scroll = typeof progress === 'number' ? progress : progress.current;
     placements.forEach((placement, i) => {
       const mesh = refs.current[i]; if (!mesh) return;
       // Full-width wrap takes several minutes; keep the central copy clear.
       const x = ((placement.x + time.current * placement.speed * .35 + 1.5) % 3 + 3) % 3 - 1.5;
       mesh.position.x = x * viewport.width;
-      mesh.position.y = placement.y * viewport.height + progress * viewport.height * (.06 + placement.depth * .055);
+      mesh.position.y = placement.y * viewport.height + scroll * viewport.height * (.06 + placement.depth * .055);
       const material = mesh.material as THREE.MeshBasicMaterial;
       material.color.copy(color.current);
       const centralFade = THREE.MathUtils.smoothstep(Math.abs(x), .16, .40);
@@ -85,7 +87,17 @@ class CanvasBoundary extends Component<{ children: ReactNode; onFailure:()=>void
   componentDidCatch() { this.props.onFailure(); }
   render() { return this.state.failed ? null : this.props.children; }
 }
-export default function SkyCanvas({ palette, progress, reduced, mobile, paused, onFailure, grassStill, hour=12, showMeadow = true, onSceneReady }: { grassStill:boolean; hour?:number; palette:Palette; progress:number; reduced:boolean; mobile:boolean; paused:boolean; onFailure:()=>void; showMeadow?: boolean; onSceneReady?:()=>void }) {
+function ScrollInvalidation({ active }: { active: boolean }) {
+  const invalidate = useThree(state => state.invalidate);
+  useEffect(() => {
+    if (!active) return;
+    const onScroll = () => invalidate();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [active, invalidate]);
+  return null;
+}
+export default function SkyCanvas({ palette, progress, reduced, mobile, paused, onFailure, grassStill, hour=12, showMeadow = true, onSceneReady }: { grassStill:boolean; hour?:number; palette:Palette; progress:ScrollProgress; reduced:boolean; mobile:boolean; paused:boolean; onFailure:()=>void; showMeadow?: boolean; onSceneReady?:()=>void }) {
   return <CanvasBoundary onFailure={onFailure}><Canvas
     aria-hidden="true" orthographic camera={{ position:[0,0,10], zoom:100, near:.1, far:30 }}
     dpr={mobile ? 1 : [1,1.5]} frameloop={paused || reduced ? 'demand' : 'always'}
@@ -94,7 +106,8 @@ export default function SkyCanvas({ palette, progress, reduced, mobile, paused, 
     onCreated={({ gl }) => { gl.setClearColor(0,0); onSceneReady?.(); }}
     style={{ pointerEvents:'none' }}>
       <ContextLossGuard onFailure={onFailure}/>
-      {showMeadow && progress>.08 && <Suspense fallback={null}><MeadowField palette={palette} progress={progress} reduced={reduced||paused||progress<.5} mobile={mobile} still={grassStill}/></Suspense>}
+      <ScrollInvalidation active={typeof progress !== 'number' && reduced && !paused}/>
+      {showMeadow && <Suspense fallback={null}><MeadowField palette={palette} progress={progress} reduced={reduced||paused} mobile={mobile} still={grassStill}/></Suspense>}
       <Clouds palette={palette} progress={progress} reduced={reduced} mobile={mobile} onFailure={onFailure} />
   </Canvas></CanvasBoundary>;
 }

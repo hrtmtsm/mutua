@@ -1,5 +1,7 @@
 'use client';
 
+import { SignupPrivacyNotice } from '@/components/PrivacyNotice';
+
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { type Language } from '@/lib/types';
@@ -206,7 +208,7 @@ export default function SetupModal({ open, onClose, onComplete, initialNative, i
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 bg-[#173e34]/55 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 bg-black/40">
       <div className="live-modal-card w-full max-w-sm rounded-2xl shadow-2xl p-6 relative">
         <button
           onClick={resetAndClose}
@@ -277,6 +279,7 @@ export default function SetupModal({ open, onClose, onComplete, initialNative, i
                   className="live-modal-input disabled:opacity-50"
                 />
                 {error && <p className="text-xs text-red-600">{error}</p>}
+                <SignupPrivacyNotice />
                 <button
                   type="submit" disabled={stage === 'saving'}
                   className="w-full live-button justify-center text-sm"

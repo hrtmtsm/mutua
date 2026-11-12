@@ -13,11 +13,12 @@ import AIPractice from './AIPractice';
 import {practiceAction} from '@/lib/practice';
 import {usePracticeAudio} from '@/hooks/usePracticeAudio';
 import SetupModal from './SetupModal';
+import { PrivacyLink } from './PrivacyNotice';
 import { initialsFor, isRealPhoto } from '@/lib/glyphAvatars';
 import { LANG_AVATAR_COLOR, LANG_FLAG_CODE } from '@/lib/constants';
 import { LANGUAGES, type Language } from '@/lib/types';
 import LanguagePicker from './LanguagePicker';
-import { Mic, MicOff, PhoneOff, SkipForward, X } from 'lucide-react';
+import { Mic, MicOff, Phone, PhoneOff, SkipForward } from 'lucide-react';
 import { useLocale } from './LocaleProvider';
 import './liveExchange.css';
 
@@ -48,7 +49,7 @@ export default function LiveExchange() {
  const [error, setError] = useState('');
  const [busy, setBusy] = useState(false);
  const [sending, setSending] = useState(false);
- const [transcriptionConsent,setTranscriptionConsent]=useState(false);
+ const [transcriptionConsentFor, setTranscriptionConsentFor] = useState<string | null>(null);
  const connectedCall=useRef('');
  const [muted, setMuted] = useState(false);
  const [audioBlocked, setAudioBlocked] = useState(false);
@@ -231,7 +232,10 @@ export default function LiveExchange() {
   // nativeLanguage/learningLanguage state here — the setState calls above
   // haven't committed yet within this same effect, so the state would
   // still read as whatever it was before this effect ran.
-  if (hasStart) void startWith(
+  // Only auto-join when there's still a signup step to show first — an
+  // already-set-up visitor lands on the normal Start screen instead of
+  // being dropped straight into a call.
+  if (hasStart && !(user && profileReady)) void startWith(
    requestedNative && (LANGUAGES as readonly string[]).includes(requestedNative) ? requestedNative as Language : null,
    requestedLearning && (LANGUAGES as readonly string[]).includes(requestedLearning) ? requestedLearning as Language : null,
   );
@@ -296,6 +300,16 @@ export default function LiveExchange() {
   finally { setSending(false); }
  };
  const actionData = { conversationId: conversation?.id, callId: snapshot?.call?.id };
+ const incomingInvite = snapshot?.call?.status === 'ringing' && snapshot.call.from_user !== user?.id;
+ const canInvite = !snapshot?.call || ['expired', 'declined', 'cancelled', 'ended'].includes(snapshot.call.status);
+ const consentKey = incomingInvite
+  ? snapshot.call?.id
+  : conversation && `${conversation.id}:${snapshot?.call?.id ?? 'first'}:${snapshot?.call?.status ?? 'idle'}`;
+ const transcriptionConsent = !!consentKey && transcriptionConsentFor === consentKey;
+ const respondToCall = (action: 'invite' | 'accept' | 'decline') => {
+  setTranscriptionConsentFor(null);
+  void perform(action, action === 'decline' ? actionData : { ...actionData, transcriptionConsent });
+ };
  return <div className={liveFont.variable}>
   <AppShell>
   <main className="flex-1 flex flex-col min-h-[640px] md:min-h-[calc(100vh-56px)]">
@@ -322,15 +336,33 @@ export default function LiveExchange() {
        </div>
        <section className="live-card live-call-controls">
         <p className="live-pill-status">{partner?.nativeLanguage} → {partner?.learningLanguage}</p>
-        {!call && snapshot?.call?.status !== 'ringing' && (!snapshot?.call || ['expired','declined','cancelled','ended'].includes(snapshot.call.status)) && (
-         <button disabled={busy} onClick={() => perform('invite', {...actionData,transcriptionConsent})} className="live-button">📞 {t('app.startCall')}</button>
+        {(canInvite || incomingInvite) && (
+         <div className="mt-2 max-w-md space-y-1 text-center">
+          <label className="inline-flex items-center gap-2 text-sm font-medium">
+           <input
+            type="checkbox"
+            checked={transcriptionConsent}
+            disabled={busy}
+            aria-describedby="call-transcription-summary"
+            onChange={e => setTranscriptionConsentFor(e.target.checked ? consentKey ?? null : null)}
+           />
+           {t('privacy.transcriptionOption')}
+          </label>
+          <p id="call-transcription-summary" className="live-note text-pretty">
+           {t('privacy.transcriptionSummary')}{' '}
+           <PrivacyLink section="call-transcription" label="privacy.details" />
+          </p>
+         </div>
+        )}
+        {canInvite && (
+         <button disabled={busy} onClick={() => respondToCall('invite')} className="live-button">📞 {t('app.startCall')}</button>
         )}
         {snapshot?.call?.status==='accepted'&&!call&&<button className="live-button" onClick={()=>setMediaCallId(snapshot.call!.id)}>{t('liveExchange.joinCallThisTab')}</button>}
         {snapshot?.call?.status === 'ringing' && <>
          <p role="status" className="live-pill-status">{snapshot.call.from_user === user?.id ? t('app.waitingForAnswer') : t('app.callInvite')}</p>
          {snapshot.call.from_user === user?.id
           ? <button disabled={busy} onClick={() => perform('cancel_invite', actionData)} className="live-button-ghost">{t('app.cancelInvite')}</button>
-          : <div className="flex gap-2"><button disabled={busy} onClick={() => perform('accept', {...actionData,transcriptionConsent})} className="live-button">{t('app.accept')}</button><button disabled={busy} onClick={() => perform('decline', actionData)} className="live-button-ghost">{t('app.decline')}</button></div>}
+          : <div className="flex gap-2"><button disabled={busy} onClick={() => respondToCall('accept')} className="live-button">{t('app.accept')}</button><button disabled={busy} onClick={() => respondToCall('decline')} className="live-button-ghost">{t('app.decline')}</button></div>}
         </>}
         {call && <>
          <p role="status" className="live-pill-status">{rtc.state === 'connected' ? t('app.callConnected') : rtc.state === 'failed' ? t('app.callFailed') : t('app.callConnecting')}</p>
@@ -339,9 +371,14 @@ export default function LiveExchange() {
           <button disabled={busy} aria-label={t('app.endCall')} title={t('app.endCall')} onClick={endVoice} className="live-icon-btn live-icon-btn-danger"><PhoneOff className="w-5 h-5" /></button>
          </div>
         </>}
-        {call&&snapshot?.voice?.consent_version&&<p className="text-sm mt-2" data-testid="transcription-status" data-status={transcription.status} data-events={transcription.diagnostics.events} data-sent-bytes={transcription.diagnostics.sentBytes} data-commits={transcription.diagnostics.commits}>{t('liveExchange.transcriptionLogPrefix')} {transcription.status==='connected'?t('liveExchange.transcriptionConnected'):transcription.status==='ended'?t('liveExchange.transcriptionEnded'):t('liveExchange.transcriptionPreparing')}</p>}
+        {call && snapshot?.voice?.consent_version && (
+         <p role="status" className="live-pill-status" data-testid="transcription-status" data-status={transcription.status} data-events={transcription.diagnostics.events} data-sent-bytes={transcription.diagnostics.sentBytes} data-commits={transcription.diagnostics.commits}>
+          {transcription.status === 'connected'
+           ? t('privacy.transcribing')
+           : !transcription.error && <>{t('liveExchange.transcriptionLogPrefix')} {transcription.status === 'ended' ? t('liveExchange.transcriptionEnded') : t('liveExchange.transcriptionPreparing')}</>}
+         </p>
+        )}
         {transcription.error&&<p role="alert" className="text-sm">{transcription.error}</p>}
-        {!call&&<label className="text-sm flex gap-2 items-start mt-3"><input type="checkbox" checked={transcriptionConsent} onChange={e=>setTranscriptionConsent(e.target.checked)}/><span>{t('liveExchange.transcriptionConsentLabel')} {t('aiPractice.voiceConsentText')}</span></label>}
         {snapshot?.voice&&<Link className="underline text-sm mt-3" href={`/calls/${snapshot.voice.id}`}>{t('liveExchange.callLogAiLink')}</Link>}
         {!call && snapshot?.call && ['expired','declined','cancelled','ended'].includes(snapshot.call.status) && <p role="status" className="live-pill-status">{({ expired:t('app.callExpired'), declined:t('app.callDeclined'), cancelled:t('app.callCancelled'), ended: snapshot.call.ended_reason === 'media_failure' ? t('app.callEndedMediaFailure') : t('app.callEnded') } as Record<string,string>)[snapshot.call.status]}</p>}
         {audioBlocked && <button onClick={() => audioRef.current?.play().then(() => setAudioBlocked(false)).catch(() => setError(t('liveExchange.audioPlayFailed')))} className="live-button-ghost">{t('app.playRemoteAudio')}</button>}
@@ -398,17 +435,16 @@ export default function LiveExchange() {
        </div>
        {!snapshot?.queue && (
         <div className="live-start-row">
-         <button disabled={busy || !authLoaded} onClick={handleStart} className="live-button live-start-button">▶ {t('app.start')}</button>
+         <button disabled={busy || !authLoaded} onClick={handleStart} className="live-button live-start-button"><Phone className="w-4 h-4" /> {t('app.startCall')}</button>
          {user && profileReady && (
           <div className="live-conditions" role="group" aria-label={t('liveExchange.conditionsLabel')}>
-           <LanguagePicker value={nativeLanguage} onChange={setNativeLanguage} placeholder={t('app.nativePlaceholder')} disabled={busy} />
-           <LanguagePicker value={learningLanguage} onChange={setLearningLanguage} placeholder={t('app.learningPlaceholder')} disabled={busy} />
+           <LanguagePicker value={nativeLanguage} onChange={setNativeLanguage} placeholder={t('app.nativePlaceholder')} label={t('setup.nativePlaceholder')} disabled={busy} />
+           <LanguagePicker value={learningLanguage} onChange={setLearningLanguage} placeholder={t('app.learningPlaceholder')} label={t('setup.learningPlaceholder')} disabled={busy} />
           </div>
          )}
          {expired && user && <button onClick={() => { setAiStage('practice'); setShowAiPrompt(true); }} className="live-button-ghost">🤖 {t('liveExchange.practiceWithAi')}</button>}
         </div>
        )}
-       <p className="live-note text-center mt-3">{t('app.footnote')} <Link href="/profile">{t('app.profileLink')}</Link></p>
       </>
      )}
     </div>
@@ -417,8 +453,9 @@ export default function LiveExchange() {
      <button disabled={busy} aria-label={t('liveExchange.leaveLabel')} title={t('liveExchange.leaveLabel')} onClick={handleStop} className="live-icon-btn live-icon-btn-danger"><PhoneOff className="w-5 h-5" /></button>
     </div>}
     {!active && snapshot?.queue && <div className="live-control-bar">
-     <button disabled={busy} aria-label={t('liveExchange.cancelLabel')} title={t('liveExchange.cancelLabel')} onClick={handleStop} className="live-icon-btn live-icon-btn-danger"><X className="w-5 h-5" /></button>
+     <button disabled={busy} onClick={handleStop} className="live-button live-start-button live-button-danger"><PhoneOff className="w-4 h-4" aria-hidden="true" /> {t('app.endCall')}</button>
     </div>}
+    <p className="live-note shrink-0 text-center mt-3">{t('app.footnote')} <Link href="/profile">{t('app.profileLink')}</Link></p>
     </div>
    </div>
   </main>
@@ -430,7 +467,7 @@ export default function LiveExchange() {
    supabase.auth.getSession().then(({data}) => { setUser(data.session?.user ?? null); if (data.session?.user) loadProfile(data.session.user); });
   }} initialNative={nativeLanguage || undefined} initialLearning={learningLanguage || undefined} />
   {showAiPrompt && user && (
-   <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 bg-[#173e34]/55 backdrop-blur-sm">
+   <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 bg-black/40">
     {aiStage === 'ask' ? (
      <div className="live-modal-card w-full max-w-sm rounded-2xl shadow-2xl p-6 relative text-center space-y-4">
       <button onClick={() => setShowAiPrompt(false)} aria-label={t('setup.close')} className="absolute top-3 right-3 opacity-60 hover:opacity-100 text-sm w-7 h-7 flex items-center justify-center">✕</button>

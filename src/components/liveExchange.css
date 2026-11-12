@@ -156,7 +156,7 @@
 
 /* Below the preview: an explicit Start button plus the matching conditions —
    nothing begins until this is pressed. */
-.live-start-row { position: relative; z-index: 10; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 16px; margin-top: 10px; }
+.live-start-row { position: relative; z-index: 10; display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: center; gap: 16px; margin-top: 10px; }
 .live-start-button { flex: 0 0 auto; min-width: 180px; }
 .live-conditions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .live-select {
@@ -177,7 +177,7 @@
 :root[data-theme='night'] .live-select:hover:not(:disabled) { opacity: 1; }
 .live-select:hover:not(:disabled) { filter: brightness(1.03); }
 @media (max-width: 500px) {
-  .live-start-row { flex-direction: column; }
+  .live-start-row { flex-direction: column; align-items: center; }
   .live-start-button { width: 100%; }
   .live-conditions { width: 100%; justify-content: center; }
 }
@@ -198,6 +198,7 @@
   cursor: pointer;
   transition: filter 140ms ease-out;
 }
+.live-button-danger { background: #a94639; color: #fff; }
 .live-button:hover:not(:disabled) { filter: brightness(1.06); }
 .live-button:active:not(:disabled) { filter: brightness(.96); }
 .live-button:disabled { opacity: .5; cursor: not-allowed; }
@@ -264,6 +265,7 @@
 
 /* LanguagePicker — flag + native-script name, in a small popover grid. */
 .lang-picker { position: relative; }
+.lang-picker-label { display: block; margin-bottom: 4px; color: var(--live-muted); font-size: 12px; font-weight: 600; line-height: 1.3; }
 .lang-picker-trigger { width: 100%; display: flex; align-items: center; gap: 8px; text-align: left; cursor: pointer; }
 .lang-picker-trigger:disabled { opacity: .5; cursor: not-allowed; }
 .lang-picker-caret { margin-left: auto; opacity: .55; font-size: 10px; flex-shrink: 0; }

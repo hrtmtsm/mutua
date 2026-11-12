@@ -19,7 +19,8 @@ export default function LandingExperience({ preview = false }: { preview?: boole
   const [grassStill,setGrassStill] = useState(false);
   const [mode,setMode] = useState<SkyMode>('auto');
   const [hour,setHour] = useState(12);
-  const [progress,setProgress] = useState(0);
+  const progress = useRef(0);
+  const staticMeadow = useRef<HTMLDivElement>(null);
   const [mobile,setMobile] = useState(false);
   const [reduced,setReduced] = useState(false);
   const [hidden,setHidden] = useState(false);
@@ -49,23 +50,31 @@ export default function LandingExperience({ preview = false }: { preview?: boole
     context?.getExtension('WEBGL_lose_context')?.loseContext();
     return ()=>{motion.removeEventListener('change',updateMedia);small.removeEventListener('change',updateMedia);document.removeEventListener('visibilitychange',updateVisibility);};
   },[]);
-  useEffect(()=>{
-    let frame=0, trailing=0, lastUpdate=0;
-    const update=()=>{
-      clearTimeout(trailing);
-      cancelAnimationFrame(frame);
-      frame=requestAnimationFrame(()=>{
-        const max=Math.max(1,(root.current?.scrollHeight??document.documentElement.scrollHeight)-window.innerHeight);
-        const next=Math.max(0,Math.min(1,window.scrollY/max));
-        const now=performance.now();
-        if(now-lastUpdate>=80||next===0||next===1){lastUpdate=now;setProgress(next);}
-        else trailing=window.setTimeout(update,80);
-      });
-    };
-    update();window.addEventListener('scroll',update,{passive:true});window.addEventListener('resize',update);
-    return ()=>{cancelAnimationFrame(frame);clearTimeout(trailing);window.removeEventListener('scroll',update);window.removeEventListener('resize',update);};
-  },[]);
   const live = supported&&!failed&&!staticMode;
+  useEffect(() => {
+    let scrollRange = 1;
+    const update = () => {
+      progress.current = Math.max(0, Math.min(1, window.scrollY / scrollRange));
+      if (staticMeadow.current) {
+        const reveal = Math.max(0, (progress.current - .12) / .88);
+        staticMeadow.current.style.transform = `translateY(${(1 - reveal) * 100}%)`;
+      }
+    };
+    const measure = () => {
+      scrollRange = Math.max(1, (root.current?.scrollHeight ?? document.documentElement.scrollHeight) - window.innerHeight);
+      update();
+    };
+    const observer = new ResizeObserver(measure);
+    if (root.current) observer.observe(root.current);
+    measure();
+    window.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', measure);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('scroll', update);
+      window.removeEventListener('resize', measure);
+    };
+  }, [live]);
   const ctaHref = '/app?start=text';
   const skyStyle={ '--study-top':palette.top,'--study-middle':palette.middle,'--study-horizon':palette.horizon,'--study-ink':palette.ink,'--study-ground':palette.foreground } as CSSProperties;
   return <main ref={root} className={`sky-study ${logoFont.variable}`} style={skyStyle} data-hero-tone={palette.night>.55?'night':'day'} data-mode={mode} data-renderer={live?'webgl':'static'} data-reduced-motion={reduced} data-paused={hidden} data-landscape="meadow">
@@ -74,7 +83,7 @@ export default function LandingExperience({ preview = false }: { preview?: boole
       <div className="study-stars" style={{opacity:palette.stars}}>{Array.from({length:32},(_,i)=><i key={i} style={{left:`${(i*37.71)%100}%`,top:`${(i*17.63)%72}%`,width:i%5===0?2:1,height:i%5===0?2:1}}/>)}</div>
       {live && <SkyCanvas hour={hour} palette={palette} progress={progress} mobile={mobile} reduced={reduced} paused={hidden} onFailure={fail} grassStill={grassStill}/>}
       {!live && <div className="study-static-clouds" style={{opacity:palette.night>.6?.23:.5}}>{[1,2,3,4].map((n,i)=><img key={n} src={`/clouds/cloud-0${n}${mobile?'-mobile':''}.png`} alt="" style={{filter:`brightness(${1-palette.night*.65})`,left:i%2===0?'-20%':'65%',top:`${i*23-8}%`}} />)}</div>}
-      {!live && <StaticMeadow palette={palette} progress={progress}/>}
+      {!live && <StaticMeadow palette={palette} meadowRef={staticMeadow}/>}
     </div>
     <header className="study-header">
       <div className="study-brand-time">

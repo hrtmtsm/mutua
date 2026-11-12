@@ -4,7 +4,7 @@ import {authorizedFetch,practiceAction,type VoiceSession} from '@/lib/practice';
 import {useLocale} from '@/components/LocaleProvider';
 
 /** One provider connection per local participant. Original audio is never persisted. */
-export function usePracticeAudio(session:VoiceSession|null, source:MediaStream|null, muted:boolean){
+export function usePracticeAudio(session:VoiceSession|null, source:MediaStream|null, muted:boolean, usePracticeHistory = false){
  const {t}=useLocale();
  const [diagnostics,setDiagnostics]=useState({events:'',sentBytes:0,commits:0});
  const [status,setStatus]=useState('idle');const [error,setError]=useState('');const [remote,setRemote]=useState<MediaStream|null>(null);
@@ -75,7 +75,7 @@ export function usePracticeAudio(session:VoiceSession|null, source:MediaStream|n
     dc.onopen=()=>{if(kind==='ai')send({type:'response.create'});};
     dc.onclose=()=>{if(!closing&&!cancelled)void fail(t('practiceAudio.processingConnectionLost'));};
     await pc.setLocalDescription(await pc.createOffer());
-    const response=await authorizedFetch('/api/practice/provider',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind,sessionId:id,sdp:pc.localDescription?.sdp}),signal:AbortSignal.timeout(25000)});
+    const response=await authorizedFetch('/api/practice/provider',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind,sessionId:id,sdp:pc.localDescription?.sdp,usePracticeHistory}),signal:AbortSignal.timeout(25000)});
     const answer=await response.json();if(!response.ok)throw Error(answer.error||t('practiceAudio.startFailed'));connectionId=answer.connectionId;
     if(cancelled||closing){await closeProvider();return;}
     await pc.setRemoteDescription({type:'answer',sdp:answer.sdp});
@@ -85,7 +85,7 @@ export function usePracticeAudio(session:VoiceSession|null, source:MediaStream|n
    }catch(e){if(!cancelled)await fail(e instanceof DOMException&&e.name==='NotAllowedError'?t('practiceAudio.micDenied'):e instanceof Error?e.message:t('practiceAudio.connectFailed'));}
   })();
   return ()=>{cancelled=true;void finish();};
- },[id,enabled,source,kind]);
+ },[id,enabled,source,kind,usePracticeHistory]);
  const finish=useCallback(()=>stopRef.current(),[]);
  return {status,error,remote,finish,diagnostics};
 }

@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
+import type { ScrollProgress } from './SkyCanvas';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { Palette } from './palette';
@@ -138,7 +139,8 @@ export function makeGrass(mobile:boolean,heightAt:(x:number,z:number)=>number=me
   geometry.instanceCount=roots.length/3;
   return geometry;
 }
-export default function MeadowField({palette,progress,reduced,mobile,still}:{palette:Palette;progress:number;reduced:boolean;mobile:boolean;still:boolean}) {
+export default function MeadowField({palette,progress,reduced,mobile,still}:{palette:Palette;progress:ScrollProgress;reduced:boolean;mobile:boolean;still:boolean}) {
+  const field = useRef<THREE.Group>(null);
   const canvas=useThree(state=>state.gl.domElement);
   const size=useThree(state=>state.size);
   const invalidate=useThree(state=>state.invalidate);
@@ -166,16 +168,20 @@ export default function MeadowField({palette,progress,reduced,mobile,still}:{pal
     uniforms.hazeColor.value.set(palette.middle).lerp(new THREE.Color(palette.horizon),.26);
     uniforms.lightColor.value.set(palette.cloud);
     uniforms.night.value=palette.night;
-    uniforms.windStrength.value=reduced||still?0:1;
-    const p=Math.max(0,Math.min(1,(progress-.12)/.88));
-    uniforms.reveal.value=(1-p)*1.55;
     invalidate();
-  },[palette,progress,reduced,still,uniforms,invalidate]);
-  useFrame((_,delta)=>{
-    if(!reduced&&!still)uniforms.windTime.value+=Math.min(delta,.05);
+  },[palette,uniforms,invalidate]);
+  useFrame((_, delta) => {
+    const scroll = typeof progress === 'number' ? progress : progress.current;
+    const reveal = Math.max(0, Math.min(1, (scroll - .12) / .88));
+    const moving = !reduced && !still && scroll >= .5;
+    if (field.current) field.current.visible = reveal > 0;
+    uniforms.reveal.value = (1 - reveal) * 1.55;
+    uniforms.windStrength.value = moving ? Math.min(1, (scroll - .5) * 8) : 0;
+    if (moving) uniforms.windTime.value += Math.min(delta, .05);
   });
+  useEffect(() => { invalidate(); }, [progress, reduced, still, invalidate]);
   useEffect(()=>()=>{terrain.dispose();grass.dispose();},[terrain,grass]);
-  return <group>
+  return <group ref={field} visible={false}>
     <mesh geometry={terrain} frustumCulled={false} renderOrder={10}>
       <shaderMaterial uniforms={uniforms} vertexShader={terrainVertex} fragmentShader={terrainFragment} transparent depthWrite side={THREE.DoubleSide}/>
     </mesh>

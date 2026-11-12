@@ -1,5 +1,7 @@
 'use client';
 
+import { SignupPrivacyNotice } from '@/components/PrivacyNotice';
+
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -358,6 +360,7 @@ export default function OnboardingPage() {
                 </button>
               </div>
               {authError && <p className="text-xs text-red-500">{authError}</p>}
+              <SignupPrivacyNotice />
               <p className="text-xs text-stone-400">
                 {t('onboarding.alreadyHaveAccount')}{' '}
                 <a href="/auth/send" className="text-[#2B8FFF] font-semibold">{t('onboarding.signIn')}</a>
