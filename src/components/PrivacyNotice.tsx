@@ -42,7 +42,7 @@ export function SignupPrivacyNotice({
         type="checkbox"
         checked={checked}
         onChange={e => onChange(e.target.checked)}
-        className="mt-0.5 h-3.5 w-3.5 shrink-0 accent-current"
+        className="mt-0.5 h-3.5 w-3.5 shrink-0 accent-[#2b2b2b]"
       />
       <span>
         {t('privacy.agreePrefix')}

@@ -272,6 +272,11 @@
   --live-cream: #ffffff;
   --live-sage: #e8e9ec;
   --live-label: #f7f8f6;
+  /* color-scheme is inherited, so setting it here on the wrapper cascades
+     to every native control inside (checkbox, inputs, scrollbars) without
+     needing a per-element override — it overrides whatever :root's own
+     (global-theme-driven) value was, same as the --live-* tokens above. */
+  color-scheme: light;
 }
 [data-setup-modal-theme='night'] {
   --live-ink: #f2f2f2;
@@ -279,6 +284,7 @@
   --live-cream: #202020;
   --live-sage: #2d2d2d;
   --live-label: #242424;
+  color-scheme: dark;
 }
 [data-setup-modal-theme='night'] :is(.live-select, .live-button-ghost) {
   background: var(--live-sage); color: var(--live-ink); border-color: #393939; box-shadow: none; color-scheme: dark;
@@ -302,7 +308,18 @@
 .live-modal-title { font-family: var(--font-live-logo), 'Figtree', sans-serif; font-weight: 800; letter-spacing: -.02em; }
 .live-modal-tabs { background: var(--live-label); }
 .live-modal-tab { color: var(--live-muted); }
-.live-modal-tab[data-active='true'] { background: var(--live-ink); color: var(--live-cream); }
+/* True neutral gray, not --live-ink/--live-muted (both carry a faint
+   green bias from this palette) — same inverted light/dark pairing,
+   just hue-free. The sky-scoped night variant below (for the landing
+   page) and the plain :root[data-theme='night'] one further down (for
+   SetupModal used outside the sky page, e.g. LiveExchange) both apply;
+   whichever context is active, only one of them has an attribute to match. */
+.live-modal-tab[data-active='true'] { background: #2b2b2b; color: #f5f5f5; }
+[data-setup-modal-theme='night'] .live-modal-tab[data-active='true'] { background: #e8e8e8; color: #202020; }
+/* SignupPrivacyNotice's checkbox — same neutral-gray treatment, set as a
+   direct rule on the checkbox itself (its Tailwind accent-[#2b2b2b] class
+   is the day/default already) so only the night case needs a rule here. */
+[data-setup-modal-theme='night'] .live-modal-card input[type='checkbox'] { accent-color: #e8e8e8; }
 .live-modal-input {
   width: 100%; padding: 10px 14px; border-radius: 10px; border: 1px solid #e7e9e5;
   background: var(--live-label); color: var(--live-ink); font-size: 14px;
@@ -311,6 +328,16 @@
 /* Must come after the rule above (equal specificity, later wins) to beat
    it when the sky is daytime but the app's own global theme is night. */
 [data-setup-modal-theme='day'] .live-modal-card .live-modal-input { border-color: #e7e9e5; }
+:root[data-theme='night'] .live-modal-tab[data-active='true'] { background: #e8e8e8; color: #202020; }
+/* Same specificity as the rule above (4 class-level selectors each) —
+   must come after it to win when the sky is daytime but the global
+   theme is night. */
+[data-setup-modal-theme='day'] .live-modal-card .live-modal-tab[data-active='true'] { background: #2b2b2b; color: #f5f5f5; }
+:root[data-theme='night'] .live-modal-card input[type='checkbox'] { accent-color: #e8e8e8; }
+/* Same specificity as the rule above (4 class-level selectors each) —
+   must come after it to win when the sky is daytime but the global
+   theme is night. */
+[data-setup-modal-theme='day'] .live-modal-card .space-y-5 input[type='checkbox'] { accent-color: #2b2b2b; }
 .live-modal-input::placeholder { color: var(--live-muted); opacity: .75; }
 .live-modal-input:focus { outline: none; border-color: var(--live-muted); }
 
