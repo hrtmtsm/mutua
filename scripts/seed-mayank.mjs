@@ -3,13 +3,13 @@
  * Run: node scripts/seed-mayank.mjs
  */
 
+import { readFileSync } from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL     = 'https://jrdnhjzvmyuslziodhpm.supabase.co';
-const SERVICE_ROLE_KEY = 'REDACTED_SUPABASE_SERVICE_ROLE_KEY';
-const TARGET_EMAIL     = 'hrtmtsh@gmail.com';
+const env = Object.fromEntries(readFileSync(new URL('../.env.local', import.meta.url), 'utf8').trim().split('\n').map(line => { const i = line.indexOf('='); return [line.slice(0, i), line.slice(i + 1)]; }));
+const TARGET_EMAIL = 'hrtmtsh@gmail.com';
 
-const db = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
+const db = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
