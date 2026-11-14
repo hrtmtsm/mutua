@@ -130,6 +130,7 @@ export default function OnboardingPage() {
   const [email,              setEmail]             = useState('');
   const [password,           setPassword]          = useState('');
   const [showPassword,       setShowPassword]      = useState(false);
+  const [agreed,             setAgreed]            = useState(false);
 
   const canAdvance =
     (step === 1 && native !== null) ||
@@ -137,7 +138,7 @@ export default function OnboardingPage() {
     (step === 3 && goal !== null) ||
     (step === 4 && commStyle !== null) ||
     (step === 5 && practiceFrequency !== null) ||
-    (step === 6 && name.trim().length >= 1 && /\S+@\S+\.\S+/.test(email) && password.length >= 8);
+    (step === 6 && name.trim().length >= 1 && /\S+@\S+\.\S+/.test(email) && password.length >= 8 && agreed);
 
   const handleNext = async () => {
     if (step < 6) {
@@ -360,7 +361,7 @@ export default function OnboardingPage() {
                 </button>
               </div>
               {authError && <p className="text-xs text-red-500">{authError}</p>}
-              <SignupPrivacyNotice />
+              <SignupPrivacyNotice checked={agreed} onChange={setAgreed} />
               <p className="text-xs text-stone-400">
                 {t('onboarding.alreadyHaveAccount')}{' '}
                 <a href="/auth/send" className="text-[#2B8FFF] font-semibold">{t('onboarding.signIn')}</a>

@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { X, LogOut, Eye, EyeOff } from 'lucide-react';
+import { X, Pencil, LogOut, Eye, EyeOff } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { OptionPicker } from '@/components/LanguagePicker';
+import { cueTopics, cueLevels, cueVoices, readCueSettings } from '@/lib/cueSettings';
 import AppShell from '@/components/AppShell';
 import { supabase } from '@/lib/supabase';
 import { useLocale } from '@/components/LocaleProvider';
@@ -10,6 +13,26 @@ import { useLocale } from '@/components/LocaleProvider';
 export default function SettingsPage() {
   const { t } = useLocale();
   const router = useRouter();
+  const [cue, setCue] = useState(() => readCueSettings(null));
+  const [cueDraft, setCueDraft] = useState<typeof cue | null>(null);
+  const [cueReady, setCueReady] = useState(false);
+  const [cueSaving, setCueSaving] = useState(false);
+  const [cueStatus, setCueStatus] = useState('');
+  const saveCue = async () => {
+    if (!cueDraft || cueSaving) return;
+    setCueSaving(true);
+    setCueStatus('');
+    try {
+      const { error } = await supabase.auth.updateUser({ data: { cue_settings: cueDraft } });
+      if (error) throw error;
+      setCue(cueDraft);
+      setCueDraft(null);
+    } catch {
+      setCueStatus(t('liveExchange.actionFailed'));
+    } finally {
+      setCueSaving(false);
+    }
+  };
   const [email, setEmail] = useState('');
   const [loggingOut, setLoggingOut] = useState(false);
 
@@ -17,6 +40,10 @@ export default function SettingsPage() {
     supabase.auth.getSession().then(({ data }) => {
       const e = data.session?.user?.email;
       if (e) setEmail(e);
+      if (data.session?.user) {
+        setCue(readCueSettings(data.session.user.user_metadata.cue_settings));
+        setCueReady(true);
+      }
     });
   }, []);
 
@@ -69,6 +96,34 @@ export default function SettingsPage() {
               <span className="text-stone-300 text-sm tracking-widest">••••••••</span>
             </button>
           </div>
+
+          <section id="cue" className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-lg font-semibold">{t('aiPractice.titleOffer')}</h2>
+              {cueReady && !cueDraft && (
+                <Button className="grid size-9 place-items-center rounded-lg hover:bg-current/5" aria-label={t('profile.editTooltip')} onClick={() => setCueDraft(cue)}>
+                  <Pencil className="size-4" aria-hidden="true" />
+                </Button>
+              )}
+            </div>
+            {[
+              { key: 'topic' as const, label: t('aiPractice.topicLabel'), options: cueTopics.map(value => ({ value, label: value })) },
+              { key: 'level' as const, label: t('aiPractice.levelLabel'), options: cueLevels.map(value => ({ value, label: value || t('aiPractice.levelUnspecified') })) },
+              { key: 'voice' as const, label: 'Cue voice', options: [{ value: 'random', label: 'Random' }, ...cueVoices.map(value => ({ value, label: value === 'marin' ? 'Marin' : 'Cedar' }))] },
+            ].map(({ key, label, options }) => cueDraft ? (
+              <OptionPicker key={key} label={label} value={cueDraft[key]} onChange={value => setCueDraft(readCueSettings({ ...cueDraft, [key]: value }))} disabled={cueSaving} singleColumn options={options} />
+            ) : (
+              <dl key={key} className="flex items-center justify-between gap-3 text-sm">
+                <dt className="text-[var(--muted)]">{label}</dt>
+                <dd className="text-right font-medium">{cueReady ? options.find(option => option.value === cue[key])?.label : '—'}</dd>
+              </dl>
+            ))}
+            {cueDraft && <div className="flex flex-wrap items-center gap-3">
+              <Button className="btn-primary rounded-xl px-4 py-2.5 text-sm text-white disabled:opacity-40" onClick={saveCue} disabled={cueSaving}>{t(cueSaving ? 'profile.saving' : 'profile.saveChanges')}</Button>
+              <Button className="rounded-xl px-4 py-2.5 text-sm" disabled={cueSaving} onClick={() => { setCueDraft(null); setCueStatus(''); }}>{t('profile.cancel')}</Button>
+            </div>}
+            {cueStatus && <p role="alert" className="text-sm">{cueStatus}</p>}
+          </section>
 
           {/* Sign out — visually separated */}
           <div className="bg-white rounded-2xl shadow-sm">

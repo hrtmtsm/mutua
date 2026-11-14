@@ -2,7 +2,7 @@ import TopNav, { BottomNav } from './Sidebar';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="app-shell min-h-screen flex flex-col bg-[#FAFAFA]">
+    <div className="app-shell min-h-screen flex flex-col md:flex-row bg-[#FAFAFA]">
       <TopNav />
       <div className="flex-1 flex flex-col min-w-0 pb-20 md:pb-0">
         {children}

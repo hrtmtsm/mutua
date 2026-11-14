@@ -3,6 +3,7 @@
 import dynamic from 'next/dynamic';
 import localFont from 'next/font/local';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import SkyTimePicker from './SkyTimePicker';
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { paletteAt, selectedHour, type SkyMode } from '@/components/sky/palette';
@@ -10,11 +11,17 @@ import StaticMeadow from '@/components/sky/StaticMeadow';
 import PeoplePossibilities from './PeoplePossibilities';
 import LocaleSwitcher from '@/components/LocaleSwitcher';
 import { useLocale } from '@/components/LocaleProvider';
+import SetupModal from '@/components/SetupModal';
 import './sky.css';
 const logoFont = localFont({ src:'./fonts/Nunito-Variable.ttf', variable:'--font-study-logo', weight:'200 1000', display:'swap' });
 const SkyCanvas = dynamic(() => import('@/components/sky/SkyCanvas'),{ssr:false});
 export default function LandingExperience({ preview = false }: { preview?: boolean }) {
   const { t } = useLocale();
+  const router = useRouter();
+  const [setupOpen, setSetupOpen] = useState(false);
+  const [setupTab, setSetupTab] = useState<'signup' | 'login'>('signup');
+  const openSignup = () => { setSetupTab('signup'); setSetupOpen(true); };
+  const openLogin = () => { setSetupTab('login'); setSetupOpen(true); };
   const MODES: { value: SkyMode; label:string }[] = [{value:'auto',label:t('landing.modeAuto')},{value:'morning',label:t('landing.modeMorning')},{value:'day',label:t('landing.modeDay')},{value:'evening',label:t('landing.modeEvening')},{value:'night',label:t('landing.modeNight')}];
   const [grassStill,setGrassStill] = useState(false);
   const [mode,setMode] = useState<SkyMode>('auto');
@@ -75,9 +82,9 @@ export default function LandingExperience({ preview = false }: { preview?: boole
       window.removeEventListener('resize', measure);
     };
   }, [live]);
-  const ctaHref = '/app?start=text';
   const skyStyle={ '--study-top':palette.top,'--study-middle':palette.middle,'--study-horizon':palette.horizon,'--study-ink':palette.ink,'--study-ground':palette.foreground } as CSSProperties;
-  return <main ref={root} className={`sky-study ${logoFont.variable}`} style={skyStyle} data-hero-tone={palette.night>.55?'night':'day'} data-mode={mode} data-renderer={live?'webgl':'static'} data-reduced-motion={reduced} data-paused={hidden} data-landscape="meadow">
+  const heroTone = palette.night>.55?'night':'day';
+  return <main ref={root} className={`sky-study ${logoFont.variable}`} style={skyStyle} data-hero-tone={heroTone} data-mode={mode} data-renderer={live?'webgl':'static'} data-reduced-motion={reduced} data-paused={hidden} data-landscape="meadow">
     <div className="study-background" aria-hidden="true">
       <div className="study-sky" />
       <div className="study-stars" style={{opacity:palette.stars}}>{Array.from({length:32},(_,i)=><i key={i} style={{left:`${(i*37.71)%100}%`,top:`${(i*17.63)%72}%`,width:i%5===0?2:1,height:i%5===0?2:1}}/>)}</div>
@@ -88,7 +95,7 @@ export default function LandingExperience({ preview = false }: { preview?: boole
     <header className="study-header">
       <div className="study-brand-time">
         <Link href="/" className="study-brand" aria-label="Mutua ホーム">Mutua{preview && <span>Landscape preview</span>}</Link>
-        <SkyTimePicker value={mode} onChange={setMode} label={t('landing.skyTime')} options={MODES}/>
+        <SkyTimePicker value={mode} onChange={setMode} options={MODES}/>
       </div>
       <div className="study-header-controls">
         <LocaleSwitcher />
@@ -100,8 +107,8 @@ export default function LandingExperience({ preview = false }: { preview?: boole
         <h1 id="exchange-heading"><span>{t('landing.heading1')}</span><span>{t('landing.heading2')}</span></h1>
         <p className="study-subtitle">{t('landing.subtitle1')}{t('landing.subtitle2') && <><br/>{t('landing.subtitle2')}</>}</p>
         <div className="landing-cta-row">
-          <Link href={ctaHref} className="study-button possibility-start">{t('landing.cta')}</Link>
-          <Link href="/app?login=1" className="landing-login-button">{t('setup.login')}</Link>
+          <button type="button" onClick={openSignup} className="study-button possibility-start">{t('landing.cta')}</button>
+          <button type="button" onClick={openLogin} className="landing-login-button">{t('setup.login')}</button>
         </div>
       </div>
       <PeoplePossibilities reduced={reduced} hidden={hidden} mobile={mobile}/>
@@ -119,8 +126,16 @@ export default function LandingExperience({ preview = false }: { preview?: boole
     </section>
     <section className="study-arrival">
       <h2>{t('landing.arrivalHeading1')}<br/>{t('landing.arrivalHeading2')}</h2>
-      <Link href={ctaHref} className="study-button possibility-start">{t('landing.cta')}</Link>
+      <button type="button" onClick={openSignup} className="study-button possibility-start">{t('landing.cta')}</button>
     </section>
+    <div data-setup-modal-theme={heroTone}>
+      <SetupModal
+        open={setupOpen}
+        onClose={() => setSetupOpen(false)}
+        initialTab={setupTab}
+        onComplete={({ isSignup }) => { setSetupOpen(false); router.push(isSignup ? '/app?start=text' : '/app'); }}
+      />
+    </div>
     {preview ? (
     <footer className="study-footer">
       <span>Independent landscape preview</span>

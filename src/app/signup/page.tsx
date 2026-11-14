@@ -1,5 +1,6 @@
 'use client';
 
+import { Button } from '@/components/ui/button';
 import { SignupPrivacyNotice } from '@/components/PrivacyNotice';
 
 import { useState } from 'react';
@@ -17,12 +18,14 @@ export default function SignupPage() {
   const [showPass,     setShowPass]   = useState(false);
   const [showConfirm,  setShowConfirm]= useState(false);
   const [submitting,   setSubmitting] = useState(false);
+  const [agreed,       setAgreed]     = useState(false);
   const [error,        setError]      = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== confirm) { setError('Passwords do not match.'); return; }
     if (password.length < 6)  { setError('Password must be at least 6 characters.'); return; }
+    if (!agreed) { setError('Please agree to the Privacy Policy to continue.'); return; }
 
     setSubmitting(true);
     setError('');
@@ -102,14 +105,14 @@ export default function SignupPage() {
                   </button>
                 </div>
                 {error && <p className="text-xs text-red-500">{error}</p>}
-                <SignupPrivacyNotice />
-                <button
+                <SignupPrivacyNotice checked={agreed} onChange={setAgreed} />
+                <Button
                   type="submit"
-                  disabled={submitting}
+                  disabled={submitting || !agreed}
                   className="w-full py-2.5 btn-primary text-white font-bold text-sm rounded-full shadow-md transition-all disabled:opacity-50 disabled:pointer-events-none"
                 >
                   {submitting ? 'Creating...' : 'Create account'}
-                </button>
+                </Button>
               </form>
 
             <p className="text-xs text-stone-400">

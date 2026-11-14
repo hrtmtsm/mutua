@@ -12,6 +12,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev:staging", "--", "3002"],
       "port": 3002
+    },
+    {
+      "name": "mutua-call-room-remote",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "cd /Users/harutomatsushima/Desktop/paired-call-room-remote && npm run dev:staging -- 3005"],
+      "port": 3005
     }
   ]
 }

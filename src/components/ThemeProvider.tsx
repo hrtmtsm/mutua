@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import './liveExchange.css';
 import { Clock3, Sun, Moon } from 'lucide-react';
 import { useLocale } from './LocaleProvider';
 
@@ -57,7 +58,7 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
   return <ThemeContext.Provider value={{ theme, preference, setPreference }}>{children}</ThemeContext.Provider>;
 }
 
-export function ThemeSwitcher() {
+export function ThemeSwitcher({ compact }: { compact?: boolean | null } = {}) {
   const { preference, setPreference } = useTheme();
   const { t } = useLocale();
   const [open, setOpen] = useState(false);
@@ -88,7 +89,7 @@ export function ThemeSwitcher() {
     <div className="lang-picker theme-switcher" ref={rootRef}>
       <button
         type="button"
-        className="live-select lang-picker-trigger"
+        className={`live-select lang-picker-trigger whitespace-nowrap ${compact === false ? "" : compact === true ? "md:!w-11 md:justify-center md:!px-0" : compact === null ? "md:max-xl:!w-11 md:max-xl:justify-center md:max-xl:!px-0" : ""}`}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label={t('theme.switcherLabel')}
@@ -96,8 +97,8 @@ export function ThemeSwitcher() {
         onClick={() => setOpen(value => !value)}
       >
         <current.Icon className="lang-picker-icon" aria-hidden="true" />
-        {current.label}
-        <span className="lang-picker-caret" aria-hidden="true">▾</span>
+        <span className={compact === true ? 'md:hidden' : compact === null ? 'md:max-xl:hidden' : undefined}>{current.label}</span>
+        <span className={`lang-picker-caret ${compact === true ? "md:!hidden" : compact === null ? "md:max-xl:!hidden" : ""}`} aria-hidden="true">▾</span>
       </button>
       {open && (
         <div className="lang-picker-menu locale-switcher-menu" role="listbox">

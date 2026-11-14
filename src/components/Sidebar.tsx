@@ -5,7 +5,7 @@ import { ThemeSwitcher, useTheme } from './ThemeProvider';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { User, ArrowLeftRight, Bell, ArrowLeft, Send, Settings, MessageSquarePlus, X, History, Calendar, MessageCircle } from 'lucide-react';
+import { User, ArrowLeftRight, ArrowLeft, Send, Settings, MessageSquarePlus, X, History, Calendar, PanelLeft } from 'lucide-react';
 import { LANG_AVATAR_COLOR } from '@/lib/constants';
 import { isRealPhoto } from '@/lib/glyphAvatars';
 import { supabase, getMessages, sendMessage, getNotifications, markNotificationsSeen, type Message, type AppNotification } from '@/lib/supabase';
@@ -310,6 +310,7 @@ function MessageChat({
 
 export default function TopNav() {
   const router = useRouter();
+  const [expanded, setExpanded] = useState<boolean | null>(null);
   const { t } = useLocale();
   const { pathname, initials, name, avatarBg, avatarUrl, hasUnread, setHasUnread } = useNavState();
   const { theme } = useTheme();
@@ -635,14 +636,15 @@ export default function TopNav() {
 
   return (
     <>
-    <header className={`sticky top-0 z-20 ${immersive ? 'bg-[#040a17]' : 'bg-white'}`}>
-      <div className="max-w-5xl mx-auto px-4 md:px-6 flex items-center h-14">
+    <header className={`sticky top-0 z-20 bg-[var(--surface)] md:h-dvh md:shrink-0 md:border-r md:border-[var(--line)] ${expanded === null ? "md:w-[72px] xl:w-52" : expanded ? "md:w-52" : "md:w-[72px]"}`}>
+      <div className="mx-auto flex h-14 items-center px-4 md:h-full md:flex-col md:items-stretch md:px-3 md:py-5">
 
-        {/* Desktop: Mutua logo — same wordmark font as the landing page (/) */}
-        <Link href="/app" className={`hidden md:block text-xl shrink-0 ${immersive ? 'text-white' : 'text-neutral-900'}`}
-          style={{ fontFamily: 'var(--font-logo), Figtree, sans-serif', fontWeight: 900, letterSpacing: '-0.045em' }}>
-          Mutua
-        </Link>
+        <div className="hidden min-h-11 items-center justify-between gap-2 md:flex">
+          <Link href="/app" aria-label="Mutua" className={`text-xl font-black ${expanded === true ? '' : expanded === false ? 'sr-only' : 'sr-only xl:not-sr-only'}`} style={{ fontFamily: 'var(--font-logo), Figtree, sans-serif' }}>Mutua</Link>
+          <button type="button" aria-label="Toggle sidebar" aria-expanded={expanded ?? undefined} onClick={() => setExpanded(value => !(value ?? window.matchMedia('(min-width: 1280px)').matches))} className={`grid size-11 shrink-0 place-items-center rounded-lg hover:bg-[var(--page)] ${expanded === true ? '' : expanded === false ? 'mx-auto' : 'mx-auto xl:mx-0'}`}>
+            <PanelLeft className="size-5" aria-hidden="true" />
+          </button>
+        </div>
 
         {/* Mobile: page title */}
         <span className={`md:hidden text-xl shrink-0 ${immersive ? 'text-white' : 'text-neutral-900'}`}
@@ -664,14 +666,16 @@ export default function TopNav() {
         </span>
 
         {/* Nav links — desktop only */}
-        <nav className="hidden md:flex items-center gap-1 flex-1 ml-8">
+        <nav className="hidden md:mt-8 md:flex md:flex-1 md:flex-col gap-1">
           {DESKTOP_NAV.map(({ href, labelKey, icon: Icon, match }) => {
             const active = match.some(p => pathname === p || pathname.startsWith(p + '/'));
             return (
               <Link
                 key={href}
                 href={href}
-                className={`relative flex items-center gap-2 px-4 py-1.5 text-sm font-semibold transition-colors rounded-full ${
+                aria-current={active ? "page" : undefined}
+                title={t(labelKey)}
+                className={`relative flex items-center gap-2 min-h-11 justify-center ${expanded === true ? "md:justify-start md:px-4" : expanded === null ? "xl:justify-start xl:px-4" : ""} text-sm font-semibold transition-colors rounded-lg aria-[current=page]:bg-[var(--page)] ${
                   immersive
                     ? active ? 'text-white' : 'text-white/55 hover:text-white'
                     : active ? 'text-neutral-900' : 'text-stone-400 hover:text-neutral-700'
@@ -680,7 +684,7 @@ export default function TopNav() {
                 <span className="relative">
                   <Icon className="w-4 h-4" strokeWidth={active ? 2.5 : 1.8} />
                 </span>
-                {t(labelKey)}
+                <span className={expanded === true ? "md:not-sr-only sr-only" : expanded === null ? "sr-only xl:not-sr-only" : "sr-only"}>{t(labelKey)}</span>
               </Link>
             );
           })}
@@ -689,45 +693,9 @@ export default function TopNav() {
         {/* Spacer on mobile */}
         <div className="flex-1 md:hidden" />
 
-        {/* Right side: theme + bell + avatar */}
-        <div className="relative flex items-center gap-3 shrink-0" ref={inboxRef}>
-          <ThemeSwitcher />
-
-          {/* Bell — routes on mobile, opens dropdown on desktop */}
-          <button
-            onClick={() => {
-              if (window.innerWidth < 768) {
-                router.push('/notifications');
-                return;
-              }
-              setInboxOpen(o => !o);
-              setMsgView('list');
-              if (!!localStorage.getItem('mutua_unread_notification')) {
-                localStorage.removeItem('mutua_unread_notification');
-              }
-              if (currentSchedStateRef.current) localStorage.setItem('mutua_last_seen_sched_state', currentSchedStateRef.current);
-              if (!localStorage.getItem('mutua_unread_message')) {
-                setHasUnread(false);
-              }
-            }}
-            className={`relative p-1.5 transition-colors ${navIconColor}`}
-          >
-            <Bell className="w-5 h-5" />
-            {hasUnread && (
-              <span className="absolute top-1 right-1 w-2 h-2 bg-rose-500 rounded-full" />
-            )}
-          </button>
-
-          {/* Messages icon — mobile only */}
-          <button
-            onClick={() => router.push('/messages')}
-            className={`md:hidden relative p-1.5 transition-colors ${navIconColor}`}
-          >
-            <MessageCircle className="w-5 h-5" />
-            {!!localStorage.getItem('mutua_unread_message') && (
-              <span className="absolute top-1 right-1 w-2 h-2 bg-rose-500 rounded-full" />
-            )}
-          </button>
+        {/* Right side: theme + avatar */}
+        <div className={`relative flex items-center gap-3 shrink-0 md:flex-col ${expanded === true ? "md:flex-row md:justify-between" : expanded === null ? "xl:flex-row xl:justify-between" : ""} md:border-t md:border-[var(--line)] md:pt-3`} ref={inboxRef}>
+          <div className="md:[&_.lang-picker-menu]:!bottom-[calc(100%+8px)] md:[&_.lang-picker-menu]:!top-auto md:[&_.lang-picker-menu]:left-0 md:[&_.lang-picker-menu]:right-auto" ><ThemeSwitcher compact={expanded === null ? null : !expanded} /></div>
 
           {/* Dropdown */}
           {inboxOpen && (
@@ -856,7 +824,7 @@ export default function TopNav() {
             </button>
 
             {profileOpen && (
-              <div className="absolute top-11 right-0 w-64 bg-white border border-stone-200 rounded-2xl shadow-xl overflow-hidden z-30">
+              <div className="absolute top-11 right-0 md:bottom-11 md:top-auto md:left-0 md:right-auto w-64 bg-white border border-stone-200 rounded-2xl shadow-xl overflow-hidden z-30">
                 {/* Header */}
                 <Link href="/profile" onClick={() => setProfileOpen(false)}
                   className="flex items-center gap-3 px-4 py-4 hover:bg-stone-50 transition-colors border-b border-stone-100">

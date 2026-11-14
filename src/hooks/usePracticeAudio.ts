@@ -4,7 +4,7 @@ import {authorizedFetch,practiceAction,type VoiceSession} from '@/lib/practice';
 import {useLocale} from '@/components/LocaleProvider';
 
 /** One provider connection per local participant. Original audio is never persisted. */
-export function usePracticeAudio(session:VoiceSession|null, source:MediaStream|null, muted:boolean, usePracticeHistory = false){
+export function usePracticeAudio(session:VoiceSession|null, source:MediaStream|null, muted:boolean, usePracticeHistory = false, recordAudio = false, cueVoice = 'random'){
  const {t}=useLocale();
  const [diagnostics,setDiagnostics]=useState({events:'',sentBytes:0,commits:0});
  const [status,setStatus]=useState('idle');const [error,setError]=useState('');const [remote,setRemote]=useState<MediaStream|null>(null);
@@ -17,6 +17,10 @@ export function usePracticeAudio(session:VoiceSession|null, source:MediaStream|n
   if(!id||!enabled)return;
   let cancelled=false,closing=false,connectionId:string|undefined,stream:MediaStream|undefined,pc:RTCPeerConnection|undefined,dc:RTCDataChannel|undefined;
   let timer:ReturnType<typeof setInterval>|undefined,heartbeat:ReturnType<typeof setInterval>|undefined,deadline:ReturnType<typeof setTimeout>|undefined;
+  let recorder: MediaRecorder | undefined;
+  let recordingContext: AudioContext | undefined;
+  let recordingSaved: Promise<void> | undefined;
+  let recordingLimit: ReturnType<typeof setTimeout> | undefined;
   const pending=new Set<Promise<unknown>>(),unfinished=new Set<string>(),done=new Set<string>();const items=new Map<string,{sequence:number;offsetMs:number}>();let sequence=0,partial=false;
   const eventTypes=new Set<string>();let commits=0;
   const providerStart=Date.now();const start=session?.started_at?Date.parse(session.started_at):providerStart;let commitAt=Date.now();let finishPromise:Promise<void>|undefined;
@@ -29,6 +33,9 @@ export function usePracticeAudio(session:VoiceSession|null, source:MediaStream|n
    if(finishPromise)return finishPromise;
    finishPromise=(async()=>{
     closing=true;clearInterval(timer);clearInterval(heartbeat);clearTimeout(deadline);
+    clearTimeout(recordingLimit);
+    if (recorder?.state === 'recording') recorder.stop();
+    void recordingContext?.close().catch(() => {});
     stream?.getTracks().forEach(t=>t.stop());tracksRef.current=null;
     if(dc?.readyState==='open'&&kind==='transcription')send({type:'input_audio_buffer.commit'});
     const until=Date.now()+4500;
@@ -37,7 +44,7 @@ export function usePracticeAudio(session:VoiceSession|null, source:MediaStream|n
     await new Promise(r=>setTimeout(r,600));
     while((unfinished.size||pending.size)&&Date.now()<until)await new Promise(r=>setTimeout(r,100));
     if(unfinished.size||pending.size)partial=true;
-    await Promise.allSettled([...pending]);
+    await Promise.allSettled([...pending, ...(recordingSaved ? [recordingSaved] : [])]);
     await practiceAction('transcript_status',{sessionId:id,status:partial?'partial':'ready'}).catch(()=>{});
     dc?.close();pc?.close();setRemote(null);await closeProvider();if(kind==='ai')await practiceAction('end',{sessionId:id,reason:partial?'provider_failure':'hangup'}).catch(()=>{});setStatus('ended');
    })();return finishPromise;
@@ -66,7 +73,45 @@ export function usePracticeAudio(session:VoiceSession|null, source:MediaStream|n
     if(cancelled||closing){stream.getTracks().forEach(t=>t.stop());return;}
     tracksRef.current=stream;stream.getAudioTracks().forEach(t=>t.enabled=!mutedRef.current);
     pc=new RTCPeerConnection();stream.getTracks().forEach(t=>pc!.addTrack(t,stream!));
-    pc.ontrack=e=>{if(!cancelled&&kind==='ai')setRemote(e.streams[0]||new MediaStream([e.track]));};
+    pc.ontrack = event => {
+     if (cancelled || closing || kind !== 'ai') return;
+     const remoteStream = event.streams[0] || new MediaStream([event.track]);
+     setRemote(remoteStream);
+     if (!recordAudio || recorder || !stream) return;
+     try {
+      recordingContext = new AudioContext();
+      const mix = recordingContext.createMediaStreamDestination();
+      recordingContext.createMediaStreamSource(stream).connect(mix);
+      recordingContext.createMediaStreamSource(remoteStream).connect(mix);
+      recorder = new MediaRecorder(mix.stream, { audioBitsPerSecond: 48000 });
+      const chunks: Blob[] = [];
+      recorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data); };
+      recorder.start();
+      recordingSaved = new Promise(resolve => {
+       recorder!.onerror = () => { setError('Could not record this call.'); resolve(); };
+       recorder!.onstop = async () => {
+        try {
+         const body = new Blob(chunks, { type: recorder!.mimeType });
+         const response = await authorizedFetch('/api/practice/recording?sessionId=' + id, {
+          method: 'POST', headers: { 'Content-Type': body.type }, body, signal: AbortSignal.timeout(20000),
+         });
+         if (!response.ok) throw new Error();
+        } catch {
+         setError('Could not save this recording.');
+        } finally {
+         resolve();
+        }
+       };
+      });
+      recordingLimit = setTimeout(() => {
+       if (recorder?.state === 'recording') recorder.stop();
+       void recordingContext?.close().catch(() => {});
+      }, 480000);
+     } catch {
+      void recordingContext?.close().catch(() => {});
+      setError('Could not record this call.');
+     }
+    };
     pc.onconnectionstatechange=()=>{
      if(pc?.connectionState==='connected'){clearTimeout(deadline);setStatus('connected');if(kind==='ai')void practiceAction('connected',{sessionId:id}).catch(()=>fail(t('practiceAudio.recordStartFailed')));}
      if(pc?.connectionState==='failed')void fail(t('practiceAudio.connectionLost'));
@@ -75,7 +120,7 @@ export function usePracticeAudio(session:VoiceSession|null, source:MediaStream|n
     dc.onopen=()=>{if(kind==='ai')send({type:'response.create'});};
     dc.onclose=()=>{if(!closing&&!cancelled)void fail(t('practiceAudio.processingConnectionLost'));};
     await pc.setLocalDescription(await pc.createOffer());
-    const response=await authorizedFetch('/api/practice/provider',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind,sessionId:id,sdp:pc.localDescription?.sdp,usePracticeHistory}),signal:AbortSignal.timeout(25000)});
+    const response=await authorizedFetch('/api/practice/provider',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind,sessionId:id,sdp:pc.localDescription?.sdp,usePracticeHistory,cueVoice}),signal:AbortSignal.timeout(25000)});
     const answer=await response.json();if(!response.ok)throw Error(answer.error||t('practiceAudio.startFailed'));connectionId=answer.connectionId;
     if(cancelled||closing){await closeProvider();return;}
     await pc.setRemoteDescription({type:'answer',sdp:answer.sdp});
@@ -85,7 +130,7 @@ export function usePracticeAudio(session:VoiceSession|null, source:MediaStream|n
    }catch(e){if(!cancelled)await fail(e instanceof DOMException&&e.name==='NotAllowedError'?t('practiceAudio.micDenied'):e instanceof Error?e.message:t('practiceAudio.connectFailed'));}
   })();
   return ()=>{cancelled=true;void finish();};
- },[id,enabled,source,kind,usePracticeHistory]);
+ },[id,enabled,source,kind,usePracticeHistory,recordAudio,cueVoice]);
  const finish=useCallback(()=>stopRef.current(),[]);
  return {status,error,remote,finish,diagnostics};
 }

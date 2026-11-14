@@ -8,9 +8,17 @@ export default function ExchangesPage() {
 
   return (
     <AppShell>
-      <main className="flex-1 px-6 pt-2 pb-10 md:py-10 max-w-3xl mx-auto w-full space-y-6">
-        <h1 className="hidden md:block font-serif font-semibold text-2xl text-[#171717]">{t('nav.log')}</h1>
-        <VoiceHistory />
+      <main style={{ fontFamily: "var(--font-logo), Figtree, sans-serif" }} className="live-exchange-scene flex h-[calc(100dvh-8.5rem)] flex-col overflow-hidden md:h-dvh">
+        <div className="mx-auto flex w-full max-w-[1248px] shrink-0 flex-col px-4 md:px-6">
+          <header className="hidden py-6 md:block">
+            <h1 className="text-2xl font-bold tracking-tight">{t('nav.log')}</h1>
+          </header>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 md:px-6">
+          <div className="mx-auto w-full max-w-3xl">
+            <VoiceHistory />
+          </div>
+        </div>
       </main>
     </AppShell>
   );

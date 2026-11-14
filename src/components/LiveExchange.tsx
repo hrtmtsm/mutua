@@ -1,5 +1,11 @@
 'use client';
 
+import { LoadingStatus } from '@/app/loading';
+import { DetailBackButton } from './DetailBackButton';
+
+import { Button } from '@/components/ui/button';
+import { useTheme } from './ThemeProvider';
+
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import type { User } from '@supabase/supabase-js';
 import Link from 'next/link';
@@ -10,7 +16,7 @@ import { useLiveAudio } from '@/hooks/useLiveAudio';
 import { useSpeaking } from '@/hooks/useSpeaking';
 import AppShell from './AppShell';
 import { paletteAt, selectedHour } from './sky/palette';
-import AIPractice from './AIPractice';
+import dynamic from 'next/dynamic';
 import {practiceAction} from '@/lib/practice';
 import {usePracticeAudio} from '@/hooks/usePracticeAudio';
 import SetupModal from './SetupModal';
@@ -19,9 +25,13 @@ import { initialsFor, isRealPhoto } from '@/lib/glyphAvatars';
 import { LANG_AVATAR_COLOR, LANG_FLAG_CODE } from '@/lib/constants';
 import { LANGUAGES, type Language } from '@/lib/types';
 import LanguagePicker from './LanguagePicker';
-import { MessageSquare, Mic, MicOff, Phone, PhoneOff, SkipForward } from 'lucide-react';
+import { MessageSquare, Mic, MicOff, Phone, PhoneOff, SkipForward, X } from 'lucide-react';
 import { useLocale } from './LocaleProvider';
 import './liveExchange.css';
+
+const AIPractice = dynamic(() => import('./AIPractice'), {
+ loading: () => <LoadingStatus />,
+});
 
 // Google Meet–style fallback: the real photo when there is one, otherwise
 // initials on a language-colored background — never a stock cartoon glyph.
@@ -35,6 +45,7 @@ const liveFont = localFont({ src: '../app/preview/sky/fonts/Nunito-Variable.ttf'
 
 export default function LiveExchange() {
  const { t } = useLocale();
+ const { preference } = useTheme();
  const [skyHour, setSkyHour] = useState(12);
  useEffect(() => {
   const updateSky = () => setSkyHour(selectedHour('auto', new Date()));
@@ -42,7 +53,7 @@ export default function LiveExchange() {
   const timer = window.setInterval(updateSky, 60_000);
   return () => window.clearInterval(timer);
  }, []);
- const sky = paletteAt(skyHour);
+ const sky = paletteAt(preference === 'auto' ? skyHour : preference === 'night' ? 0 : 12);
  const skyStyle = {
   '--call-sky-top': sky.top,
   '--call-sky-middle': sky.middle,
@@ -69,10 +80,26 @@ export default function LiveExchange() {
  const connectedCall=useRef('');
  const [muted, setMuted] = useState(false);
  const [audioBlocked, setAudioBlocked] = useState(false);
+ const stoppingRef = useRef(false);
  const [expired, setExpired] = useState(false);
  const [showAiPrompt, setShowAiPrompt] = useState(false);
  const [aiSpeaking, setAiSpeaking] = useState(false);
  const [chatOpen, setChatOpen] = useState(true);
+ const [mobileChatOpen, setMobileChatOpen] = useState(false);
+ const mobileChatTrigger = useRef<HTMLButtonElement>(null);
+ const mobileChatClose = useRef<HTMLButtonElement>(null);
+ useEffect(() => {
+  if (!mobileChatOpen) return;
+  mobileChatClose.current?.focus();
+  const closeOnEscape = (event: KeyboardEvent) => {
+   if (event.key === 'Escape') {
+    setMobileChatOpen(false);
+    mobileChatTrigger.current?.focus();
+   }
+  };
+  window.addEventListener('keydown', closeOnEscape);
+  return () => window.removeEventListener('keydown', closeOnEscape);
+ }, [mobileChatOpen]);
  const [aiCallStatus, setAiCallStatus] = useState<HTMLDivElement | null>(null);
  const [aiCallControls, setAiCallControls] = useState<HTMLDivElement | null>(null);
  const [aiStage, setAiStage] = useState<'ask' | 'practice'>('ask');
@@ -101,9 +128,9 @@ export default function LiveExchange() {
   const { data, error } = await supabase.from('profiles').select('*').eq('email', account.email!)
    .order('created_at', { ascending: false }).limit(1).maybeSingle();
   if (sessionUser.current !== account.id) return;
+  setProfileLoaded(true);
   if (error) { setError(t('liveExchange.profileLoadError')); return; }
   setProfileReady(!!data?.native_language && !!data?.learning_language);
-  setProfileLoaded(true);
   if (data) {
    setSessionId(data.session_id);
    setNativeLanguage(data.native_language ?? '');
@@ -140,7 +167,7 @@ export default function LiveExchange() {
    setShowAiPrompt(false);
    setAiSpeaking(false);
   }
-  if (!hasAiCall && previous?.queue && !next.queue && !next.conversation) { setExpired(true); setAiStage('ask'); setShowAiPrompt(true); }
+  if (!stoppingRef.current && !hasAiCall && previous?.queue && !next.queue && !next.conversation) { setExpired(true); setAiStage('ask'); setShowAiPrompt(true); }
   if (previous?.conversation?.id !== next.conversation?.id) setMessages(next.messages || []);
   else setMessages(old => {
    const merged = new Map(old.map(message => [message.id, message]));
@@ -163,7 +190,17 @@ export default function LiveExchange() {
  useEffect(() => {
   if (!user || !profileReady) return;
   refresh();
-  const interval = setInterval(refresh, 2000);
+  let lastIdleCheck = Date.now();
+  const interval = setInterval(() => {
+   const state = currentRef.current;
+   if (state?.queue || state?.conversation?.status === 'active' ||
+       (state?.voice && state.voice.status !== 'ended')) {
+    void refresh();
+   } else if (document.visibilityState === 'visible' && Date.now() - lastIdleCheck >= 15000) {
+    lastIdleCheck = Date.now();
+    void refresh();
+   }
+  }, 2000);
   const onFocus = () => refresh();
   window.addEventListener('focus', onFocus);
   return () => { clearInterval(interval); window.removeEventListener('focus', onFocus); };
@@ -309,6 +346,7 @@ export default function LiveExchange() {
  };
  // Stop: end/cancel whatever's happening and stay paused until Next is pressed again.
  const handleStop = async () => {
+  stoppingRef.current = true;
   setStoppedByUser(true);
   setError(''); setBusy(true);
   try {
@@ -316,8 +354,9 @@ export default function LiveExchange() {
    const existing = currentRef.current;
    if (existing?.conversation?.status === 'active') await command('end', { conversationId: existing.conversation.id, callId: existing.call?.id });
    else if (existing?.queue) await command('cancel');
-  } catch (error) { setError(error instanceof Error ? error.message : t('liveExchange.actionFailed')); }
-  finally { setBusy(false); }
+   return true;
+  } catch (error) { setError(error instanceof Error ? error.message : t('liveExchange.actionFailed')); return false; }
+  finally { stoppingRef.current = false; setBusy(false); }
  };
  const sendMessage = async (event: React.FormEvent) => {
   event.preventDefault();
@@ -352,25 +391,74 @@ export default function LiveExchange() {
     placeholder={t('app.messagePlaceholder')}
     className="live-input disabled:cursor-not-allowed disabled:opacity-60"
    />
-   <button disabled={!active || sending || !input.trim() || busy} type="submit" className="live-button">
+   <Button disabled={!active || sending || !input.trim() || busy} type="submit" className="live-button">
     {sending ? t('app.sending') : t('app.send')}
-   </button>
+   </Button>
   </form>
  );
- const inCallMode = joining || !!snapshot?.queue || active || aiInCall;
+ const sessionInProgress = joining || !!snapshot?.queue || active || aiInCall;
+ const [keepCallRoom, setKeepCallRoom] = useState(false);
+ const [aiBackTarget, setAiBackTarget] = useState<HTMLElement | null>(null);
+ const inCallMode = sessionInProgress || keepCallRoom;
+ useEffect(() => {
+  if (sessionInProgress) setKeepCallRoom(true);
+ }, [sessionInProgress]);
+ const leaveRoom = async () => {
+  if (sessionInProgress && !(await handleStop())) return;
+  setShowAiPrompt(false);
+  setStoppedByUser(true);
+  setKeepCallRoom(false);
+ };
+ const startActions = (
+        <div className="live-start-row">
+           <Button disabled={busy || !authLoaded || sessionInProgress} onClick={handleStart} className="live-button live-start-button"><Phone className="w-4 h-4" /> {t(inCallMode || stoppedByUser || expired ? 'liveExchange.findSomeoneAgain' : 'app.startExchange')}</Button>
+           {user && profileReady && <Button disabled={sessionInProgress} onClick={() => { setAiStage('practice'); setShowAiPrompt(true); }} className="live-button-ghost">{t('liveExchange.practiceWithAi')}</Button>}
+           {user && profileReady && (
+            <div className="live-conditions" role="group" aria-label={t('liveExchange.conditionsLabel')}>
+             <LanguagePicker value={nativeLanguage} onChange={setNativeLanguage} placeholder={t('app.nativePlaceholder')} label={t('setup.nativePlaceholder')} disabled={busy || sessionInProgress} />
+             <LanguagePicker value={learningLanguage} onChange={setLearningLanguage} placeholder={t('app.learningPlaceholder')} label={t('setup.learningPlaceholder')} disabled={busy || sessionInProgress} />
+            </div>
+           )}
+           {inCallMode && !aiInCall && (
+            <Button disabled={busy || joining} onClick={leaveRoom} className="live-button live-button-danger">{t('liveExchange.leaveLabel')}</Button>
+           )}
+           {inCallMode && (
+      <div className="live-room-chat-toggle">
+       <button type="button" className="live-icon-btn live-desktop-chat-trigger" aria-label={t('liveExchange.chatLogLabel')} aria-pressed={chatOpen} onClick={() => setChatOpen(open => !open)}>
+        <MessageSquare className="size-5" aria-hidden="true" />
+       </button>
+       <button ref={mobileChatTrigger} type="button" className="live-icon-btn live-mobile-chat-trigger" aria-label={t('liveExchange.chatLogLabel')} aria-expanded={mobileChatOpen} onClick={() => setMobileChatOpen(true)}>
+        <MessageSquare className="size-5" aria-hidden="true" />
+       </button>
+      </div>
+           )}
+        </div>
+ );
  return <div className={liveFont.variable}>
   <AppShell>
-  <main data-chat-open={inCallMode && !chatOpen ? "false" : undefined} className={inCallMode ? 'live-room' : 'flex-1 flex flex-col min-h-[640px] md:min-h-[calc(100vh-56px)]'}>
+  <main data-mobile-chat-open={mobileChatOpen} data-chat-open={inCallMode && !chatOpen ? "false" : undefined} className={inCallMode ? 'live-room' : 'flex-1 flex flex-col min-h-[640px] md:min-h-[calc(100vh-56px)]'}>
    {inCallMode && (
-    <header className="live-room-heading">
-     <Phone className="size-4" aria-hidden="true" />
-     <span>{aiInCall ? t('aiPractice.titleInCall') : active ? partner?.name || t('app.partner') : t('app.searching')}</span>
+    <header className="live-room-heading" ref={setAiBackTarget}>
+     {!aiInCall && <DetailBackButton label={t('nav.exchange')} disabled={busy || joining} onClick={leaveRoom} />}
     </header>
    )}
    <div className="live-exchange-scene flex-1 p-4 md:py-6 md:px-6">
     <div className="live-content">
+     {!inCallMode && (
+      <header className="mb-5 hidden md:block">
+       <h1 className="text-2xl font-bold tracking-tight">{t('nav.exchange')}</h1>
+      </header>
+     )}
     <audio ref={audioRef} autoPlay playsInline data-testid="remote-audio" data-connection-state={rtc.state} data-sent-bytes={rtc.stats.sentBytes} data-received-bytes={rtc.stats.receivedBytes} data-received-energy={rtc.stats.receivedEnergy} />
-    {error && <div role="alert" className="live-error mb-4">{error}</div>}
+    {(!authLoaded || (user && !profileLoaded)) && <LoadingStatus />}
+    {error && (
+     <div className="live-error mb-4 flex items-center justify-between gap-3">
+      <span role="alert">{error}</span>
+      <Button aria-label={t('setup.close')} onClick={() => setError('')} className="grid size-8 shrink-0 place-items-center rounded-md hover:bg-current/5">
+       <X className="size-4" aria-hidden="true" />
+      </Button>
+     </div>
+    )}
     <div className="live-stage">
      {active ? (
       <div className="live-split">
@@ -416,7 +504,7 @@ export default function LiveExchange() {
         {canInvite && (
          <button disabled={busy} onClick={() => respondToCall('invite')} className="live-button">📞 {t('app.startCall')}</button>
         )}
-        {snapshot?.call?.status==='accepted'&&!call&&<button className="live-button" onClick={()=>setMediaCallId(snapshot.call!.id)}>{t('liveExchange.joinCallThisTab')}</button>}
+        {snapshot?.call?.status==='accepted'&&!call&&<Button className="live-button" onClick={()=>setMediaCallId(snapshot.call!.id)}>{t('liveExchange.joinCallThisTab')}</Button>}
         {snapshot?.call?.status === 'ringing' && <>
          <p role="status" className="live-pill-status">{snapshot.call.from_user === user?.id ? t('app.waitingForAnswer') : t('app.callInvite')}</p>
          {snapshot.call.from_user === user?.id
@@ -440,6 +528,7 @@ export default function LiveExchange() {
        </section>
        </div>
        <section className="live-card live-chat-pane">
+        <button ref={mobileChatClose} type="button" className="live-mobile-chat-close live-icon-btn" aria-label={t('setup.close')} onClick={() => { setMobileChatOpen(false); mobileChatTrigger.current?.focus(); }}>✕</button>
         {inCallMode && <h2 className="live-room-chat-heading">{t('liveExchange.chatLogLabel')}</h2>}
         <div role="log" aria-label={t('liveExchange.chatLogLabel')} aria-live="polite" className="flex-1 min-h-0 overflow-y-auto space-y-3">
          {messages.length === 0 && <p className="live-pill-status text-center">{t('app.matched')}</p>}
@@ -452,27 +541,26 @@ export default function LiveExchange() {
       </div>
      ) : (
       <>
-       {!aiInCall && (stoppedByUser || (user && !profileReady) || conversation?.status === 'ended' || expired) && (
+       {!aiInCall && (!stoppedByUser && ((user && !profileReady) || conversation?.status === 'ended' || expired)) && (
         <p className="live-pill-status text-center mb-3">
-         {stoppedByUser ? t('app.stopped')
-          : user && !profileReady ? t('app.needProfile')
+         {user && !profileReady ? t('app.needProfile')
           : expired ? t('app.expired')
           : conversation?.ended_reason === 'peer_left' ? t('app.peerLeft')
           : t('app.conversationEnded')}
         </p>
        )}
-       <div className="live-split">
+       <div className="live-split" style={inCallMode ? undefined : { gridTemplateColumns: "minmax(0, 1fr)" }}>
         <div className="live-call-column">
         <div className="live-video-row">
-         <div className="live-main-tile live-call-sky" style={skyStyle}>
+         <div className={inCallMode ? "live-main-tile live-call-sky" : "live-main-tile"} style={inCallMode ? skyStyle : undefined}>
           <div className="live-participant-pair">
            <div className="live-participant" data-speaking={aiInCall && aiSpeaking ? 'true' : undefined}>
-            <div className="live-partner-badge">{t(aiInCall ? 'callDetail.aiSpeakerLabel' : 'app.partner')}</div>
+            <div className="live-partner-badge">{aiInCall ? 'Cue' : t('app.partner')}</div>
             {aiInCall ? (
              <div className="ai-cloud-avatar" aria-hidden="true" />
             ) : (
              <div className="live-participant-placeholder" role="status">
-              <span>{t(joining || snapshot?.queue ? 'liveExchange.findingPartnerText' : 'app.notStarted')}</span>
+              <span>{t(sessionInProgress ? 'liveExchange.findingPartnerText' : expired ? 'liveExchange.noPartnerFoundTitle' : 'app.notStarted')}</span>
               {(joining || snapshot?.queue) && (
                <span className="live-finding-dots" aria-hidden="true"><span /><span /><span /></span>
               )}
@@ -487,56 +575,45 @@ export default function LiveExchange() {
          </div>
         </div>
         </div>
-        <section className="live-card live-chat-pane">
+        {inCallMode && <section className="live-card live-chat-pane">
+        <button ref={mobileChatClose} type="button" className="live-mobile-chat-close live-icon-btn" aria-label={t('setup.close')} onClick={() => { setMobileChatOpen(false); mobileChatTrigger.current?.focus(); }}>✕</button>
         {inCallMode && <h2 className="live-room-chat-heading">{t('liveExchange.chatLogLabel')}</h2>}
          <div className="live-chat-pane-empty"><p className="live-pill-status">{snapshot?.queue ? t('app.waitingForPartner') : t('app.waitingForMatch')}</p></div>
          {chatComposer}
-        </section>
+        </section>}
        </div>
-       {!inCallMode && (
-        <div className="live-start-row">
-           <button disabled={busy || !authLoaded} onClick={handleStart} className="live-button live-start-button"><Phone className="w-4 h-4" /> {t('app.startCall')}</button>
-           {user && profileReady && (
-            <div className="live-conditions" role="group" aria-label={t('liveExchange.conditionsLabel')}>
-             <LanguagePicker value={nativeLanguage} onChange={setNativeLanguage} placeholder={t('app.nativePlaceholder')} label={t('setup.nativePlaceholder')} disabled={busy} />
-             <LanguagePicker value={learningLanguage} onChange={setLearningLanguage} placeholder={t('app.learningPlaceholder')} label={t('setup.learningPlaceholder')} disabled={busy} />
-            </div>
-           )}
-           {expired && user && <button onClick={() => { setAiStage('practice'); setShowAiPrompt(true); }} className="live-button-ghost">🤖 {t('liveExchange.practiceWithAi')}</button>}
-        </div>
-       )}
       </>
      )}
     </div>
+    </div>
+   </div>
     {inCallMode && (
-     <footer className="live-room-toolbar">
+     <footer className="live-room-toolbar !flex flex-col">
       <div className="live-room-status">
        {aiInCall ? <div ref={setAiCallStatus} /> : (
         <span role="status">{call
          ? t(rtc.state === 'connected' ? 'app.callConnected' : rtc.state === 'failed' ? 'app.callFailed' : 'app.callConnecting')
-         : active ? t('app.matched') : t('app.searching')}</span>
+         : active ? t('app.matched') : null}</span>
        )}
       </div>
-      {aiInCall && <div className="live-room-actions" ref={setAiCallControls} />}
+      <div className="min-w-0 max-w-full">
+       {aiInCall && <div className="live-room-actions" ref={setAiCallControls} />}
     {active && <div className="live-room-actions">
      {call && <>
       <button aria-pressed={muted} aria-label={muted ? t('app.unmute') : t('app.mute')} title={muted ? t('app.unmute') : t('app.mute')} onClick={() => setMuted(value => !value)} className="live-icon-btn">{muted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}</button>
       <button disabled={busy} aria-label={t('app.endCall')} title={t('app.endCall')} onClick={endVoice} className="live-icon-btn live-icon-btn-danger"><PhoneOff className="w-5 h-5" /></button>
      </>}
      <button disabled={busy || !authLoaded} aria-label={t('liveExchange.nextPartnerLabel')} title={t('liveExchange.nextPartnerLabel')} onClick={handleNext} className="live-icon-btn"><SkipForward className="w-5 h-5" /></button>
-     <button disabled={busy} aria-label={t('liveExchange.leaveLabel')} title={t('liveExchange.leaveLabel')} onClick={handleStop} className="live-icon-btn live-icon-btn-danger"><PhoneOff className="w-5 h-5" /></button>
     </div>}
-    {!active && !aiInCall && <div className="live-room-actions">
-     <button disabled={busy} onClick={handleStop} className="live-button live-start-button live-button-danger"><PhoneOff className="w-4 h-4" aria-hidden="true" /> {t('app.endCall')}</button>
-    </div>}
-      <button type="button" className="live-icon-btn live-room-chat-toggle" aria-label={t('liveExchange.chatLogLabel')} aria-pressed={chatOpen} onClick={() => setChatOpen(open => !open)}>
-       <MessageSquare className="size-5" aria-hidden="true" />
-      </button>
+      {startActions}
+    </div>
      </footer>
     )}
-    {!inCallMode && <p className="live-note shrink-0 text-center mt-3">{t('app.footnote')} <Link href="/profile">{t('app.profileLink')}</Link></p>}
-    </div>
-   </div>
+    {!inCallMode && (
+     <footer className="live-room-toolbar live-start-toolbar">
+      {startActions}
+     </footer>
+    )}
   </main>
   <SetupModal open={setup} onClose={() => { setSetup(false); setPendingStart(false); }} initialTab={setupInitialTab} onComplete={({ isSignup }) => {
    setSetup(false);
@@ -546,26 +623,28 @@ export default function LiveExchange() {
    supabase.auth.getSession().then(({data}) => { setUser(data.session?.user ?? null); if (data.session?.user) loadProfile(data.session.user); });
   }} initialNative={nativeLanguage || undefined} initialLearning={learningLanguage || undefined} />
   {(showAiPrompt || aiInCall) && user && (
-   <div className={aiInCall ? "contents" : "fixed inset-0 z-[100] flex items-center justify-center px-4 bg-black/40"}>
+   <div className={aiInCall ? "contents" : `fixed inset-0 z-[100] flex justify-center px-4 bg-black/40 ${aiStage === 'ask' ? 'items-center' : 'items-start overflow-y-auto py-[clamp(1rem,24dvh,15rem)]'}`}>
     {!aiInCall && aiStage === 'ask' ? (
      <div className="live-modal-card w-full max-w-sm rounded-2xl shadow-2xl p-6 relative text-center space-y-4">
       <button onClick={() => setShowAiPrompt(false)} aria-label={t('setup.close')} className="absolute top-3 right-3 opacity-60 hover:opacity-100 text-sm w-7 h-7 flex items-center justify-center">✕</button>
       <p className="live-modal-title text-lg">{t('liveExchange.noPartnerFoundTitle')}</p>
       <p className="live-subtitle text-sm leading-relaxed">{t('liveExchange.noPartnerFoundBody')}</p>
       <div className="space-y-2">
-       <button className="w-full live-button justify-center text-sm" onClick={() => setAiStage('practice')}>
+       <Button className="w-full live-button justify-center text-sm" onClick={() => setAiStage('practice')}>
         {t('liveExchange.practiceWithAi')}
-       </button>
-       <button className="w-full live-button-ghost justify-center text-sm" onClick={() => { setShowAiPrompt(false); void handleStart(); }}>
+       </Button>
+       <Button className="w-full live-button-ghost justify-center text-sm" onClick={() => { setShowAiPrompt(false); void handleStart(); }}>
         {t('liveExchange.findSomeoneAgain')}
-       </button>
+       </Button>
       </div>
      </div>
     ) : (
-     <div className={aiInCall ? "contents" : "w-full max-w-lg relative max-h-[90vh] overflow-y-auto"}>
+     <div className={aiInCall ? "contents" : "w-full max-w-lg relative"}>
       {!aiInCall && <button onClick={() => setShowAiPrompt(false)} aria-label={t('setup.close')} className="absolute top-4 right-4 opacity-60 hover:opacity-100 text-sm w-7 h-7 flex items-center justify-center z-10 bg-white/70 rounded-full">✕</button>}
       <AIPractice
        session={aiSession}
+       backTarget={aiInCall ? aiBackTarget : null}
+       onBack={() => { setShowAiPrompt(false); setStoppedByUser(true); setKeepCallRoom(false); }}
        callControls={aiInCall ? aiCallControls : null}
        callStatus={aiInCall ? aiCallStatus : null}
        onSpeakingChange={setAiSpeaking}

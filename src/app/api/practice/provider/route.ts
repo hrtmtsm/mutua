@@ -61,7 +61,7 @@ export async function POST(request:Request){
   const practiceHistory = body.kind === 'ai' && body.usePracticeHistory === true
    ? await recentPracticeUtterances(auth.rpcDb, auth.userId, s)
    : [];
-  const form=new FormData();form.set('sdp',body.sdp);form.set('session',JSON.stringify(providerSession(body.kind,s,practiceHistory)));
+  const form=new FormData();form.set('sdp',body.sdp);form.set('session',JSON.stringify(providerSession(body.kind,s,practiceHistory,body.cueVoice)));
   const upstream=await fetch('https://api.openai.com/v1/realtime/calls',{method:'POST',headers:providerHeaders(auth.userId),body:form,signal:AbortSignal.timeout(20000)});
   if(!upstream.ok)throw Error([401,403].includes(upstream.status)?'provider_auth_failed':upstream.status===429?'provider_capacity':'provider_connection_failed');
   const location=upstream.headers.get('location');providerId=location?.split('/').pop();if(!providerId)throw Error('provider_session_missing');

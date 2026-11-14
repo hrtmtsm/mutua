@@ -1,10 +1,11 @@
 'use client';
 
+import { Button } from '@/components/ui/button';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { UserProfile } from '@/lib/types';
-import { LANGUAGES, GOALS, COMM_STYLES, FREQUENCY, type Language, type Goal, type CommStyle, type Frequency } from '@/lib/types';
-import { LANG_FLAGS, LANG_AVATAR_COLOR, INTEREST_CATEGORIES, INTEREST_MIGRATION } from '@/lib/constants';
+import { LANGUAGES, type Language } from '@/lib/types';
+import { LANG_FLAGS, LANG_AVATAR_COLOR } from '@/lib/constants';
 import { track } from '@/lib/analytics';
 import { supabase, saveProfile } from '@/lib/supabase';
 import type { UserAvailability } from '@/lib/supabase';
@@ -197,9 +198,9 @@ function CropModal({ src, onConfirm, onCancel }: { src: string; onConfirm: (blob
           <button onClick={onCancel} className="flex-1 py-2.5 text-sm font-semibold text-stone-500 border border-stone-200 rounded-full hover:bg-stone-50 transition-colors">
             {t('profile.cancel')}
           </button>
-          <button onClick={handleConfirm} className="flex-1 py-2.5 btn-primary text-white text-sm font-semibold rounded-full">
+          <Button onClick={handleConfirm} className="flex-1 py-2.5 btn-primary text-white text-sm font-semibold rounded-full">
             {t('profile.usePhoto')}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -231,10 +232,6 @@ export default function ProfilePage() {
 
   const [native,     setNative]     = useState<Language>('English');
   const [learning,   setLearning]   = useState<Language>('Japanese');
-  const [goal,       setGoal]       = useState<Goal>('Casual conversation');
-  const [commStyle,  setCommStyle]  = useState<CommStyle>('Voice call');
-  const [practiceFrequency, setPracticeFrequency] = useState<Frequency>('Once a week');
-  const [interests, setInterests] = useState<string[]>([]);
   const [bio,       setBio]       = useState('');
 
 
@@ -248,33 +245,7 @@ export default function ProfilePage() {
       setAvatarUrl(p.avatar_url || defaultAvatarFor(p.session_id));
       setNative(p.native_language);
       setLearning(p.learning_language);
-      if (p.goal)       setGoal(p.goal);
-      if (p.comm_style) setCommStyle(p.comm_style);
-      if (p.practice_frequency) setPracticeFrequency(p.practice_frequency);
       if (p.bio) setBio(p.bio);
-      if (p.interests) {
-        const allTags = INTEREST_CATEGORIES.flatMap(c => c.tags);
-        const normalized = p.interests
-          .split(',')
-          .map((s: string) => s.trim())
-          .filter(Boolean)
-          .map((s: string) => {
-            const exact = allTags.find(t => t.toLowerCase() === s.toLowerCase());
-            if (exact) return exact;
-            const migrationKey = Object.keys(INTEREST_MIGRATION).find(k => k.toLowerCase() === s.toLowerCase());
-            return migrationKey ? INTEREST_MIGRATION[migrationKey] : null;
-          })
-          .filter(Boolean) as string[];
-        const deduped = [...new Set(normalized)].slice(0, 5);
-        setInterests(deduped);
-        // Write normalized value back to localStorage so loadMatch reads clean data
-        const stored = localStorage.getItem('mutua_profile');
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          parsed.interests = deduped.join(', ');
-          localStorage.setItem('mutua_profile', JSON.stringify(parsed));
-        }
-      }
     }
 
     async function loadAvailability() {
@@ -403,16 +374,12 @@ export default function ProfilePage() {
       ...profile,
       native_language:    native,
       learning_language:  learning,
-      goal,
-      comm_style:         commStyle,
-      practice_frequency: practiceFrequency,
-      interests:          interests.length ? interests.join(', ') : undefined,
       bio:                bio.trim() || undefined,
     };
     localStorage.setItem('mutua_profile', JSON.stringify(updated));
     setProfile(updated);
     try { await saveProfile(updated); } catch { /* offline */ }
-    track('profile_updated', { has_bio: !!bio.trim(), interests_count: interests.length });
+    track('profile_updated', { has_bio: !!bio.trim() });
     setSaving(false);
     setEditing(false);
   };
@@ -474,8 +441,8 @@ export default function ProfilePage() {
                   </div>
                   <div className="flex items-center justify-between gap-3">
                     <button type="button" onClick={() => setIconPickerOpen(false)} disabled={uploading} className="text-sm text-stone-500">{t('profile.cancel')}</button>
-                    <button type="button" onClick={saveGlyphAvatar} disabled={uploading || !AVATAR_OPTIONS.includes(draftAvatar)}
-                      className="rounded-full bg-blue-600 hover:bg-blue-700 px-5 py-2 text-sm font-semibold text-white disabled:opacity-50">{uploading ? t('profile.savingIcon') : t('profile.saveIcon')}</button>
+                    <Button type="button" onClick={saveGlyphAvatar} disabled={uploading || !AVATAR_OPTIONS.includes(draftAvatar)}
+                      className="rounded-full bg-blue-600 hover:bg-blue-700 px-5 py-2 text-sm font-semibold text-white disabled:opacity-50">{uploading ? t('profile.savingIcon') : t('profile.saveIcon')}</Button>
                   </div>
                   <p className="text-xs text-stone-500">Adventurer / Glyphs by <a href="https://www.dicebear.com/styles/" target="_blank" rel="noreferrer" className="underline">DiceBear</a> / Lisa Wischofsky &amp; Matt Houser · <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer" className="underline">CC BY 4.0</a></p>
                 </section>
@@ -552,9 +519,9 @@ export default function ProfilePage() {
               </div>
 
               {editingIdentity && (
-                <button onClick={handleSaveIdentity} disabled={saving} className="w-full py-2.5 btn-primary text-white font-bold text-sm rounded-full shadow-md disabled:opacity-50">
+                <Button onClick={handleSaveIdentity} disabled={saving} className="w-full py-2.5 btn-primary text-white font-bold text-sm rounded-full shadow-md disabled:opacity-50">
                   {saving ? t('profile.saving') : t('profile.saveChanges')}
-                </button>
+                </Button>
               )}
 
             </div>
@@ -577,9 +544,6 @@ export default function ProfilePage() {
                 {[
                   { label: t('profile.nativeLanguageLabel'), value: `${LANG_FLAGS[native] ?? ''} ${native}`, editor: <SelectWrap><select value={native} onChange={e => setNative(e.target.value as Language)} className={selectClass}>{LANGUAGES.map(l => <option key={l}>{l}</option>)}</select></SelectWrap> },
                   { label: t('partnerProfile.learningLabel'), value: `${LANG_FLAGS[learning] ?? ''} ${learning}`, editor: <SelectWrap><select value={learning} onChange={e => setLearning(e.target.value as Language)} className={selectClass}>{LANGUAGES.filter(l => l !== native).map(l => <option key={l}>{l}</option>)}</select></SelectWrap> },
-                  { label: t('partnerProfile.goalLabel'),     value: goal,             editor: <SelectWrap><select value={goal} onChange={e => setGoal(e.target.value as Goal)} className={selectClass}>{GOALS.map(g => <option key={g}>{g}</option>)}</select></SelectWrap> },
-                  { label: t('partnerProfile.styleLabel'),    value: commStyle,        editor: <SelectWrap><select value={commStyle} onChange={e => setCommStyle(e.target.value as CommStyle)} className={selectClass}>{COMM_STYLES.map(s => <option key={s}>{s}</option>)}</select></SelectWrap> },
-                  { label: t('partnerProfile.frequencyLabel'), value: practiceFrequency, editor: <SelectWrap><select value={practiceFrequency} onChange={e => setPracticeFrequency(e.target.value as Frequency)} className={selectClass}>{FREQUENCY.map(f => <option key={f}>{f}</option>)}</select></SelectWrap> },
                 ].map(({ label, value, editor }) => (
                   <div key={label} className="flex items-center justify-between py-3 border-b border-stone-100 last:border-0">
                     <span className="text-xs font-semibold text-stone-400">{label}</span>
@@ -588,61 +552,10 @@ export default function ProfilePage() {
                 ))}
               </div>
 
-              {/* Interests tag picker */}
-              <div className="pt-2 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-stone-400">{t('partnerProfile.interestsLabel')}</span>
-                  <span className="text-xs text-stone-400">{editing ? t('profile.interestsCountMax').replace('{n}', String(interests.length)) : interests.length > 0 ? t('profile.interestsCountSelected').replace('{n}', String(interests.length)) : ''}</span>
-                </div>
-                {editing ? (
-                  <div className="space-y-3">
-                    {INTEREST_CATEGORIES.map(cat => (
-                      <div key={cat.label}>
-                        <p className="text-xs text-stone-400 mb-1.5">{cat.label}</p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {cat.tags.map(tag => {
-                            const selected = interests.includes(tag);
-                            const maxed = interests.length >= 5 && !selected;
-                            return (
-                              <button
-                                key={tag}
-                                type="button"
-                                disabled={maxed}
-                                onClick={() => setInterests(prev =>
-                                  selected ? prev.filter(t => t !== tag) : [...prev, tag]
-                                )}
-                                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                                  selected
-                                    ? 'bg-neutral-900 text-white'
-                                    : maxed
-                                    ? 'bg-stone-100 text-stone-300 cursor-not-allowed'
-                                    : 'bg-stone-100 text-stone-500 hover:bg-stone-200'
-                                }`}
-                              >
-                                {tag}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex flex-wrap gap-1.5">
-                    {interests.length > 0
-                      ? interests.map(tag => (
-                          <span key={tag} className="px-2.5 py-1 bg-stone-100 text-xs font-medium text-stone-500 rounded-full">{tag}</span>
-                        ))
-                      : <span className="text-sm text-stone-400">—</span>
-                    }
-                  </div>
-                )}
-              </div>
-
               {editing && (
-                <button onClick={handleSavePrefs} disabled={saving} className="w-full py-2.5 btn-primary text-white font-bold text-sm rounded-full shadow-md disabled:opacity-50">
+                <Button onClick={handleSavePrefs} disabled={saving} className="w-full py-2.5 btn-primary text-white font-bold text-sm rounded-full shadow-md disabled:opacity-50">
                   {saving ? t('profile.saving') : t('profile.saveChanges')}
-                </button>
+                </Button>
               )}
 
             </div>

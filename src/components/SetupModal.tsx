@@ -90,6 +90,7 @@ export default function SetupModal({ open, onClose, onComplete, initialNative, i
   const [learning, setLearning] = useState<Language | ''>(initialLearning ?? '');
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
+  const [agreed,   setAgreed]   = useState(false);
   const [error,    setError]    = useState('');
 
   // state carried from a successful login that still needs a language pair
@@ -106,6 +107,7 @@ export default function SetupModal({ open, onClose, onComplete, initialNative, i
       setStage('form');
       setError('');
       setPassword('');
+      setAgreed(false);
       setTab(initialTab ?? 'signup');
       setNative(current => current || initialNative || current);
       setLearning(current => current || initialLearning || current);
@@ -126,6 +128,7 @@ export default function SetupModal({ open, onClose, onComplete, initialNative, i
     if (!native || !learning) { setError(t('setupModal.selectLanguagesError')); return; }
     if (native === learning)  { setError(t('liveExchange.sameLanguageError')); return; }
     if (!email || !password)  { setError(t('setupModal.emailPasswordRequired')); return; }
+    if (!agreed) { setError(t('privacy.agreeRequiredError')); return; }
 
     setStage('saving');
     try {
@@ -246,7 +249,11 @@ export default function SetupModal({ open, onClose, onComplete, initialNative, i
 
         {(stage === 'form' || stage === 'saving') && (
           <div className="space-y-5">
-            <div className="live-modal-tabs flex rounded-full p-1 text-sm font-semibold">
+            {/* mt-5 clears the absolutely-positioned close button (top-3,
+                h-7 → bottom edge ~40px into the card) — without it, the
+                "Log in" tab's top-right corner sits under the ✕ and the
+                two controls fight over the same clicks. */}
+            <div className="live-modal-tabs flex rounded-full p-1 text-sm font-semibold mt-5">
               <button
                 type="button"
                 onClick={() => { setTab('signup'); setError(''); }}
@@ -279,9 +286,9 @@ export default function SetupModal({ open, onClose, onComplete, initialNative, i
                   className="live-modal-input disabled:opacity-50"
                 />
                 {error && <p className="text-xs text-red-600">{error}</p>}
-                <SignupPrivacyNotice />
+                <SignupPrivacyNotice checked={agreed} onChange={setAgreed} />
                 <button
-                  type="submit" disabled={stage === 'saving'}
+                  type="submit" disabled={stage === 'saving' || !agreed}
                   className="w-full live-button justify-center text-sm"
                 >
                   {stage === 'saving' ? t('setup.processing') : t('setup.start')}

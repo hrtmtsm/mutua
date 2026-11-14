@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { LANGUAGES, type Language } from '@/lib/types';
 import { LANG_FLAG_CODE, LANG_NATIVE_NAME } from '@/lib/constants';
 import './liveExchange.css';
@@ -24,8 +24,26 @@ export default function LanguagePicker({ value, onChange, placeholder, label, di
   label?: string;
   disabled?: boolean;
 }) {
+  return <OptionPicker value={value} onChange={onChange} placeholder={placeholder} label={label} disabled={disabled}
+    options={ORDERED_LANGUAGES.map(language => ({
+      value: language,
+      label: LANG_NATIVE_NAME[language] || language,
+      icon: <span className={`fi fi-${LANG_FLAG_CODE[language]} lang-picker-flag`} aria-hidden="true" />,
+    }))} />;
+}
+
+export function OptionPicker<Value extends string>({ value, onChange, placeholder, label, disabled, options, singleColumn }: {
+  value: Value | '';
+  onChange: (value: Value) => void;
+  placeholder?: string;
+  label?: string;
+  disabled?: boolean;
+  options: readonly { value: Value; label: string; icon?: ReactNode }[];
+  singleColumn?: boolean;
+}) {
   const id = useId();
-  const selectedName = value ? LANG_NATIVE_NAME[value] || value : '';
+  const selected = options.find(option => option.value === value);
+  const selectedName = selected?.label;
   const [open, setOpen] = useState(false);
   const [placement, setPlacement] = useState<'below' | 'above'>('below');
   const rootRef = useRef<HTMLDivElement>(null);
@@ -68,9 +86,9 @@ export default function LanguagePicker({ value, onChange, placeholder, label, di
         aria-expanded={open}
         onClick={toggleOpen}
       >
-        {value ? (
+        {selected ? (
           <>
-            <span className={`fi fi-${LANG_FLAG_CODE[value]} lang-picker-flag`} aria-hidden="true" />
+            {selected.icon}
             {selectedName}
           </>
         ) : (
@@ -79,19 +97,19 @@ export default function LanguagePicker({ value, onChange, placeholder, label, di
         <span className="lang-picker-caret" aria-hidden="true">▾</span>
       </button>
       {open && (
-        <div className="lang-picker-menu" data-placement={placement} role="listbox">
-          {ORDERED_LANGUAGES.map(language => (
+        <div className="lang-picker-menu" data-placement={placement} role="listbox" aria-label={label} style={singleColumn ? { gridTemplateColumns: 'minmax(0, 1fr)', width: '100%', minWidth: 0 } : undefined}>
+          {options.map(option => (
             <button
-              key={language}
+              key={option.value}
               type="button"
               role="option"
-              aria-selected={value === language}
-              data-active={value === language}
+              aria-selected={value === option.value}
+              data-active={value === option.value}
               className="lang-picker-option"
-              onClick={() => { onChange(language); setOpen(false); }}
+              onClick={() => { onChange(option.value); setOpen(false); rootRef.current?.querySelector('button')?.focus(); }}
             >
-              <span className={`fi fi-${LANG_FLAG_CODE[language]} lang-picker-flag`} aria-hidden="true" />
-              {LANG_NATIVE_NAME[language] || language}
+              {option.icon}
+              {option.label}
             </button>
           ))}
         </div>

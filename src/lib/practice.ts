@@ -14,3 +14,28 @@ export async function practiceAction<T=VoiceSession>(action:string,data:Record<s
  const response=await authorizedFetch('/api/practice',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,data})});
  const result=await response.json();if(!response.ok)throw Error(result.error||'操作を完了できませんでした。');return result;
 }
+
+const detailRequests = new Map<string, Promise<PracticeDetail>>();
+
+export function loadPracticeDetail(sessionId: string, accessToken: string, refresh = false) {
+ const key = `${accessToken}:${sessionId}`;
+ const existing = detailRequests.get(key);
+ if (existing && !refresh) return existing;
+
+ const request = fetchPracticeHistory<PracticeDetail>(sessionId);
+ detailRequests.set(key, request);
+ const clear = () => {
+  if (detailRequests.get(key) === request) detailRequests.delete(key);
+ };
+ void request.then(() => setTimeout(clear, 5000), clear);
+ return request;
+}
+
+export async function fetchPracticeHistory<T>(sessionId: string, chat = false, signal?: AbortSignal): Promise<T> {
+ const params = new URLSearchParams({call: sessionId});
+ if (chat) params.set('chat', '1');
+ const response = await authorizedFetch('/api/practice?' + params, {signal});
+ const data = await response.json();
+ if (!response.ok) throw new Error(data.error || '履歴を読み込めませんでした。');
+ return data;
+}

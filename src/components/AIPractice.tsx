@@ -1,4 +1,7 @@
 'use client';
+
+import { DetailBackButton } from './DetailBackButton';
+import { Button } from '@/components/ui/button';
 import {useEffect,useRef,useState} from 'react';
 import { createPortal } from 'react-dom';
 import { Mic, MicOff, Volume2 } from 'lucide-react';
@@ -6,9 +9,13 @@ import { useSpeaking } from '@/hooks/useSpeaking';
 import {authorizedFetch,practiceAction,type VoiceSession} from '@/lib/practice';
 import {usePracticeAudio} from '@/hooks/usePracticeAudio';
 import {useLocale} from './LocaleProvider';
+import { supabase } from '@/lib/supabase';
+import { readCueSettings, type CueVoice } from '@/lib/cueSettings';
 import {PrivacyLink} from './PrivacyNotice';
-export default function AIPractice({session,onStarted,onEnded,callControls,callStatus,onSpeakingChange}:{
+export default function AIPractice({session,onStarted,onEnded,callControls,callStatus,onSpeakingChange,backTarget,onBack}:{
  session: VoiceSession | null;
+ backTarget?: HTMLElement | null;
+ onBack?: () => void;
  onStarted: (session: VoiceSession) => void;
  onEnded: (sessionId: string) => void;
  callControls: HTMLDivElement | null;
@@ -17,9 +24,9 @@ export default function AIPractice({session,onStarted,onEnded,callControls,callS
 }){
  const {t}=useLocale();
  const [resume,setResume]=useState(false);
- const [usePracticeHistory, setUsePracticeHistory] = useState(false);
- const [topic,setTopic]=useState('Casual conversation'),[level,setLevel]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[enabled,setEnabled]=useState(false),[muted,setMuted]=useState(false);
- const audio=useRef<HTMLAudioElement>(null);const provider=usePracticeAudio(resume?session:null,null,muted,usePracticeHistory);
+ const [voice, setVoice] = useState<CueVoice>('random');
+ const [busy,setBusy]=useState(false),[error,setError]=useState(''),[enabled,setEnabled]=useState(false),[muted,setMuted]=useState(false);
+ const audio=useRef<HTMLAudioElement>(null);const provider=usePracticeAudio(resume?session:null,null,muted,true,false,voice);
  const speaking = useSpeaking(provider.remote);
  useEffect(() => { onSpeakingChange(speaking); }, [speaking, onSpeakingChange]);
  useEffect(()=>{void authorizedFetch('/api/practice?capabilities').then(r=>r.json()).then(d=>setEnabled(!!d.ai)).catch(()=>{});},[]);
@@ -30,6 +37,10 @@ export default function AIPractice({session,onStarted,onEnded,callControls,callS
   setError('');
   const requestId = crypto.randomUUID();
   try {
+   const { data, error: authError } = await supabase.auth.getUser();
+   if (authError) throw authError;
+   const { topic, level, voice } = readCueSettings(data.user?.user_metadata.cue_settings);
+   setVoice(voice);
    const next = await practiceAction<VoiceSession & { request_id: string | null }>('ai_begin', {
     requestId, topic, level, consent: true, consentVersion: 'voice-log-v1',
    });
@@ -41,13 +52,14 @@ export default function AIPractice({session,onStarted,onEnded,callControls,callS
    setBusy(false);
   }
  };
- const end = async () => {
+ const end = async (exitRoom = false) => {
   if (!session) return;
   setBusy(true);
   try {
    await provider.finish();
    await practiceAction('end', { sessionId: session.id, reason: 'hangup' });
    onEnded(session.id);
+   if (exitRoom) onBack?.();
   } catch {
    setError(t('aiPractice.endSyncFailed'));
   } finally {
@@ -56,8 +68,25 @@ export default function AIPractice({session,onStarted,onEnded,callControls,callS
  };
  const content = <section className={callControls ? "text-sm" : "live-card p-5"} aria-label={t('aiPractice.sectionLabel')}>
  <audio ref={audio} autoPlay playsInline data-testid="ai-audio" data-connection-state={provider.status}/>
- {!session && <h2 className="font-bold text-balance pr-8">{t('aiPractice.titleOffer')}</h2>}
- {!callControls && <p className="text-sm mt-2 text-pretty">{t('aiPractice.description')}</p>}
+ {!session && (
+   <div className="flex flex-col items-center gap-3 pt-3 text-center">
+    <div className="cue-modal-mascot size-36 shrink-0 overflow-hidden">
+     <div className="ai-cloud-avatar ai-cloud-avatar--plain" aria-hidden="true" />
+    </div>
+    <style jsx>{`
+     @media (prefers-reduced-motion: no-preference) {
+      .cue-modal-mascot { animation: cue-pop 200ms ease-out both; }
+     }
+     @keyframes cue-pop {
+      0% { opacity: 0; transform: translateY(8px) scale(.88); }
+      70% { opacity: 1; transform: translateY(-3px) scale(1.04); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+     }
+    `}</style>
+    <h2 className="text-2xl font-bold text-balance">{t('aiPractice.titleOffer')}</h2>
+    <p className="max-w-sm text-sm leading-relaxed text-pretty">{t('aiPractice.description')}</p>
+   </div>
+  )}
  {(error||provider.error)&&<p role="alert" className="mt-2">{error||provider.error}</p>}
  {session && session.status !== 'ended' ? (
   <div className="flex flex-wrap items-center justify-center gap-2">
@@ -72,43 +101,22 @@ export default function AIPractice({session,onStarted,onEnded,callControls,callS
    <button type="button" className="live-icon-btn" aria-label={t('aiPractice.playAudio')} title={t('aiPractice.playAudio')} onClick={() => void audio.current?.play()}>
     <Volume2 className="size-5" aria-hidden="true" />
    </button>
-   <button type="button" className="live-button live-button-danger" disabled={busy} onClick={end}>{t('aiPractice.endAiCall')}</button>
+   <Button type="button" className="live-button live-button-danger" disabled={busy} onClick={() => void end(true)}>{t('liveExchange.leaveLabel')}</Button>
   </div>
  ) :<>
- <details className="mt-4 text-sm">
-  <summary className="cursor-pointer rounded-lg border border-current/10 px-3 py-2.5 font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">{t('aiPractice.advancedSettings')}</summary>
-  <div className="mt-3 grid gap-3 sm:grid-cols-2">
-   <label className="min-w-0">
-    <span className="lang-picker-label">{t('aiPractice.topicLabel')}</span>
-    <select className="live-select w-full cursor-pointer disabled:cursor-not-allowed disabled:opacity-50" value={topic} onChange={event => setTopic(event.target.value)} disabled={busy}>
-     <option>Casual conversation</option>
-     <option>Travel</option>
-     <option>Work</option>
-     <option>Culture</option>
-     <option>Daily life</option>
-    </select>
-   </label>
-   <label className="min-w-0">
-    <span className="lang-picker-label">{t('aiPractice.levelLabel')}</span>
-    <select className="live-select w-full cursor-pointer disabled:cursor-not-allowed disabled:opacity-50" value={level} onChange={event => setLevel(event.target.value)} disabled={busy}>
-     <option value="">{t('aiPractice.levelUnspecified')}</option>
-     <option>Beginner</option>
-     <option>Intermediate</option>
-     <option>Advanced</option>
-    </select>
-   </label>
-  </div>
- </details>
- <label className="mt-4 flex items-start gap-2 text-sm font-medium">
-  <input className="mt-0.5" type="checkbox" checked={usePracticeHistory} disabled={busy} onChange={event => setUsePracticeHistory(event.target.checked)} />
-  {t('aiPractice.personalize')}
- </label>
- <p className="live-note mt-2 text-pretty">
+ <Button className="live-button mt-5 w-full justify-center" disabled={busy||!enabled} onClick={start}>{enabled?t('aiPractice.startCallCta'):t('aiPractice.startCallPreparing')}</Button>
+ <p className="live-note mt-2 text-center text-pretty">
   {t('aiPractice.audioSummary')}{' '}
   <PrivacyLink section="ai-practice" label="privacy.details" />
  </p>
- <button className="live-button mt-4" disabled={busy||!enabled} onClick={start}>{enabled?t('aiPractice.startCallCta'):t('aiPractice.startCallPreparing')}</button>
+
  </>}
  </section>;
- return callControls ? createPortal(content, callControls) : content;
+ return <>
+  {callControls ? createPortal(content, callControls) : content}
+  {backTarget && createPortal(
+   <DetailBackButton label={t('nav.exchange')} disabled={busy} onClick={() => void end(true)} />,
+   backTarget,
+  )}
+ </>;
 }
