@@ -680,7 +680,17 @@ body:has(.how-story) > .overflow-hidden { overflow:clip; }
 /* Sky time lives on its own rail; locale stays in the header's normal flow. */
 .study-header-controls { position:fixed; top:max(24px,env(safe-area-inset-top)); right:max(5%,env(safe-area-inset-right)); display:flex; align-items:center; gap:10px; z-index:40; }
 .study-header-controls .locale-switcher { position:relative; }
-.study-header-controls .locale-switcher .lang-picker-menu { z-index:50; }
+.study-header-controls .locale-switcher .picker-popover { z-index:50; }
+/* Same neutral black/white-per-sky-tone tokens as .study-brand-time below
+   (not this page's sage-tinted --exchange-* landscape tokens) — the popover
+   reads --live-* (liveExchange.css), which otherwise only follows the
+   app's unrelated global light/night toggle. */
+.sky-study[data-hero-tone='day'] .study-header-controls .locale-switcher {
+  --live-ink: #1c2622; --live-muted: #677069; --live-cream: #ffffff; --live-sage: #e8e9ec; --live-label: #f7f8f6;
+}
+.sky-study[data-hero-tone='night'] .study-header-controls .locale-switcher {
+  --live-ink: #f2f2f2; --live-muted: #ababab; --live-cream: #202020; --live-sage: #2d2d2d; --live-label: #242424;
+}
 /* Match the sky-time picker's quiet, no-background style instead of the
    app's usual white pill (which the form pickers elsewhere still use). */
 .study-header-controls .locale-switcher .lang-picker-trigger {
@@ -692,6 +702,16 @@ body:has(.how-story) > .overflow-hidden { overflow:clip; }
 .study-header-controls .locale-switcher .lang-picker-trigger[aria-expanded='true'] { opacity:1; background:#ffffff12; filter:none; }
 .study-header-controls .locale-switcher .lang-picker-trigger:focus-visible { outline:2px solid #7394b5; outline-offset:3px; opacity:1; }
 .sky-study[data-hero-tone='night'] .study-header-controls .locale-switcher .lang-picker-trigger { color:#edeedf; }
+/* The trigger is also a .live-select, so :root[data-theme='night']
+   :is(.live-select, .live-button-ghost) (liveExchange.css) would fill it
+   with a solid background whenever the app's global theme is night,
+   regardless of the sky's own tone — same fix as .study-brand-time below. */
+.study-header-controls .locale-switcher .lang-picker-trigger.live-select { background:transparent; border-color:transparent; box-shadow:none; }
+/* color-scheme governs native UI the popover's own CSS can't reach (its
+   scrollbar, mainly) — without this it keeps inheriting :root's, which
+   only follows the global toggle, not the sky. */
+.sky-study[data-hero-tone='night'] .study-header-controls .locale-switcher .picker-popover { border-color:#ffffff15; color-scheme:dark; }
+.sky-study[data-hero-tone='day'] .study-header-controls .locale-switcher .picker-popover { border-color:#e7e9e5; color-scheme:light; }
 .study-time-rail { position:fixed; z-index:35; right:max(20px,env(safe-area-inset-right)); top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:4px; padding:7px; border-radius:20px; color:#28483f; background:#f2f5ee36; border:1px solid #ffffff1f; backdrop-filter:blur(12px); }
 .study-time-rail button { position:relative; display:flex; justify-content:center; align-items:center; width:40px; height:44px; border:0; border-radius:12px; background:transparent; color:inherit; cursor:pointer; opacity:.62; transition:background-color 160ms ease-out,opacity 160ms ease-out; }
 .study-time-rail button:hover { opacity:1; background:#ffffff30; }
@@ -752,11 +772,12 @@ body:has(.how-story) > .overflow-hidden { overflow:clip; }
    regardless of the sky's own tone. Same specificity (3 classes), later
    in source, keeps this quiet/transparent no matter the global theme. */
 .study-brand-time .lang-picker-trigger.live-select { background:transparent; border-color:transparent; box-shadow:none; }
-.sky-study[data-hero-tone='night'] .study-brand-time .picker-popover { border-color:#ffffff15; }
+.sky-study[data-hero-tone='night'] .study-brand-time .picker-popover { border-color:#ffffff15; color-scheme:dark; }
 /* Beats :root[data-theme='night'] .picker-popover (equal specificity,
    later in source) for when the sky is in daytime but the app's own
-   global theme toggle happens to be set to night. */
-.sky-study[data-hero-tone='day'] .study-brand-time .picker-popover { border-color:#e7e9e5; }
+   global theme toggle happens to be set to night. color-scheme governs
+   native UI the popover's own CSS can't reach (its scrollbar, mainly). */
+.sky-study[data-hero-tone='day'] .study-brand-time .picker-popover { border-color:#e7e9e5; color-scheme:light; }
 @media(max-width:700px) {
  .study-brand-time { gap:11px; }
  .study-brand-time .lang-picker-trigger { font-size:11px; gap:5px; padding:5px 2px; }

@@ -695,7 +695,9 @@ export default function TopNav() {
 
         {/* Right side: theme + avatar */}
         <div className={`relative flex items-center gap-3 shrink-0 md:flex-col ${expanded === true ? "md:flex-row md:justify-between" : expanded === null ? "xl:flex-row xl:justify-between" : ""} md:border-t md:border-[var(--line)] md:pt-3`} ref={inboxRef}>
-          <div className="md:[&_.lang-picker-menu]:!bottom-[calc(100%+8px)] md:[&_.lang-picker-menu]:!top-auto md:[&_.lang-picker-menu]:left-0 md:[&_.lang-picker-menu]:right-auto" ><ThemeSwitcher compact={expanded === null ? null : !expanded} /></div>
+          {/* No manual flip-upward hack needed here anymore — Radix's
+              DropdownMenu.Content avoids viewport collisions on its own. */}
+          <ThemeSwitcher compact={expanded === null ? null : !expanded} />
 
           {/* Dropdown */}
           {inboxOpen && (

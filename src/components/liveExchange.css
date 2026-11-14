@@ -367,7 +367,9 @@
 .theme-switcher { display: inline-block; width: auto; }
 .theme-switcher .lang-picker-trigger { width: auto; padding: 8px 12px; border-radius: 999px; font-size: 12px; }
 .lang-picker-icon { width: 14px; height: 14px; flex-shrink: 0; }
-.locale-switcher-menu { grid-template-columns: 1fr; width: max-content; min-width: 140px; left: auto; right: 0; }
+/* Radix positions/aligns this itself (DropdownMenuContent align="end") —
+   only the sizing survives from the old plain-absolute-div version. */
+.locale-switcher-menu { width: max-content; min-width: 140px; }
 
 
 .live-main-tile.live-call-sky,
