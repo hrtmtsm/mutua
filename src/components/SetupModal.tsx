@@ -210,8 +210,12 @@ export default function SetupModal({ open, onClose, onComplete, initialNative, i
     }
   };
 
+  // items-start + a fixed top offset (instead of items-center) keeps the
+  // card's top edge — and the tabs/close button right under it — from
+  // jumping up and down when switching tabs changes the card's height
+  // (the signup form is much taller than the login one).
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 bg-black/40">
+    <div className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto px-4 pt-[12vh] pb-8 bg-black/40">
       <div className="live-modal-card w-full max-w-sm rounded-2xl shadow-2xl p-6 relative">
         <button
           onClick={resetAndClose}
