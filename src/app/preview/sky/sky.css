@@ -600,11 +600,11 @@ body:has(.how-story) > .overflow-hidden { overflow:clip; }
 .landing-login-button {
  display:flex; align-items:center; justify-content:center;
  width:260px; min-height:54px; padding:15px 24px; border-radius:999px; font-size:15px; font-weight:700;
- color:var(--exchange-ink); background:rgba(255,255,255,.4); border:none; opacity:.85;
+ color:var(--exchange-ink); background:rgba(255,255,255,.55); border:none; opacity:.95;
  text-decoration:none; line-height:1.2; transition:opacity 140ms ease-out, background-color 140ms ease-out;
 }
-.landing-login-button:hover { opacity:1; background:rgba(255,255,255,.55); }
-.landing-login-button:active { opacity:.9; background:rgba(255,255,255,.35); }
+.landing-login-button:hover { opacity:1; background:rgba(255,255,255,.7); }
+.landing-login-button:active { opacity:.95; background:rgba(255,255,255,.5); }
 .landing-login-button:focus-visible { outline:2px solid currentColor; outline-offset:3px; }
 @media(max-width:700px) {
  .possibility-hero h1 { font-size:clamp(33px,8.7vw,42px); }
