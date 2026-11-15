@@ -33,6 +33,15 @@ const AIPractice = dynamic(() => import('./AIPractice'), {
  loading: () => <LoadingStatus />,
 });
 
+// /api/live-exchange's own fixed (not locale-aware) text for "the call/
+// conversation you were acting on has already ended" — a routine race at
+// call end (the other side's client got there first), not a real problem,
+// so it shouldn't surface as a scary dismissible error banner.
+const BENIGN_ALREADY_ENDED_ERRORS = new Set([
+ 'この通話は終了しています。',
+ '会話は終了しています。次の相手を探してください。',
+]);
+
 // Google Meet–style fallback: the real photo when there is one, otherwise
 // initials on a language-colored background — never a stock cartoon glyph.
 function AvatarTile({ url, name, color }: { url?: string | null; name?: string | null; color: string }) {
@@ -227,7 +236,10 @@ export default function LiveExchange() {
  const perform = async (action: string, data: Record<string, unknown> = {}) => {
   setError(''); setBusy(true);
   try { await command(action, data); }
-  catch (error) { setError(error instanceof Error ? error.message : t('liveExchange.actionFailed')); }
+  catch (error) {
+   const message = error instanceof Error ? error.message : t('liveExchange.actionFailed');
+   if (!BENIGN_ALREADY_ENDED_ERRORS.has(message)) setError(message);
+  }
   finally { setBusy(false); }
  };
  const stopFailedCall = (reason: string) => {
@@ -237,7 +249,13 @@ export default function LiveExchange() {
   const failedCallId = call.id;
   liveAction('end_call', { conversationId: call.conversation_id, callId: failedCallId, reason: 'media_failure' })
    .then(next => { if (currentRef.current?.call?.id === failedCallId) { requestVersion.current++; apply(next); } })
-   .catch(() => { if (currentRef.current?.call?.id === failedCallId) setError(`${reason} ${t('liveExchange.callEndSyncFailed')}`); });
+   .catch(error => {
+    // The other side's client already ended this same call first — expected
+    // when both sides detect the same media failure at once, not worth a
+    // second, more alarming "...and syncing that failed too" message.
+    if (error instanceof Error && BENIGN_ALREADY_ENDED_ERRORS.has(error.message)) return;
+    if (currentRef.current?.call?.id === failedCallId) setError(`${reason} ${t('liveExchange.callEndSyncFailed')}`);
+   });
  };
  const rtc = useLiveAudio({ callId: call?.id, conversationId: call?.conversation_id,
   myId: user?.id, partnerId: partner?.id, muted, onFailure: stopFailedCall });
@@ -483,7 +501,7 @@ export default function LiveExchange() {
        </div>
        <section className="live-card live-call-controls">
         <p className="live-pill-status">{partner?.nativeLanguage} → {partner?.learningLanguage}</p>
-        {(canInvite || incomingInvite) && (
+        {canInvite && (
          <div className="mt-2 max-w-md space-y-1 text-center">
           <label className="inline-flex items-center gap-2 text-sm font-medium">
            <input
@@ -505,12 +523,6 @@ export default function LiveExchange() {
          <button disabled={busy} onClick={() => respondToCall('invite')} className="live-button">📞 {t('app.startCall')}</button>
         )}
         {snapshot?.call?.status==='accepted'&&!call&&<Button className="live-button" onClick={()=>setMediaCallId(snapshot.call!.id)}>{t('liveExchange.joinCallThisTab')}</Button>}
-        {snapshot?.call?.status === 'ringing' && <>
-         <p role="status" className="live-pill-status">{snapshot.call.from_user === user?.id ? t('app.waitingForAnswer') : t('app.callInvite')}</p>
-         {snapshot.call.from_user === user?.id
-          ? <button disabled={busy} onClick={() => perform('cancel_invite', actionData)} className="live-button-ghost">{t('app.cancelInvite')}</button>
-          : <div className="flex gap-2"><button disabled={busy} onClick={() => respondToCall('accept')} className="live-button">{t('app.accept')}</button><button disabled={busy} onClick={() => respondToCall('decline')} className="live-button-ghost">{t('app.decline')}</button></div>}
-        </>}
         {call && <>
 
         </>}
@@ -526,6 +538,42 @@ export default function LiveExchange() {
         {!call && snapshot?.call && ['expired','declined','cancelled','ended'].includes(snapshot.call.status) && <p role="status" className="live-pill-status">{({ expired:t('app.callExpired'), declined:t('app.callDeclined'), cancelled:t('app.callCancelled'), ended: snapshot.call.ended_reason === 'media_failure' ? t('app.callEndedMediaFailure') : t('app.callEnded') } as Record<string,string>)[snapshot.call.status]}</p>}
         {audioBlocked && <button onClick={() => audioRef.current?.play().then(() => setAudioBlocked(false)).catch(() => setError(t('liveExchange.audioPlayFailed')))} className="live-button-ghost">{t('app.playRemoteAudio')}</button>}
        </section>
+       {snapshot?.call?.status === 'ringing' && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 bg-black/40">
+         <div className="live-modal-card w-full max-w-sm rounded-2xl shadow-2xl p-6 relative text-center space-y-4">
+          {snapshot.call.from_user === user?.id ? (
+           <>
+            <p role="status" className="live-modal-title text-lg">{t('app.waitingForAnswer')}</p>
+            <button disabled={busy} onClick={() => perform('cancel_invite', actionData)} className="w-full live-button-ghost justify-center text-sm">{t('app.cancelInvite')}</button>
+           </>
+          ) : (
+           <>
+            <p role="status" className="live-modal-title text-lg">{t('app.callInvite')}</p>
+            <div className="space-y-1">
+             <label className="inline-flex items-center gap-2 text-sm font-medium">
+              <input
+               type="checkbox"
+               checked={transcriptionConsent}
+               disabled={busy}
+               aria-describedby="call-transcription-summary-modal"
+               onChange={e => setTranscriptionConsentFor(e.target.checked ? consentKey ?? null : null)}
+              />
+              {t('privacy.transcriptionOption')}
+             </label>
+             <p id="call-transcription-summary-modal" className="live-note text-pretty">
+              {t('privacy.transcriptionSummary')}{' '}
+              <PrivacyLink section="call-transcription" label="privacy.details" />
+             </p>
+            </div>
+            <div className="flex gap-2">
+             <button disabled={busy} onClick={() => respondToCall('accept')} className="flex-1 live-button justify-center text-sm">{t('app.accept')}</button>
+             <button disabled={busy} onClick={() => respondToCall('decline')} className="flex-1 live-button-ghost justify-center text-sm">{t('app.decline')}</button>
+            </div>
+           </>
+          )}
+         </div>
+        </div>
+       )}
        </div>
        <section className="live-card live-chat-pane">
         <button ref={mobileChatClose} type="button" className="live-mobile-chat-close live-icon-btn" aria-label={t('setup.close')} onClick={() => { setMobileChatOpen(false); mobileChatTrigger.current?.focus(); }}>✕</button>
@@ -541,13 +589,13 @@ export default function LiveExchange() {
       </div>
      ) : (
       <>
-       {!aiInCall && (!stoppedByUser && ((user && !profileReady) || conversation?.status === 'ended' || expired)) && (
-        <p className="live-pill-status text-center mb-3">
-         {user && !profileReady ? t('app.needProfile')
-          : expired ? t('app.expired')
-          : conversation?.ended_reason === 'peer_left' ? t('app.peerLeft')
-          : t('app.conversationEnded')}
-        </p>
+       {/* Only the "you still need to set a language pair" case gets a banner here —
+           it's the one thing blocking the user from starting at all. A call simply
+           ending (conversationEnded/peerLeft/expired) is already obvious from the
+           empty tile + "look for someone again" button right below, so it doesn't
+           need its own repeated banner every time. */}
+       {!aiInCall && !stoppedByUser && user && !profileReady && (
+        <p className="live-pill-status text-center mb-3">{t('app.needProfile')}</p>
        )}
        <div className="live-split" style={inCallMode ? undefined : { gridTemplateColumns: "minmax(0, 1fr)" }}>
         <div className="live-call-column">
